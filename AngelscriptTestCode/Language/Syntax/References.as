@@ -3,11 +3,15 @@
  * @summary Reference parameters and reference locals.
  * @topic Language
  * @topic Syntax
+ *
+ * references
+ * function-reference-parameter-combinations
+ * ref-to-local
+ * ref-inout-chain
  */
 /**
- * @version root
+ * @begin references
  * @summary In, out, and inout references plus a local alias.
- * @topic Baseline
  */
 void WriteRef(int& Out Value)
 {
@@ -35,24 +39,7 @@ int UseReferences()
 }
 /** @end */
 /**
- * @version invalid-ref-to-literal
- * @parent root
- * @summary A non-const reference cannot bind a literal.
- * @topic Negative
- */
-void Write(int& Out Value)
-{
-	Value = 1;
-}
-
-void Test()
-{
-	Write(3);
-}
-/** @end */
-/**
- * @version valid-function-reference-parameter-combinations
- * @parent root
+ * @begin function-reference-parameter-combinations
  * @summary Positive language form retained from legacy function reference parameter combinations.
  * @topic Syntax
  */
@@ -85,8 +72,7 @@ void DefaultAndOut(int&out Result, int Value = 10)
 	}
 /** @end */
 /**
- * @version valid-ref-to-local
- * @parent root
+ * @begin ref-to-local
  * @summary A reference parameter writes through a local.
  * @topic Syntax
  */
@@ -103,8 +89,7 @@ int UseRef()
 }
 /** @end */
 /**
- * @version valid-ref-inout-chain
- * @parent root
+ * @begin ref-inout-chain
  * @summary Two inout references update the same local in sequence.
  * @topic Syntax
  */
@@ -124,18 +109,5 @@ int UseChain()
 	AddOne(Value);
 	AddTwo(Value);
 	return Value;
-}
-/** @end */
-/**
- * @version invalid-ref-to-const-then-write
- * @parent root
- * @summary A const reference cannot be written.
- * @topic Negative
- */
-void Test()
-{
-	const int Value = 1;
-	int& Written = Value;
-	Written = 2;
 }
 /** @end */

@@ -3,11 +3,17 @@
  * @summary Preprocessor if, elif, else, and endif branch skeletons.
  * @topic Language
  * @topic Preprocessor
+ *
+ * if-elif-else
+ * editor-flag-branch
+ * editor-configuration-flag-branch
+ * if-elif-endif-no-else
+ * nested-if-directives
+ * if-zero-dead-branch
  */
 /**
- * @version root
+ * @begin if-elif-else
  * @summary A three-arm directive chain selecting among integer returns.
- * @topic Baseline
  * @topic SourceOnly
  */
 int Entry()
@@ -22,8 +28,7 @@ int Entry()
 }
 /** @end */
 /**
- * @version valid-editor-flag-branch
- * @parent root
+ * @begin editor-flag-branch
  * @summary A single #if/#else pair guarded by an editor configuration flag.
  * @topic Preprocessor
  * @topic SourceOnly
@@ -38,23 +43,7 @@ int EditorBranch()
 }
 /** @end */
 /**
- * @version invalid-missing-endif
- * @parent root
- * @summary A #if chain must close with #endif.
- * @topic Negative
- * @topic SourceOnly
- */
-int Test()
-{
-#if FLAG
-	return 1;
-#else
-	return 0;
-}
-/** @end */
-/**
- * @version valid-editor-configuration-flag-branch
- * @parent root
+ * @begin editor-configuration-flag-branch
  * @summary Positive language form retained from legacy editor configuration flag branch.
  * @topic Preprocessor
  * @topic SourceOnly
@@ -69,8 +58,7 @@ int Entry()
 	}
 /** @end */
 /**
- * @version valid-if-elif-endif-no-else
- * @parent root
+ * @begin if-elif-endif-no-else
  * @summary If/elif/endif chain without an else arm.
  * @topic Preprocessor
  * @topic SourceOnly
@@ -86,8 +74,7 @@ int Entry()
 }
 /** @end */
 /**
- * @version valid-nested-if-directives
- * @parent root
+ * @begin nested-if-directives
  * @summary An inner #if nested inside an outer #if/#endif.
  * @topic Preprocessor
  * @topic SourceOnly
@@ -105,8 +92,7 @@ int Entry()
 }
 /** @end */
 /**
- * @version valid-if-zero-dead-branch
- * @parent root
+ * @begin if-zero-dead-branch
  * @summary A #if 0 branch is source text that is not selected.
  * @topic Preprocessor
  * @topic SourceOnly
@@ -118,33 +104,5 @@ int Entry()
 #else
 	return 0;
 #endif
-}
-/** @end */
-/**
- * @version invalid-elif-without-if
- * @parent root
- * @summary Elif cannot appear without an open if.
- * @topic Negative
- * @topic SourceOnly
- */
-int Test()
-{
-#elif FLAG
-	return 1;
-#endif
-	return 0;
-}
-/** @end */
-/**
- * @version invalid-endif-without-if
- * @parent root
- * @summary Endif cannot appear without an open if.
- * @topic Negative
- * @topic SourceOnly
- */
-int Test()
-{
-#endif
-	return 0;
 }
 /** @end */

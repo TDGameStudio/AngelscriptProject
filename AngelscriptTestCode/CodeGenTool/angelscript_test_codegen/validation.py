@@ -20,11 +20,8 @@ def validate_topology(
     diagnostics: list[CodegenDiagnostic] = []
     tag_counts: dict[str, int] = {}
     unique_indices: dict[str, int] = {}
-    root_count = 0
 
     for index, version in enumerate(versions):
-        if version.tag == "root":
-            root_count += 1
         tag_counts[version.tag] = tag_counts.get(version.tag, 0) + 1
         if tag_counts[version.tag] == 1:
             unique_indices[version.tag] = index
@@ -41,7 +38,7 @@ def validate_topology(
                 )
             )
 
-    if root_count == 0:
+    if not versions:
         diagnostics.append(
             CodegenDiagnostic(
                 code="MissingRoot",
@@ -49,23 +46,12 @@ def validate_topology(
                 line=1,
                 byte_offset=0,
                 version_tag=None,
-                message="A file must contain exactly one root version.",
-            )
-        )
-    elif root_count > 1:
-        diagnostics.append(
-            CodegenDiagnostic(
-                code="MultipleRoots",
-                source_path=source_path,
-                line=1,
-                byte_offset=0,
-                version_tag=None,
-                message="A file must contain exactly one root version.",
+                message="A file must contain at least one version.",
             )
         )
 
     for version in versions:
-        if version.tag == "root" or version.parent is None:
+        if version.parent is None:
             continue
         if version.parent not in tag_counts:
             diagnostics.append(
@@ -105,7 +91,7 @@ def validate_topology(
             positions[current] = len(path)
             path.append(current)
             node = versions[index]
-            if node.tag == "root" or node.parent is None:
+            if node.parent is None:
                 break
             parent_count = tag_counts.get(node.parent)
             if parent_count is None or parent_count != 1:

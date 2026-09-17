@@ -3,11 +3,17 @@
  * @summary Enum declarations, explicit values, and local use.
  * @topic Language
  * @topic Syntax
+ *
+ * enum
+ * basic-enum-values
+ * empty-enum-declaration
+ * enum-explicit-values
+ * enum-local-usage
+ * enum-trailing-comma
  */
 /**
- * @version root
+ * @begin enum
  * @summary An implicit enum and an explicitly numbered enum used as a local.
- * @topic Baseline
  */
 enum EColor
 {
@@ -36,31 +42,7 @@ int LocalEnum()
 }
 /** @end */
 /**
- * @version invalid-duplicate-enumerator
- * @parent root
- * @summary Enumerator names must be unique in one enum.
- * @topic Negative
- */
-enum EColor
-{
-	Red,
-	Red
-}
-/** @end */
-/**
- * @version invalid-enum-without-name
- * @parent root
- * @summary An enum declaration requires a name.
- * @topic Negative
- */
-enum
-{
-	Red
-}
-/** @end */
-/**
- * @version valid-basic-enum-values
- * @parent root
+ * @begin basic-enum-values
  * @summary Positive language form retained from legacy basic enum values.
  * @topic Syntax
  */
@@ -72,8 +54,7 @@ enum EEnumBasic
 }
 /** @end */
 /**
- * @version valid-empty-enum-declaration
- * @parent root
+ * @begin empty-enum-declaration
  * @summary Positive language form retained from legacy empty enum declaration.
  * @topic Syntax
  */
@@ -82,8 +63,7 @@ enum EEnumEmpty
 }
 /** @end */
 /**
- * @version valid-enum-explicit-values
- * @parent root
+ * @begin enum-explicit-values
  * @summary Positive language form retained from legacy enum explicit values.
  * @topic Syntax
  */
@@ -95,8 +75,7 @@ enum EEnumExplicit
 }
 /** @end */
 /**
- * @version valid-enum-local-usage
- * @parent root
+ * @begin enum-local-usage
  * @summary Positive language form retained from legacy enum local usage.
  * @topic Syntax
  */
@@ -117,33 +96,7 @@ namespace SyntaxTest
 	}
 /** @end */
 /**
- * @version invalid-method-inside-enum
- * @parent root
- * @summary Compile-rejection form retained from legacy method inside enum.
- * @topic Negative
- */
-enum EEnumMethod
-{
-	Value1;
-void Foo()
-	{
-	}
-}
-/** @end */
-/**
- * @version invalid-non-integer-enumerator
- * @parent root
- * @summary Compile-rejection form retained from legacy non integer enumerator.
- * @topic Negative
- */
-enum EEnumBadVal
-{
-	Value1 = "hello"
-}
-/** @end */
-/**
- * @version valid-enum-trailing-comma
- * @parent root
+ * @begin enum-trailing-comma
  * @summary An enumerator list that ends with a trailing comma.
  * @topic Syntax
  */

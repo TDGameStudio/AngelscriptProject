@@ -3,11 +3,15 @@
  * @summary Const methods on structs.
  * @topic Language
  * @topic Syntax
+ *
+ * struct-const
+ * struct-const-method
+ * struct-const-reader-method
+ * const-method-on-struct
  */
 /**
- * @version root
+ * @begin struct-const
  * @summary A const reader method that does not mutate members.
- * @topic Baseline
  */
 struct FSize
 {
@@ -29,24 +33,7 @@ int ReadArea()
 }
 /** @end */
 /**
- * @version invalid-mutate-in-const-method
- * @parent root
- * @summary A const method cannot assign a member.
- * @topic Negative
- */
-struct FSize
-{
-	int Width;
-
-	void Grow() const
-	{
-		Width += 1;
-	}
-}
-/** @end */
-/**
- * @version valid-struct-const-method
- * @parent root
+ * @begin struct-const-method
  * @summary Positive language form retained from legacy struct const method.
  * @topic Syntax
  */
@@ -61,8 +48,7 @@ struct FStructFuncConst
 	}
 /** @end */
 /**
- * @version valid-struct-const-reader-method
- * @parent root
+ * @begin struct-const-reader-method
  * @summary Positive language form retained from legacy struct const reader method.
  * @topic Syntax
  */
@@ -77,24 +63,7 @@ struct FStructMethods
 }
 /** @end */
 /**
- * @version invalid-mutate-member-in-const-method
- * @parent root
- * @summary Compile-rejection form retained from legacy mutate member in const method.
- * @topic Negative
- */
-struct FStructConstModify
-{
-	int X = 0;
-
-	void Bad() const
-	{
-		X = 5;
-	}
-}
-/** @end */
-/**
- * @version valid-const-method-on-struct
- * @parent root
+ * @begin const-method-on-struct
  * @summary A const method that only reads members.
  * @topic Syntax
  */

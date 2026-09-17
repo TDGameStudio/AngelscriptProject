@@ -3,11 +3,17 @@
  * @summary Integer and enum switch forms with break.
  * @topic Language
  * @topic ControlFlow
+ *
+ * switch
+ * switch-enum
+ * switch-basic
+ * switch-break
+ * switch-integer-types
+ * switch-fallthrough-to-default
  */
 /**
- * @version root
+ * @begin switch
  * @summary A defaulted integer switch, an explicit-break switch, and an enum switch.
- * @topic Baseline
  */
 enum EKind
 {
@@ -62,41 +68,7 @@ int SwitchEnum(EKind Kind)
 }
 /** @end */
 /**
- * @version invalid-switch-on-float
- * @parent root
- * @summary A float cannot be the switch selector.
- * @topic Negative
- */
-void Test()
-{
-	float Value = 1.0f;
-	switch (Value)
-	{
-		case 1.0f:
-			return;
-	}
-}
-/** @end */
-/**
- * @version invalid-duplicate-case
- * @parent root
- * @summary Duplicate case labels are invalid.
- * @topic Negative
- */
-void Test(int Value)
-{
-	switch (Value)
-	{
-		case 1:
-			return;
-		case 1:
-			return;
-	}
-}
-/** @end */
-/**
- * @version valid-switch-enum
- * @parent root
+ * @begin switch-enum
  * @summary Positive language form retained from legacy switch enum.
  * @topic ControlFlow
  */
@@ -108,135 +80,7 @@ enum ECoverageSwitchState
 }
 /** @end */
 /**
- * @version invalid-case-outside-switch
- * @parent root
- * @summary Compile-rejection form retained from legacy case outside switch.
- * @topic Negative
- */
-void Test()
-{
-	case 1:
-		int X = 0;
-}
-/** @end */
-/**
- * @version invalid-switch-duplicate-case
- * @parent root
- * @summary Compile-rejection form retained from legacy switch duplicate case.
- * @topic Negative
- */
-void Test()
-{
-	int X = 1;
-	switch (X)
-	{
-		case 1:
-			break;
-		case 1:
-			break;
-	}
-}
-/** @end */
-/**
- * @version invalid-switch-duplicate-default
- * @parent root
- * @summary Compile-rejection form retained from legacy switch duplicate default.
- * @topic Negative
- */
-void Test()
-{
-	int X = 1;
-	switch (X)
-	{
-		default:
-			break;
-		default:
-			break;
-	}
-}
-/** @end */
-/**
- * @version invalid-switch-float-case-label
- * @parent root
- * @summary Compile-rejection form retained from legacy switch float case label.
- * @topic Negative
- */
-void Test()
-{
-	int X = 1;
-	switch (X)
-	{
-		case 1.5f:
-			break;
-	}
-}
-/** @end */
-/**
- * @version invalid-switch-over-bool
- * @parent root
- * @summary Compile-rejection form retained from legacy switch over bool.
- * @topic Negative
- */
-int SwitchBool(bool Value)
-{
-	switch (Value)
-	{
-		case true:
-			return 1;
-		case false:
-			return 0;
-	}
-	return -1;
-}
-/** @end */
-/**
- * @version invalid-switch-string-case-label
- * @parent root
- * @summary Compile-rejection form retained from legacy switch string case label.
- * @topic Negative
- */
-void Test()
-{
-	int X = 1;
-	switch (X)
-	{
-		case "hello":
-			break;
-	}
-}
-/** @end */
-/**
- * @version invalid-switch-variable-case-label
- * @parent root
- * @summary Compile-rejection form retained from legacy switch variable case label.
- * @topic Negative
- */
-void Test()
-{
-	int X = 1;
-	int Y = 2;
-	switch (X)
-	{
-		case Y:
-			break;
-	}
-}
-/** @end */
-/**
- * @version invalid-switch-without-braces
- * @parent root
- * @summary Compile-rejection form retained from legacy switch without braces.
- * @topic Negative
- */
-void Test()
-{
-	int X = 1;
-	switch (X) case 0: break;
-}
-/** @end */
-/**
- * @version valid-switch-basic
- * @parent root
+ * @begin switch-basic
  * @summary Authored language form for switch basic.
  * @topic ControlFlow
  */
@@ -254,8 +98,7 @@ int SwitchBasic(int Value)
 }
 /** @end */
 /**
- * @version valid-switch-break
- * @parent root
+ * @begin switch-break
  * @summary Authored language form for switch break.
  * @topic ControlFlow
  */
@@ -278,8 +121,7 @@ int SwitchBreak(int Value)
 }
 /** @end */
 /**
- * @version valid-switch-integer-types
- * @parent root
+ * @begin switch-integer-types
  * @summary Authored language form for switch integer types.
  * @topic ControlFlow
  */
@@ -306,8 +148,7 @@ int SwitchInt64(int64 Value)
 }
 /** @end */
 /**
- * @version valid-switch-fallthrough-to-default
- * @parent root
+ * @begin switch-fallthrough-to-default
  * @summary A case without break falls into default.
  * @topic ControlFlow
  */

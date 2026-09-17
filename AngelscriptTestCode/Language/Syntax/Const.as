@@ -3,11 +3,15 @@
  * @summary Const locals, const parameters, and const methods.
  * @topic Language
  * @topic Syntax
+ *
+ * const
+ * const-method-on-struct
+ * const-values-methods-and-references
+ * const-string-local
  */
 /**
- * @version root
+ * @begin const
  * @summary A const local and a const method that only reads.
- * @topic Baseline
  */
 struct FHolder
 {
@@ -28,70 +32,7 @@ int ConstLocal()
 }
 /** @end */
 /**
- * @version invalid-assign-const-local
- * @parent root
- * @summary A const local cannot be reassigned.
- * @topic Negative
- */
-void Test()
-{
-	const int Limit = 3;
-	Limit = 4;
-}
-/** @end */
-/**
- * @version invalid-const-without-initializer
- * @parent root
- * @summary A const local requires an initializer.
- * @topic Negative
- */
-void Test()
-{
-	const int Limit;
-}
-/** @end */
-/**
- * @version invalid-const-local-mutation
- * @parent root
- * @summary Compile-rejection form retained from legacy const local mutation.
- * @topic Negative
- */
-void Test()
-{
-	const int Value = 1;
-	Value = 2;
-}
-/** @end */
-/**
- * @version invalid-const-method-member-mutation
- * @parent root
- * @summary Compile-rejection form retained from legacy const method member mutation.
- * @topic Negative
- */
-class ConstMutationProbe
-{
-	int Value = 0;
-
-void Mutate() const
-	{
-		Value = 2;
-	}
-}
-/** @end */
-/**
- * @version invalid-const-value-parameter-mutation
- * @parent root
- * @summary Compile-rejection form retained from legacy const value parameter mutation.
- * @topic Negative
- */
-void Test(const int Value)
-{
-	Value = 2;
-}
-/** @end */
-/**
- * @version valid-const-method-on-struct
- * @parent root
+ * @begin const-method-on-struct
  * @summary Positive language form retained from legacy const method on struct.
  * @topic Syntax
  */
@@ -106,8 +47,7 @@ struct FStructConst
 	}
 /** @end */
 /**
- * @version valid-const-values-methods-and-references
- * @parent root
+ * @begin const-values-methods-and-references
  * @summary Positive language form retained from legacy const values methods and references.
  * @topic Syntax
  */
@@ -156,8 +96,7 @@ namespace SyntaxTest
 	}
 /** @end */
 /**
- * @version valid-const-string-local
- * @parent root
+ * @begin const-string-local
  * @summary A const string local cannot be rebound.
  * @topic Syntax
  */
@@ -165,16 +104,5 @@ string Read()
 {
 	const string Text = "fixed";
 	return Text;
-}
-/** @end */
-/**
- * @version invalid-this-outside-class
- * @parent root
- * @summary This is invalid outside a class or struct method.
- * @topic Negative
- */
-void Test()
-{
-	int Value = this;
 }
 /** @end */

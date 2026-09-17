@@ -3,11 +3,15 @@
  * @summary Single-branch if statements and condition forms.
  * @topic Language
  * @topic ControlFlow
+ *
+ * if
+ * if-conditions
+ * bare-if-true
+ * if-unbraced-body
  */
 /**
- * @version root
+ * @begin if
  * @summary A boolean if that assigns only on the true path, plus comparison conditions.
- * @topic Baseline
  */
 int IfBasic(bool Flag)
 {
@@ -34,22 +38,7 @@ int IfComparison(int Value)
 }
 /** @end */
 /**
- * @version invalid-if-non-bool
- * @parent root
- * @summary An if condition must be boolean.
- * @topic Negative
- */
-void Test()
-{
-	if (1)
-	{
-		return;
-	}
-}
-/** @end */
-/**
- * @version valid-if-conditions
- * @parent root
+ * @begin if-conditions
  * @summary Positive language form retained from legacy if conditions.
  * @topic ControlFlow
  */
@@ -59,87 +48,7 @@ bool IsReady()
 	}
 /** @end */
 /**
- * @version invalid-if-empty-condition
- * @parent root
- * @summary Compile-rejection form retained from legacy if empty condition.
- * @topic Negative
- */
-void Test()
-{
-	if ()
-	{
-	}
-}
-/** @end */
-/**
- * @version invalid-if-float-condition
- * @parent root
- * @summary Compile-rejection form retained from legacy if float condition.
- * @topic Negative
- */
-void Test()
-{
-	if (1.0f)
-	{
-	}
-}
-/** @end */
-/**
- * @version invalid-if-integer-condition
- * @parent root
- * @summary Compile-rejection form retained from legacy if integer condition.
- * @topic Negative
- */
-void Test()
-{
-	if (5)
-	{
-	}
-}
-/** @end */
-/**
- * @version invalid-if-string-condition
- * @parent root
- * @summary Compile-rejection form retained from legacy if string condition.
- * @topic Negative
- */
-void Test()
-{
-	if ("hello")
-	{
-	}
-}
-/** @end */
-/**
- * @version invalid-if-unparenthesized-condition
- * @parent root
- * @summary Compile-rejection form retained from legacy if unparenthesized condition.
- * @topic Negative
- */
-void Test()
-{
-	if true
-	{
-	}
-}
-/** @end */
-/**
- * @version invalid-if-variable-integer-condition
- * @parent root
- * @summary Compile-rejection form retained from legacy if variable integer condition.
- * @topic Negative
- */
-void Test()
-{
-	int X = 0;
-	if (X)
-	{
-	}
-}
-/** @end */
-/**
- * @version valid-bare-if-true
- * @parent root
+ * @begin bare-if-true
  * @summary Bare if with a true condition executes its body.
  * @topic ControlFlow
  */
@@ -153,8 +62,7 @@ int BareIf()
 }
 /** @end */
 /**
- * @version valid-if-unbraced-body
- * @parent root
+ * @begin if-unbraced-body
  * @summary Unbraced if owns only the following statement.
  * @topic ControlFlow
  */

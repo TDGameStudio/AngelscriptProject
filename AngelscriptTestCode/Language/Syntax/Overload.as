@@ -3,11 +3,18 @@
  * @summary Function overload sets resolved by arity and numeric type.
  * @topic Language
  * @topic Syntax
+ *
+ * overload
+ * bool-int-overload-resolution
+ * float-double-overload-resolution
+ * function-overload-arity-and-numeric-resolution
+ * int-width-overload-resolution
+ * void-overload-set
+ * string-function-overloading
  */
 /**
- * @version root
+ * @begin overload
  * @summary Overloads distinguished by arity and by int versus float.
- * @topic Baseline
  */
 int Combine(int Value)
 {
@@ -35,24 +42,7 @@ int PickNumeric()
 }
 /** @end */
 /**
- * @version invalid-duplicate-signature
- * @parent root
- * @summary Two functions cannot share the same signature.
- * @topic Negative
- */
-int Combine(int Value)
-{
-	return Value;
-}
-
-int Combine(int Value)
-{
-	return Value + 1;
-}
-/** @end */
-/**
- * @version valid-bool-int-overload-resolution
- * @parent root
+ * @begin bool-int-overload-resolution
  * @summary Positive language form retained from legacy bool int overload resolution.
  * @topic Syntax
  */
@@ -77,8 +67,7 @@ int Pick(bool b)
 	}
 /** @end */
 /**
- * @version valid-float-double-overload-resolution
- * @parent root
+ * @begin float-double-overload-resolution
  * @summary Positive language form retained from legacy float double overload resolution.
  * @topic Syntax
  */
@@ -103,8 +92,7 @@ int ProcessFloat(float X, bool bUseFloatPath)
 	}
 /** @end */
 /**
- * @version valid-function-overload-arity-and-numeric-resolution
- * @parent root
+ * @begin function-overload-arity-and-numeric-resolution
  * @summary Positive language form retained from legacy function overload arity and numeric resolution.
  * @topic Syntax
  */
@@ -159,8 +147,7 @@ int Choose(int A)
 	}
 /** @end */
 /**
- * @version valid-int-width-overload-resolution
- * @parent root
+ * @begin int-width-overload-resolution
  * @summary Positive language form retained from legacy int width overload resolution.
  * @topic Syntax
  */
@@ -195,8 +182,7 @@ int Process(int x)
 	}
 /** @end */
 /**
- * @version valid-void-overload-set
- * @parent root
+ * @begin void-overload-set
  * @summary Positive language form retained from legacy void overload set.
  * @topic Syntax
  */
@@ -213,22 +199,7 @@ void Foo(int X)
 	}
 /** @end */
 /**
- * @version invalid-duplicate-function-signature
- * @parent root
- * @summary Compile-rejection form retained from legacy duplicate function signature.
- * @topic Negative
- */
-void Foo(int X)
-{
-}
-
-void Foo(int X)
-{
-}
-/** @end */
-/**
- * @version valid-string-function-overloading
- * @parent root
+ * @begin string-function-overloading
  * @summary Overloads distinguished by string versus int.
  * @topic Syntax
  */

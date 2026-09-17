@@ -21,10 +21,12 @@ class _Line:
 @dataclass
 class _Header:
     version: str = ""
+    begin: str = ""
     parent: str | None = None
     summary: str = ""
     topics: list[str] = field(default_factory=list)
     saw_version: bool = False
+    saw_begin: bool = False
     saw_parent: bool = False
     saw_summary: bool = False
 
@@ -143,15 +145,6 @@ def _parse_header(
             begin += 1
 
         if begin >= end or data[begin] != 0x40:
-            errors.append(
-                _make_error(
-                    "MalformedMetadataDirective",
-                    "Metadata header content must be one directive per logical line.",
-                    source_path,
-                    line.number,
-                    raw_offsets[min(begin, len(raw_offsets) - 1)],
-                )
-            )
             line_index += 1
             continue
 
@@ -179,6 +172,20 @@ def _parse_header(
             else:
                 header.version = value
                 header.saw_version = True
+        elif directive == "begin":
+            if header.saw_begin:
+                errors.append(
+                    _make_error(
+                        "DuplicateMetadataDirective",
+                        "@begin may appear only once in a metadata header.",
+                        source_path,
+                        line.number,
+                        raw_offsets[begin],
+                    )
+                )
+            else:
+                header.begin = value
+                header.saw_begin = True
         elif directive == "parent":
             if header.saw_parent:
                 errors.append(
@@ -315,6 +322,16 @@ def parse_source_file(source: SourceInput) -> ParsedFile:
                 raw_offsets[0],
             )
         )
+    if file_header.saw_begin:
+        errors.append(
+            _make_error(
+                "FileBeginForbidden",
+                "The file header cannot declare @begin.",
+                source_path,
+                1,
+                raw_offsets[0],
+            )
+        )
     for topic in file_header.topics:
         if not is_nonempty_text(topic):
             errors.append(
@@ -341,18 +358,30 @@ def parse_source_file(source: SourceInput) -> ParsedFile:
         if version_header is None:
             break
 
-        version_tag = version_header.version or None
-        if not version_header.saw_version:
+        if version_header.saw_begin and version_header.saw_version:
             errors.append(
                 _make_error(
-                    "MissingVersionTag",
-                    "A version header requires @version.",
+                    "CaseIdentityConflict",
+                    "A case header uses @begin or @version, not both.",
                     source_path,
                     header_line.number,
                     raw_offsets[header_line.start],
                 )
             )
-        elif not is_valid_version_tag(version_header.version):
+        if version_header.saw_begin:
+            version_header.version = version_header.begin
+        version_tag = version_header.version or None
+        if not version_header.saw_begin and not version_header.saw_version:
+            errors.append(
+                _make_error(
+                    "MissingVersionTag",
+                    "A version header requires @begin or @version.",
+                    source_path,
+                    header_line.number,
+                    raw_offsets[header_line.start],
+                )
+            )
+        elif version_header.version and not is_valid_version_tag(version_header.version):
             errors.append(
                 _make_error(
                     "InvalidVersionTag",
@@ -397,31 +426,9 @@ def parse_source_file(source: SourceInput) -> ParsedFile:
                         version_tag,
                     )
                 )
-
-        if version_header.version == "root":
-            if version_header.saw_parent:
-                errors.append(
-                    _make_error(
-                        "RootParentForbidden",
-                        "The root version must not declare a Parent.",
-                        source_path,
-                        header_line.number,
-                        raw_offsets[header_line.start],
-                        version_tag,
-                    )
-                )
-        elif not version_header.saw_parent:
-            errors.append(
-                _make_error(
-                    "VersionParentRequired",
-                    "Every non-root version must declare a Parent.",
-                    source_path,
-                    header_line.number,
-                    raw_offsets[header_line.start],
-                    version_tag,
-                )
-            )
-        elif version_header.parent is None or not is_valid_version_tag(version_header.parent):
+        if version_header.saw_parent and (
+            version_header.parent is None or not is_valid_version_tag(version_header.parent)
+        ):
             errors.append(
                 _make_error(
                     "InvalidParentTag",
@@ -458,7 +465,7 @@ def parse_source_file(source: SourceInput) -> ParsedFile:
         )
         version = ParsedVersion(
             tag=version_header.version,
-            parent=None if version_header.version == "root" else version_header.parent,
+            parent=version_header.parent,
             summary=version_header.summary,
             topics=tuple(version_header.topics),
             body=data[body_begin:body_end],

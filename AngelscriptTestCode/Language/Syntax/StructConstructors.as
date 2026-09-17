@@ -3,11 +3,14 @@
  * @summary Struct constructors and constructed locals.
  * @topic Language
  * @topic Syntax
+ *
+ * struct-constructors
+ * default-constructor-only
+ * constructor-overload-set
  */
 /**
- * @version root
+ * @begin struct-constructors
  * @summary A struct with a default constructor and a two-argument constructor.
- * @topic Baseline
  */
 struct FPoint
 {
@@ -35,28 +38,7 @@ int Constructed()
 }
 /** @end */
 /**
- * @version invalid-constructor-wrong-arity
- * @parent root
- * @summary A constructor call must match a declared arity.
- * @topic Negative
- */
-struct FPoint
-{
-	int X;
-	FPoint(int InX)
-	{
-		X = InX;
-	}
-}
-
-void Test()
-{
-	FPoint Value(1, 2);
-}
-/** @end */
-/**
- * @version valid-default-constructor-only
- * @parent root
+ * @begin default-constructor-only
  * @summary A struct with only a default constructor.
  * @topic Syntax
  */
@@ -79,8 +61,7 @@ int UseDefault()
 }
 /** @end */
 /**
- * @version valid-constructor-overload-set
- * @parent root
+ * @begin constructor-overload-set
  * @summary Default and one-argument constructors on one struct.
  * @topic Syntax
  */
@@ -104,32 +85,5 @@ int UseBoth()
 	FScale Defaulted;
 	FScale Explicit(4);
 	return Defaulted.Amount + Explicit.Amount;
-}
-/** @end */
-/**
- * @version invalid-constructor-unknown-arg-type
- * @parent root
- * @summary Constructor parameter type must exist.
- * @topic Negative
- */
-struct FPoint
-{
-	int X;
-
-	FPoint(MissingType Value)
-	{
-		X = 0;
-	}
-}
-/** @end */
-/**
- * @version invalid-constructor-on-primitive
- * @parent root
- * @summary A primitive cannot be constructed with a user constructor call shape.
- * @topic Negative
- */
-void Test()
-{
-	int Value(1, 2);
 }
 /** @end */

@@ -7,19 +7,19 @@ description: Use when implementing, extending, or refactoring AngelscriptProject
 
 Use this skill as the quick execution guide for writing or refactoring C++ automation tests in `AngelscriptProject`.
 
-The reconstruction baseline hard-disables the old runtime and legacy test corpus. New tests go in `Plugins/Angelscript/Source/AngelscriptTest/NewVersion/` and register beneath `Angelscript.UnitTest.<Area>.<Scenario>`. They may use plain Unreal Automation or the isolated NativeEngine CQTest pattern below; the physical `NewVersion` name is temporary and must not appear in public test identities.
+The reconstruction baseline hard-disables the old runtime and legacy test corpus. New tests live under `Plugins/Angelscript/Source/AngelscriptTest/{NativeEngine,Bindings,Framework,FrameworkTests,Baseline}/`. NativeEngine identities are `Angelscript.UnitTest.NativeEngine.<Layer>.<Class>.<Method>`; Bindings, Framework, and Baseline keep their existing prefixes. `NewVersion` is not a source root or identity segment.
 
 Read [references/legacy-source-isolation.md](references/legacy-source-isolation.md) before changing a `Legacy/.ubtignore` boundary, moving old test source, or diagnosing why ignored sources still enter C++ or UHT. The durable behavior is owned by `openspec/specs/angelscript/testing/baseline/spec.md`.
 
-Read [references/test-code-database.md](references/test-code-database.md) when authoring shared versioned `.as` containers, adding generic source annotations, registering C++ source factories from another module, or consuming `FAngelscriptTestCode` queries. It covers both providers, complete-version rules, ownership and failure boundaries; the durable behavior is owned by `openspec/specs/angelscript/testing/code-database/spec.md`.
+Read [references/test-code-database.md](references/test-code-database.md) when authoring shared versioned `.as` containers, adding generic source annotations, registering C++ source factories from another module, or consuming `FAngelscriptTestCode` queries. It covers both providers, complete-version rules, ownership and failure boundaries; the production Language example is `Language/Syntax/StructFields` with parentless `fields-two`, child `add-field`, and `StructFieldsCompileFail`. The durable behavior is owned by `openspec/specs/angelscript/testing/code-database/spec.md`.
 
 When you need CQTest macro expansion, registration, lifecycle, matcher internals, latent commands, or engine test components, load [cqtest.md](cqtest.md). That file is the UE 5.8 engine reference. This skill owns project identity, replacement fixtures, and Harness verification. If they conflict, this file wins.
 
 ## Replacement NativeEngine CQTest Rules
 
 - Use CQTest only as an explicitly included UE assertion and registration library under `WITH_ANGELSCRIPT_TESTS`; do not enable `WITH_ANGELSCRIPT_UNITTESTS` or inherit the legacy force include.
-- Put shared replacement-only fixtures in `NewVersion/NativeEngine/NativeEngineTestSupport.h`. Keep them limited to locally owned inputs and observations; do not construct an ambient `asCScriptEngine`, `FAngelscriptEngine`, or legacy engine pool.
-- CQTest composes `<TestDir>.<ClassName>.<MethodName>`. Use `Angelscript.UnitTest.NativeEngine` as `TestDir`, the exact area token such as `Foundation` as the unprefixed C++ class identifier, and each `TEST_METHOD` as the scenario token.
+- Put shared replacement-only fixtures in `NativeEngine/NativeEngineTestSupport.h`. Keep them limited to locally owned inputs and observations; do not construct an ambient `asCScriptEngine`, `FAngelscriptEngine`, or legacy engine pool.
+- CQTest composes `<TestDir>.<ClassName>.<MethodName>`. Use `Angelscript.UnitTest.NativeEngine.<Layer>` as `TestDir`. The C++ class token names the scenario family and must not repeat the layer; each `TEST_METHOD` is the case token.
 - Include `CQTest.h` explicitly in each test translation unit. Keep scenario flow and matcher assertions in the method, and clean up method-owned state deterministically.
 - After an incremental Harness editor build, run one exact `Angelscript.UnitTest.NativeEngine.<Area>` prefix with `Fast = $true`. Treat the Automation report's complete paths, counts, warnings/errors, and process exit as the public-identity oracle.
 
@@ -182,6 +182,8 @@ Use focused regression tests for AS `USTRUCT` delegate or `UFUNCTION` parameter 
 For delegate hot reload, distinguish delegate declaration from `UPROPERTY` members using the delegate type. Test property retarget only when the scenario includes a delegate property.
 
 ## Layer And Placement
+
+Do not recreate `Plugins/Angelscript/Source/AngelscriptTest/NewVersion/`. New replacement tests go only under `NativeEngine/<Layer>/`, `Bindings/`, `Framework/`, `FrameworkTests/`, or `Baseline/`.
 
 Legacy layer routing:
 

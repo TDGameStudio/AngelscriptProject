@@ -3,11 +3,25 @@
  * @summary Value-type operator overload declarations without observation wrappers.
  * @topic Language
  * @topic Operators
+ *
+ * overload
+ * compare-overload
+ * container-op-index
+ * f-val-cmp-overload
+ * f-vec-add-assign-overload
+ * f-vec-add-overload
+ * f-vec-equals-overload
+ * f-vec-mul-overload
+ * f-vec-neg-overload
+ * f-vec-sub-overload
+ * f-vec-usage-overload
+ * score-operator-suite
+ * op-index-read-write
+ * unary-index-and-conversion
  */
 /**
- * @version root
+ * @begin overload
  * @summary A two-axis value type with add, subtract, multiply, negate, and equality overloads.
- * @topic Baseline
  */
 struct FVec
 {
@@ -76,8 +90,7 @@ int UseOverloads()
 }
 /** @end */
 /**
- * @version valid-compare-overload
- * @parent root
+ * @begin compare-overload
  * @summary A comparable value type with a dedicated less-than overload.
  * @topic Operators
  */
@@ -96,22 +109,7 @@ struct FVal
 }
 /** @end */
 /**
- * @version invalid-unknown-operator
- * @parent root
- * @summary An unknown operator name is not a valid overload.
- * @topic Negative
- */
-struct FBad
-{
-	int opUnknown(int Other) const
-	{
-		return Other;
-	}
-}
-/** @end */
-/**
- * @version valid-container-op-index
- * @parent root
+ * @begin container-op-index
  * @summary Positive language form retained from legacy container op index.
  * @topic Operators
  */
@@ -126,8 +124,7 @@ struct FMyContainer
 	}
 /** @end */
 /**
- * @version valid-f-val-cmp-overload
- * @parent root
+ * @begin f-val-cmp-overload
  * @summary Positive language form retained from legacy f val cmp overload.
  * @topic Operators
  */
@@ -142,8 +139,7 @@ struct FValCmp
 	}
 /** @end */
 /**
- * @version valid-f-vec-add-assign-overload
- * @parent root
+ * @begin f-vec-add-assign-overload
  * @summary Positive language form retained from legacy f vec add assign overload.
  * @topic Operators
  */
@@ -161,8 +157,7 @@ struct FVecAddAssign
 	}
 /** @end */
 /**
- * @version valid-f-vec-add-overload
- * @parent root
+ * @begin f-vec-add-overload
  * @summary Positive language form retained from legacy f vec add overload.
  * @topic Operators
  */
@@ -181,8 +176,7 @@ struct FVecAdd
 	}
 /** @end */
 /**
- * @version valid-f-vec-equals-overload
- * @parent root
+ * @begin f-vec-equals-overload
  * @summary Positive language form retained from legacy f vec equals overload.
  * @topic Operators
  */
@@ -202,8 +196,7 @@ struct FVecEquals
 	}
 /** @end */
 /**
- * @version valid-f-vec-mul-overload
- * @parent root
+ * @begin f-vec-mul-overload
  * @summary Positive language form retained from legacy f vec mul overload.
  * @topic Operators
  */
@@ -222,8 +215,7 @@ struct FVecMul
 	}
 /** @end */
 /**
- * @version valid-f-vec-neg-overload
- * @parent root
+ * @begin f-vec-neg-overload
  * @summary Positive language form retained from legacy f vec neg overload.
  * @topic Operators
  */
@@ -242,8 +234,7 @@ struct FVecNeg
 	}
 /** @end */
 /**
- * @version valid-f-vec-sub-overload
- * @parent root
+ * @begin f-vec-sub-overload
  * @summary Positive language form retained from legacy f vec sub overload.
  * @topic Operators
  */
@@ -262,8 +253,7 @@ struct FVecSub
 	}
 /** @end */
 /**
- * @version valid-f-vec-usage-overload
- * @parent root
+ * @begin f-vec-usage-overload
  * @summary Positive language form retained from legacy f vec usage overload.
  * @topic Operators
  */
@@ -291,8 +281,7 @@ struct FVecUsage
 	}
 /** @end */
 /**
- * @version valid-score-operator-suite
- * @parent root
+ * @begin score-operator-suite
  * @summary Positive language form retained from legacy score operator suite.
  * @topic Operators
  */
@@ -397,205 +386,7 @@ struct FScoreValue
 	}
 /** @end */
 /**
- * @version invalid-addition-without-op-add
- * @parent root
- * @summary Compile-rejection form retained from legacy addition without op add.
- * @topic Negative
- */
-struct FMyType
-{
-	int X = 0;
-}
-
-void Test()
-{
-	FMyType A;
-	FMyType B;
-	FMyType C = A + B;
-}
-/** @end */
-/**
- * @version invalid-addition-without-op-add-coverage
- * @parent root
- * @summary Compile-rejection form retained from legacy addition without op add coverage.
- * @topic Negative
- */
-struct FNoPlus
-{
-	int Value = 0;
-}
-
-void Test()
-{
-	FNoPlus A;
-	FNoPlus B;
-	FNoPlus C = A + B;
-}
-/** @end */
-/**
- * @version invalid-duplicate-op-add
- * @parent root
- * @summary Compile-rejection form retained from legacy duplicate op add.
- * @topic Negative
- */
-struct FVecDupAdd
-{
-	int X = 0;
-
-	FVecDupAdd opAdd(const FVecDupAdd&in Other) const
-	{
-		return FVecDupAdd();
-	}
-
-	FVecDupAdd opAdd(const FVecDupAdd&in Other) const
-	{
-		return FVecDupAdd();
-	}
-}
-/** @end */
-/**
- * @version invalid-duplicate-op-add-coverage
- * @parent root
- * @summary Compile-rejection form retained from legacy duplicate op add coverage.
- * @topic Negative
- */
-struct FDuplicateOp
-{
-	FDuplicateOp opAdd(const FDuplicateOp&in Other) const
-	{
-		return FDuplicateOp();
-	}
-
-	FDuplicateOp opAdd(const FDuplicateOp&in Other) const
-	{
-		return FDuplicateOp();
-	}
-}
-/** @end */
-/**
- * @version invalid-global-operator-overload
- * @parent root
- * @summary Compile-rejection form retained from legacy global operator overload.
- * @topic Negative
- */
-int opAdd(int A, int B)
-{
-	return A + B;
-}
-/** @end */
-/**
- * @version invalid-invalid-operator-name
- * @parent root
- * @summary Compile-rejection form retained from legacy invalid operator name.
- * @topic Negative
- */
-struct FVecInvalid
-{
-	int X = 0;
-
-	FVecInvalid opInvalid(const FVecInvalid&in Other) const
-	{
-		return FVecInvalid();
-	}
-}
-/** @end */
-/**
- * @version invalid-op-add-returns-void
- * @parent root
- * @summary Compile-rejection form retained from legacy op add returns void.
- * @topic Negative
- */
-struct FVecAddVoid
-{
-	int X = 0;
-
-	void opAdd(const FVecAddVoid&in Other) const
-	{
-	}
-}
-/** @end */
-/**
- * @version invalid-op-add-without-parameter
- * @parent root
- * @summary Compile-rejection form retained from legacy op add without parameter.
- * @topic Negative
- */
-struct FVecBadParams
-{
-	int X = 0;
-
-	FVecBadParams opAdd() const
-	{
-		return FVecBadParams();
-	}
-}
-/** @end */
-/**
- * @version invalid-op-cmp-non-int-return
- * @parent root
- * @summary Compile-rejection form retained from legacy op cmp non int return.
- * @topic Negative
- */
-struct FValCmpWrongRet
-{
-	int Value = 0;
-
-	float opCmp(const FValCmpWrongRet&in Other) const
-	{
-		return 0.0f;
-	}
-}
-/** @end */
-/**
- * @version invalid-op-equals-non-bool-return
- * @parent root
- * @summary Compile-rejection form retained from legacy op equals non bool return.
- * @topic Negative
- */
-struct FVecEqWrongRet
-{
-	int X = 0;
-
-	int opEquals(const FVecEqWrongRet&in Other) const
-	{
-		return 0;
-	}
-}
-/** @end */
-/**
- * @version invalid-op-index-returns-void
- * @parent root
- * @summary Compile-rejection form retained from legacy op index returns void.
- * @topic Negative
- */
-struct FContainerBadRet
-{
-	array<int> Data;
-
-	void opIndex(int Index) const
-	{
-	}
-}
-/** @end */
-/**
- * @version invalid-op-neg-with-parameter
- * @parent root
- * @summary Compile-rejection form retained from legacy op neg with parameter.
- * @topic Negative
- */
-struct FVecNegParam
-{
-	int X = 0;
-
-	FVecNegParam opNeg(int Dummy) const
-	{
-		return FVecNegParam();
-	}
-}
-/** @end */
-/**
- * @version valid-op-index-read-write
- * @parent root
+ * @begin op-index-read-write
  * @summary A value type with opIndex used on both sides of assignment.
  * @topic Operators
  */
@@ -620,5 +411,37 @@ int UseIndex()
 	Cells[0] = 3;
 	Cells[1] = 4;
 	return Cells[0] + Cells[1];
+}
+/** @end */
+/**
+ * @begin unary-index-and-conversion
+ * @summary Positive language form retained from legacy unary index and conversion operators.
+ * @topic Operators
+ */
+struct FIndexedScores
+{
+	array<int> Values;
+
+	int opIndex(int Index) const
+	{
+		return Values[Index];
+	}
+}
+
+struct FUnaryScore
+{
+	int Value = 0;
+
+	FUnaryScore opNeg() const
+	{
+		FUnaryScore Result;
+		Result.Value = -Value;
+		return Result;
+	}
+
+	int opImplConv() const
+	{
+		return Value;
+	}
 }
 /** @end */

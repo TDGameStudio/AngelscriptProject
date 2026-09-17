@@ -3,11 +3,22 @@
  * @summary Line, block, documentation, and escaped-annotation comment forms.
  * @topic Language
  * @topic Syntax
+ *
+ * comments
+ * escaped-annotation-comment
+ * block-comment-before-function
+ * block-comment-with-separate-markers
+ * comment-before-function
+ * documentation-comment
+ * inline-comment-inside-function
+ * multi-line-block-comment
+ * range-based-for-rewrite-skips-literals
+ * single-line-comment
+ * comment-in-string-is-literal
  */
 /**
- * @version root
+ * @begin comments
  * @summary A function preceded by line and block comments, with an inline comment.
- * @topic Baseline
  */
 // single-line comment before the function
 /* block comment
@@ -20,8 +31,7 @@ int Commented()
 }
 /** @end */
 /**
- * @version valid-escaped-annotation-comment
- * @parent root
+ * @begin escaped-annotation-comment
  * @summary An escaped annotation comment remains literal source text.
  * @topic Syntax
  */
@@ -33,20 +43,7 @@ int Documented()
 }
 /** @end */
 /**
- * @version invalid-unterminated-block-comment
- * @parent root
- * @summary A block comment must close.
- * @topic Negative
- */
-int Test()
-{
-	/* unterminated
-	return 1;
-}
-/** @end */
-/**
- * @version valid-block-comment-before-function
- * @parent root
+ * @begin block-comment-before-function
  * @summary Positive language form retained from legacy block comment before function.
  * @topic Syntax
  */
@@ -56,8 +53,7 @@ void Test()
 	}
 /** @end */
 /**
- * @version valid-block-comment-with-separate-markers
- * @parent root
+ * @begin block-comment-with-separate-markers
  * @summary Positive language form retained from legacy block comment with separate markers.
  * @topic Syntax
  */
@@ -66,8 +62,7 @@ void Test()
 	}
 /** @end */
 /**
- * @version valid-comment-before-function
- * @parent root
+ * @begin comment-before-function
  * @summary Positive language form retained from legacy comment before function.
  * @topic Syntax
  */
@@ -77,8 +72,7 @@ void Test()
 	}
 /** @end */
 /**
- * @version valid-documentation-comment
- * @parent root
+ * @begin documentation-comment
  * @summary Positive language form retained from legacy documentation comment.
  * @topic Syntax
  */
@@ -88,8 +82,7 @@ int DocumentationCommented()
 	}
 /** @end */
 /**
- * @version valid-inline-comment-inside-function
- * @parent root
+ * @begin inline-comment-inside-function
  * @summary Positive language form retained from legacy inline comment inside function.
  * @topic Syntax
  */
@@ -100,8 +93,7 @@ void Test()
 	}
 /** @end */
 /**
- * @version valid-multi-line-block-comment
- * @parent root
+ * @begin multi-line-block-comment
  * @summary Positive language form retained from legacy multi line block comment.
  * @topic Syntax
  */
@@ -112,8 +104,7 @@ int MultiLineCommented()
 	}
 /** @end */
 /**
- * @version valid-range-based-for-rewrite-skips-literals
- * @parent root
+ * @begin range-based-for-rewrite-skips-literals
  * @summary Positive language form retained from legacy range based for rewrite skips literals.
  * @topic Syntax
  */
@@ -142,8 +133,7 @@ int Entry()
 	}
 /** @end */
 /**
- * @version valid-single-line-comment
- * @parent root
+ * @begin single-line-comment
  * @summary Positive language form retained from legacy single line comment.
  * @topic Syntax
  */
@@ -154,8 +144,7 @@ int SingleLineCommented()
 	}
 /** @end */
 /**
- * @version valid-comment-in-string-is-literal
- * @parent root
+ * @begin comment-in-string-is-literal
  * @summary Comment markers inside a string remain payload.
  * @topic Syntax
  */

@@ -239,7 +239,8 @@ class SourceParserTests(unittest.TestCase):
         )
         with self.assertRaises(CodegenError) as raised_missing_root:
             parse_source_file(make_source("Language/NoRoot.as", missing_root))
-        self.assertIn("MissingRoot", diagnostic_codes(raised_missing_root.exception))
+        self.assertIn("MissingParent", diagnostic_codes(raised_missing_root.exception))
+        self.assertNotIn("MissingRoot", diagnostic_codes(raised_missing_root.exception))
 
         multiple_roots = (
             b"/**\n"
@@ -261,7 +262,35 @@ class SourceParserTests(unittest.TestCase):
         )
         with self.assertRaises(CodegenError) as raised_multiple:
             parse_source_file(make_source("Language/TwoRoots.as", multiple_roots))
-        self.assertIn("MultipleRoots", diagnostic_codes(raised_multiple.exception))
+        self.assertIn("DuplicateVersionTag", diagnostic_codes(raised_multiple.exception))
+        self.assertNotIn("MultipleRoots", diagnostic_codes(raised_multiple.exception))
+
+    def test_two_parentless_begin_cases(self) -> None:
+        content = (
+            b"/**\n"
+            b" * @version v1\n"
+            b" * @summary Two parentless theme cases.\n"
+            b" */\n"
+            b"/**\n"
+            b" * @begin alpha\n"
+            b" * @summary First parentless case.\n"
+            b" */\n"
+            b"int Alpha = 1;\n"
+            b"/** @end */\n"
+            b"/**\n"
+            b" * @begin beta\n"
+            b" * @summary Second parentless case.\n"
+            b" */\n"
+            b"int Beta = 2;\n"
+            b"/** @end */\n"
+        )
+        parsed = parse_source_file(make_source("Language/Theme.as", content))
+        self.assertEqual(("alpha", "beta"), tuple(version.tag for version in parsed.versions))
+        alpha, beta = parsed.versions
+        self.assertIsNone(alpha.parent)
+        self.assertIsNone(beta.parent)
+        self.assertEqual(b"int Alpha = 1;\n", alpha.clean_source)
+        self.assertEqual(b"int Beta = 2;\n", beta.clean_source)
 
     def test_discovery_identity_remains_path_owned(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

@@ -3,11 +3,13 @@
  * @summary Assignment and compound assignment forms without observation wrappers.
  * @topic Language
  * @topic Operators
+ *
+ * assignment
+ * string-concatenation-plus-assign
  */
 /**
- * @version root
+ * @begin assignment
  * @summary Plain assignment plus arithmetic, bitwise, and shift compound assignments.
- * @topic Baseline
  */
 int SimpleAssign()
 {
@@ -87,142 +89,7 @@ int ShiftRAssign()
 }
 /** @end */
 /**
- * @version invalid-assign-to-literal
- * @parent root
- * @summary A literal cannot be the target of assignment.
- * @topic Negative
- */
-void Test()
-{
-	5 = 1;
-}
-/** @end */
-/**
- * @version invalid-compound-on-const
- * @parent root
- * @summary A const local cannot be compound-assigned.
- * @topic Negative
- */
-void Test()
-{
-	const int X = 1;
-	X += 1;
-}
-/** @end */
-/**
- * @version invalid-add-assign-string-to-int
- * @parent root
- * @summary Compile-rejection form retained from legacy add assign string to int.
- * @topic Negative
- */
-void Test()
-{
-	int X = 0;
-	X += "hello";
-}
-/** @end */
-/**
- * @version invalid-assignment-to-const
- * @parent root
- * @summary Compile-rejection form retained from legacy assignment to const.
- * @topic Negative
- */
-void Test()
-{
-	const int X = 5;
-	X = 10;
-}
-/** @end */
-/**
- * @version invalid-assignment-to-expression
- * @parent root
- * @summary Compile-rejection form retained from legacy assignment to expression.
- * @topic Negative
- */
-void Test()
-{
-	int X = 0;
-	int Y = 0;
-	(X + Y) = 5;
-}
-/** @end */
-/**
- * @version invalid-assignment-to-function-return
- * @parent root
- * @summary Compile-rejection form retained from legacy assignment to function return.
- * @topic Negative
- */
-int Foo()
-{
-	return 1;
-}
-
-void Test()
-{
-	Foo() = 5;
-}
-/** @end */
-/**
- * @version invalid-assignment-to-literal
- * @parent root
- * @summary Compile-rejection form retained from legacy assignment to literal.
- * @topic Negative
- */
-void Test()
-{
-	5 = 10;
-}
-/** @end */
-/**
- * @version invalid-assignment-to-undeclared-variable
- * @parent root
- * @summary Compile-rejection form retained from legacy assignment to undeclared variable.
- * @topic Negative
- */
-void Test()
-{
-	UndeclaredVar = 5;
-}
-/** @end */
-/**
- * @version invalid-mod-assign-on-float
- * @parent root
- * @summary Compile-rejection form retained from legacy mod assign on float.
- * @topic Negative
- */
-void Test()
-{
-	float X = 1.0f;
-	X %= 2.0f;
-}
-/** @end */
-/**
- * @version invalid-shift-assign-on-float
- * @parent root
- * @summary Compile-rejection form retained from legacy shift assign on float.
- * @topic Negative
- */
-void Test()
-{
-	float X = 1.0f;
-	X <<= 2;
-}
-/** @end */
-/**
- * @version invalid-string-assigned-to-int
- * @parent root
- * @summary Compile-rejection form retained from legacy string assigned to int.
- * @topic Negative
- */
-void Test()
-{
-	int X = 0;
-	X = "hello";
-}
-/** @end */
-/**
- * @version valid-string-concatenation-plus-assign
- * @parent root
+ * @begin string-concatenation-plus-assign
  * @summary Plus-assign concatenates onto a string local.
  * @topic Operators
  */

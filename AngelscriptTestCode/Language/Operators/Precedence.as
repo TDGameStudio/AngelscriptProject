@@ -3,11 +3,18 @@
  * @summary Mixed-operator precedence chains without observation wrappers.
  * @topic Language
  * @topic Operators
+ *
+ * precedence
+ * parenthesized-override
+ * arithmetic-before-comparison
+ * comparison-before-logical
+ * bitwise-before-comparison
+ * ternary-inside-arithmetic
+ * and-versus-or
  */
 /**
- * @version root
+ * @begin precedence
  * @summary Arithmetic, shift, comparison, bitwise, and logical precedence mixes.
- * @topic Baseline
  */
 int ArithmeticBindsTighter()
 {
@@ -38,8 +45,7 @@ int LogicalVersusComparison()
 }
 /** @end */
 /**
- * @version valid-parenthesized-override
- * @parent root
+ * @begin parenthesized-override
  * @summary Parentheses override the default arithmetic binding.
  * @topic Operators
  */
@@ -49,8 +55,7 @@ int ForcedAddFirst()
 }
 /** @end */
 /**
- * @version valid-arithmetic-before-comparison
- * @parent root
+ * @begin arithmetic-before-comparison
  * @summary Addition binds before equality comparison.
  * @topic Operators
  */
@@ -60,8 +65,7 @@ bool ArithmeticBeforeComparison()
 }
 /** @end */
 /**
- * @version valid-comparison-before-logical
- * @parent root
+ * @begin comparison-before-logical
  * @summary Comparisons bind before logical and.
  * @topic Operators
  */
@@ -71,8 +75,7 @@ bool ComparisonBeforeLogical()
 }
 /** @end */
 /**
- * @version valid-bitwise-before-comparison
- * @parent root
+ * @begin bitwise-before-comparison
  * @summary Bitwise and binds before equality.
  * @topic Operators
  */
@@ -82,8 +85,7 @@ bool BitwiseBeforeComparison()
 }
 /** @end */
 /**
- * @version valid-ternary-inside-arithmetic
- * @parent root
+ * @begin ternary-inside-arithmetic
  * @summary A parenthesized ternary resolves before surrounding addition.
  * @topic Operators
  */
@@ -93,8 +95,7 @@ int TernaryInsideAdd()
 }
 /** @end */
 /**
- * @version valid-and-versus-or
- * @parent root
+ * @begin and-versus-or
  * @summary Logical and binds tighter than logical or.
  * @topic Operators
  */

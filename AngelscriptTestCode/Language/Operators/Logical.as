@@ -3,11 +3,14 @@
  * @summary Logical conjunction, disjunction, negation, and short-circuit forms.
  * @topic Language
  * @topic Operators
+ *
+ * logical
+ * short-circuit-and
+ * short-circuit-or
  */
 /**
- * @version root
+ * @begin logical
  * @summary And, or, not, a compound mix, and a short-circuit probe.
- * @topic Baseline
  */
 int ConjunctionHolds()
 {
@@ -40,85 +43,7 @@ int ShortCircuitSkipsDivisor()
 }
 /** @end */
 /**
- * @version invalid-logical-on-int
- * @parent root
- * @summary Logical and requires boolean operands.
- * @topic Negative
- */
-void Test()
-{
-	bool Result = 1 && 2;
-}
-/** @end */
-/**
- * @version invalid-logical-and-on-floats
- * @parent root
- * @summary Compile-rejection form retained from legacy logical and on floats.
- * @topic Negative
- */
-void Test()
-{
-	bool X = 1.0f && 2.0f;
-}
-/** @end */
-/**
- * @version invalid-logical-and-on-integers
- * @parent root
- * @summary Compile-rejection form retained from legacy logical and on integers.
- * @topic Negative
- */
-void Test()
-{
-	int X = 1 && 2;
-}
-/** @end */
-/**
- * @version invalid-logical-missing-right-operand
- * @parent root
- * @summary Compile-rejection form retained from legacy logical missing right operand.
- * @topic Negative
- */
-void Test()
-{
-	bool X = true && ;
-}
-/** @end */
-/**
- * @version invalid-logical-not-on-integer
- * @parent root
- * @summary Compile-rejection form retained from legacy logical not on integer.
- * @topic Negative
- */
-void Test()
-{
-	int X = !5;
-}
-/** @end */
-/**
- * @version invalid-logical-or-on-strings
- * @parent root
- * @summary Compile-rejection form retained from legacy logical or on strings.
- * @topic Negative
- */
-void Test()
-{
-	auto X = "a" || "b";
-}
-/** @end */
-/**
- * @version invalid-triple-ampersand-operator
- * @parent root
- * @summary Compile-rejection form retained from legacy triple ampersand operator.
- * @topic Negative
- */
-void Test()
-{
-	bool X = true &&& false;
-}
-/** @end */
-/**
- * @version valid-short-circuit-and
- * @parent root
+ * @begin short-circuit-and
  * @summary Logical and skips the right operand when the left is false.
  * @topic Operators
  */
@@ -130,8 +55,7 @@ int Probe()
 }
 /** @end */
 /**
- * @version valid-short-circuit-or
- * @parent root
+ * @begin short-circuit-or
  * @summary Logical or skips the right operand when the left is true.
  * @topic Operators
  */

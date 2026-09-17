@@ -3,11 +3,14 @@
  * @summary Enumerations declared inside a namespace.
  * @topic Language
  * @topic Namespace
+ *
+ * enum
+ * namespace-with-enum
+ * enum-qualified-from-nested-namespace
  */
 /**
- * @version root
+ * @begin enum
  * @summary A namespaced enum selected through a qualified enumerator.
- * @topic Baseline
  */
 namespace Game
 {
@@ -30,19 +33,7 @@ int PhaseValue()
 }
 /** @end */
 /**
- * @version invalid-unqualified-namespaced-enum
- * @parent root
- * @summary A namespaced enum type is not visible without its qualifier.
- * @topic Negative
- */
-void Test()
-{
-	EPhase Phase = EPhase::Play;
-}
-/** @end */
-/**
- * @version valid-namespace-with-enum
- * @parent root
+ * @begin namespace-with-enum
  * @summary Positive language form retained from legacy namespace with enum.
  * @topic Namespace
  */
@@ -67,8 +58,7 @@ enum MyEnum
 	}
 /** @end */
 /**
- * @version valid-enum-qualified-from-nested-namespace
- * @parent root
+ * @begin enum-qualified-from-nested-namespace
  * @summary Enum enumerator accessed through a nested qualifier.
  * @topic Namespace
  */
@@ -88,24 +78,5 @@ int UseLane()
 {
 	Game::Mode::ELane Lane = Game::Mode::ELane::High;
 	return int(Lane);
-}
-/** @end */
-/**
- * @version invalid-enum-missing-qualifier
- * @parent root
- * @summary A namespaced enumerator is not visible without its qualifier.
- * @topic Negative
- */
-namespace Game
-{
-	enum ELane
-	{
-		Low
-	}
-}
-
-void Test()
-{
-	ELane Lane = Low;
 }
 /** @end */

@@ -3,11 +3,32 @@
  * @summary Value, reference, in, and inout parameter combinations.
  * @topic Language
  * @topic Syntax
+ *
+ * parameters
+ * bool-in-out-parameter
+ * bool-out-parameter
+ * bool-reference-in-parameter
+ * bool-value-parameters
+ * float-in-out-parameters
+ * float-out-parameters
+ * float-reference-in-parameters
+ * float-value-parameters
+ * function-parameters-multiple-out
+ * int-family-in-out-parameters
+ * int-family-out-parameters
+ * int-family-reference-in-parameters
+ * int-family-value-parameters
+ * reference-write-parameter
+ * script-quat-value-parameters
+ * script-quat-out-parameters
+ * string-value-parameters
+ * string-in-parameter
+ * string-out-parameter
+ * string-inout-parameter
  */
 /**
- * @version root
+ * @begin parameters
  * @summary By-value, const-in, out, and inout integer parameters.
- * @topic Baseline
  */
 int ValueParam(int Amount)
 {
@@ -40,18 +61,7 @@ int UseDirections()
 }
 /** @end */
 /**
- * @version invalid-void-parameter
- * @parent root
- * @summary Void is not a legal parameter type.
- * @topic Negative
- */
-void Bad(void Amount)
-{
-}
-/** @end */
-/**
- * @version valid-bool-in-out-parameter
- * @parent root
+ * @begin bool-in-out-parameter
  * @summary Positive language form retained from legacy bool in out parameter.
  * @topic Syntax
  */
@@ -61,8 +71,7 @@ void Toggle(bool&inout b)
 	}
 /** @end */
 /**
- * @version valid-bool-out-parameter
- * @parent root
+ * @begin bool-out-parameter
  * @summary Positive language form retained from legacy bool out parameter.
  * @topic Syntax
  */
@@ -72,8 +81,7 @@ void SetTrue(bool&out b)
 	}
 /** @end */
 /**
- * @version valid-bool-reference-in-parameter
- * @parent root
+ * @begin bool-reference-in-parameter
  * @summary Positive language form retained from legacy bool reference in parameter.
  * @topic Syntax
  */
@@ -83,8 +91,7 @@ bool PassThrough(const bool&in b)
 	}
 /** @end */
 /**
- * @version valid-bool-value-parameters
- * @parent root
+ * @begin bool-value-parameters
  * @summary Positive language form retained from legacy bool value parameters.
  * @topic Syntax
  */
@@ -94,8 +101,7 @@ bool Negate(bool b)
 	}
 /** @end */
 /**
- * @version valid-float-in-out-parameters
- * @parent root
+ * @begin float-in-out-parameters
  * @summary Positive language form retained from legacy float in out parameters.
  * @topic Syntax
  */
@@ -110,8 +116,7 @@ void SquareFloat(float&inout X)
 	}
 /** @end */
 /**
- * @version valid-float-out-parameters
- * @parent root
+ * @begin float-out-parameters
  * @summary Positive language form retained from legacy float out parameters.
  * @topic Syntax
  */
@@ -138,8 +143,7 @@ void WriteFloat(float&out X)
 	}
 /** @end */
 /**
- * @version valid-float-reference-in-parameters
- * @parent root
+ * @begin float-reference-in-parameters
  * @summary Positive language form retained from legacy float reference in parameters.
  * @topic Syntax
  */
@@ -154,8 +158,7 @@ float AcceptFloatIn(const float&in X)
 	}
 /** @end */
 /**
- * @version valid-float-value-parameters
- * @parent root
+ * @begin float-value-parameters
  * @summary Positive language form retained from legacy float value parameters.
  * @topic Syntax
  */
@@ -170,8 +173,7 @@ float AcceptFloat(float X)
 	}
 /** @end */
 /**
- * @version valid-function-parameters-multiple-out
- * @parent root
+ * @begin function-parameters-multiple-out
  * @summary Positive language form retained from legacy function parameters multiple out.
  * @topic Syntax
  */
@@ -182,8 +184,7 @@ void SetPair(bool&out First, bool&out Second)
 	}
 /** @end */
 /**
- * @version valid-int-family-in-out-parameters
- * @parent root
+ * @begin int-family-in-out-parameters
  * @summary Positive language form retained from legacy int family in out parameters.
  * @topic Syntax
  */
@@ -228,8 +229,7 @@ void DoubleInt8(int8&inout x)
 	}
 /** @end */
 /**
- * @version valid-int-family-out-parameters
- * @parent root
+ * @begin int-family-out-parameters
  * @summary Positive language form retained from legacy int family out parameters.
  * @topic Syntax
  */
@@ -280,8 +280,7 @@ void WriteInt8(int8&out x)
 	}
 /** @end */
 /**
- * @version valid-int-family-reference-in-parameters
- * @parent root
+ * @begin int-family-reference-in-parameters
  * @summary Positive language form retained from legacy int family reference in parameters.
  * @topic Syntax
  */
@@ -326,8 +325,7 @@ int8 AcceptInt8In(int8&in x)
 	}
 /** @end */
 /**
- * @version valid-int-family-value-parameters
- * @parent root
+ * @begin int-family-value-parameters
  * @summary Positive language form retained from legacy int family value parameters.
  * @topic Syntax
  */
@@ -372,8 +370,7 @@ int8 AcceptInt8(int8 x)
 	}
 /** @end */
 /**
- * @version valid-reference-write-parameter
- * @parent root
+ * @begin reference-write-parameter
  * @summary Positive language form retained from legacy reference write parameter.
  * @topic Syntax
  */
@@ -383,28 +380,7 @@ void Foo(int&out Out)
 	}
 /** @end */
 /**
- * @version invalid-function-unknown-parameter-type
- * @parent root
- * @summary Compile-rejection form retained from legacy function unknown parameter type.
- * @topic Negative
- */
-void Foo(NonExistentType X)
-{
-}
-/** @end */
-/**
- * @version invalid-void-parameter-type
- * @parent root
- * @summary Compile-rejection form retained from legacy void parameter type.
- * @topic Negative
- */
-void Foo(void X)
-{
-}
-/** @end */
-/**
- * @version valid-script-quat-value-parameters
- * @parent root
+ * @begin script-quat-value-parameters
  * @summary Authored language form for script quat value parameters.
  * @topic Syntax
  */
@@ -426,8 +402,7 @@ FScriptQuat ScaleQuat(FScriptQuat Value)
 }
 /** @end */
 /**
- * @version valid-script-quat-out-parameters
- * @parent root
+ * @begin script-quat-out-parameters
  * @summary Authored language form for script quat out parameters.
  * @topic Syntax
  */
@@ -448,8 +423,7 @@ void Identity(FScriptQuat& Out Value)
 }
 /** @end */
 /**
- * @version valid-string-value-parameters
- * @parent root
+ * @begin string-value-parameters
  * @summary A string received by value.
  * @topic Syntax
  */
@@ -459,8 +433,7 @@ string Prefix(string Text)
 }
 /** @end */
 /**
- * @version valid-string-in-parameter
- * @parent root
+ * @begin string-in-parameter
  * @summary A const-in string parameter.
  * @topic Syntax
  */
@@ -470,8 +443,7 @@ int LengthOf(const string& In Text)
 }
 /** @end */
 /**
- * @version valid-string-out-parameter
- * @parent root
+ * @begin string-out-parameter
  * @summary A string written through an out parameter.
  * @topic Syntax
  */
@@ -481,8 +453,7 @@ void WriteHello(string& Out Text)
 }
 /** @end */
 /**
- * @version valid-string-inout-parameter
- * @parent root
+ * @begin string-inout-parameter
  * @summary A string updated through an inout parameter.
  * @topic Syntax
  */

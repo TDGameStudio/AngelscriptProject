@@ -3,11 +3,16 @@
  * @summary Break and continue inside loops.
  * @topic Language
  * @topic ControlFlow
+ *
+ * loop-jump
+ * break-in-loop
+ * continue-in-loop
+ * break-in-nested-loop
+ * continue-in-nested-loop
  */
 /**
- * @version root
+ * @begin loop-jump
  * @summary A while that breaks early and a while that continues on even values.
- * @topic Baseline
  */
 int BreakInLoop(int Limit)
 {
@@ -42,77 +47,7 @@ int ContinueInLoop(int Limit)
 }
 /** @end */
 /**
- * @version invalid-break-outside-loop
- * @parent root
- * @summary Break is invalid outside a loop or switch.
- * @topic Negative
- */
-void Test()
-{
-	break;
-}
-/** @end */
-/**
- * @version invalid-continue-outside-loop
- * @parent root
- * @summary Continue is invalid outside a loop.
- * @topic Negative
- */
-void Test()
-{
-	continue;
-}
-/** @end */
-/**
- * @version invalid-break-in-function-called-from-loop
- * @parent root
- * @summary Compile-rejection form retained from legacy break in function called from loop.
- * @topic Negative
- */
-void Foo()
-{
-	break;
-}
-
-void Test()
-{
-	for (int I = 0; I < 5; ++I)
-	{
-		Foo();
-	}
-}
-/** @end */
-/**
- * @version invalid-break-inside-if-without-loop
- * @parent root
- * @summary Compile-rejection form retained from legacy break inside if without loop.
- * @topic Negative
- */
-void Test()
-{
-	if (true)
-	{
-		break;
-	}
-}
-/** @end */
-/**
- * @version invalid-continue-inside-if-without-loop
- * @parent root
- * @summary Compile-rejection form retained from legacy continue inside if without loop.
- * @topic Negative
- */
-void Test()
-{
-	if (true)
-	{
-		continue;
-	}
-}
-/** @end */
-/**
- * @version valid-break-in-loop
- * @parent root
+ * @begin break-in-loop
  * @summary Authored language form for break in loop.
  * @topic ControlFlow
  */
@@ -131,8 +66,7 @@ int BreakInLoop()
 }
 /** @end */
 /**
- * @version valid-continue-in-loop
- * @parent root
+ * @begin continue-in-loop
  * @summary Authored language form for continue in loop.
  * @topic ControlFlow
  */
@@ -151,8 +85,7 @@ int ContinueInLoop()
 }
 /** @end */
 /**
- * @version valid-break-in-nested-loop
- * @parent root
+ * @begin break-in-nested-loop
  * @summary Break leaves only the inner loop.
  * @topic ControlFlow
  */
@@ -174,8 +107,7 @@ int NestedBreak()
 }
 /** @end */
 /**
- * @version valid-continue-in-nested-loop
- * @parent root
+ * @begin continue-in-nested-loop
  * @summary Continue skips the rest of the inner iteration.
  * @topic ControlFlow
  */

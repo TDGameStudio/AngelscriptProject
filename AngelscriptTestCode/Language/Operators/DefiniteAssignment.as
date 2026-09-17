@@ -3,11 +3,16 @@
  * @summary Branch and partial definite-assignment forms without observation wrappers.
  * @topic Language
  * @topic Operators
+ *
+ * definite-assignment
+ * partial-then-complete
+ * branch-definite-assignment
+ * partial-definite-assignment
+ * assigned-on-all-returns
  */
 /**
- * @version root
+ * @begin definite-assignment
  * @summary Both branches assign the same local before it is read.
- * @topic Baseline
  */
 int BothBranchesAssign(bool Flag)
 {
@@ -24,8 +29,7 @@ int BothBranchesAssign(bool Flag)
 }
 /** @end */
 /**
- * @version valid-partial-then-complete
- * @parent root
+ * @begin partial-then-complete
  * @summary A later assignment completes a path that left the local unset.
  * @topic Operators
  */
@@ -41,24 +45,7 @@ int CompleteAfterPartial(bool Flag)
 }
 /** @end */
 /**
- * @version invalid-unassigned-read
- * @parent root
- * @summary Reading a local that is not definitely assigned is invalid.
- * @topic Negative
- */
-int Test(bool Flag)
-{
-	int X;
-	if (Flag)
-	{
-		X = 1;
-	}
-	return X;
-}
-/** @end */
-/**
- * @version valid-branch-definite-assignment
- * @parent root
+ * @begin branch-definite-assignment
  * @summary Positive language form retained from legacy branch definite assignment.
  * @topic Operators
  */
@@ -87,8 +74,7 @@ int Compute(bool bFlag)
 	}
 /** @end */
 /**
- * @version valid-partial-definite-assignment
- * @parent root
+ * @begin partial-definite-assignment
  * @summary Positive language form retained from legacy partial definite assignment.
  * @topic Operators
  */
@@ -103,8 +89,7 @@ int RunPartial(bool bFlag)
 	}
 /** @end */
 /**
- * @version valid-assigned-on-all-returns
- * @parent root
+ * @begin assigned-on-all-returns
  * @summary A local is assigned on every return path before it is read.
  * @topic Operators
  */

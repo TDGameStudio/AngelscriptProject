@@ -3,11 +3,14 @@
  * @summary Global and scoped names that share a spelling.
  * @topic Language
  * @topic Namespace
+ *
+ * global-versus-scoped
+ * namespace-global-versus-scoped
+ * namespace-scoped-global
  */
 /**
- * @version root
+ * @begin global-versus-scoped
  * @summary A global helper and a same-named scoped helper selected by qualification.
- * @topic Baseline
  */
 int Amount()
 {
@@ -33,21 +36,7 @@ int PickScoped()
 }
 /** @end */
 /**
- * @version invalid-ambiguous-unqualified-after-using
- * @parent root
- * @summary An unqualified name is invalid when a using-directive makes it ambiguous.
- * @topic Negative
- */
-using namespace Game;
-
-int Test()
-{
-	return Amount();
-}
-/** @end */
-/**
- * @version valid-namespace-global-versus-scoped
- * @parent root
+ * @begin namespace-global-versus-scoped
  * @summary Positive language form retained from legacy namespace global versus scoped.
  * @topic Namespace
  */
@@ -93,8 +82,7 @@ namespace AccessGlobal
 }
 /** @end */
 /**
- * @version valid-namespace-scoped-global
- * @parent root
+ * @begin namespace-scoped-global
  * @summary Positive language form retained from legacy namespace scoped global.
  * @topic Namespace
  */

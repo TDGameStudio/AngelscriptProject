@@ -1,0 +1,14 @@
+api_version: openspec.dev/v1
+kind: change
+metadata:
+  uid: change_f69b9214-d1d7-440a-8c5e-a34d54be1620
+  id: angelscript/refactor-language-theme-cases
+  title: Refactor Language fixtures into theme pockets
+workflow: angelscript
+created_at: 2026-09-17T07:27:53Z
+goal: Drop privileged root stars, split compile and runtime fail files, rewrite Language author fixtures, and retarget the test Skill and code-database specs.
+archived_at: 2026-09-17T08:07:52Z
+archive_schema: closure-v1
+closure:
+  kind: completed
+  reason: All 6 Task DAG nodes passed their proving commands. Language author files are theme pockets with @begin cases, optional Family, and CompileFail/RuntimeFail siblings. Durable deltas are synchronized into current specs angelscript/testing/code-database and angelscript/testing/language-fixtures. Knowledge candidates remain change-local.

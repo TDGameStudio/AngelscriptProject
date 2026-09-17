@@ -3,11 +3,14 @@
  * @summary Deep parentheses, long chains, and assignment-in-expression forms.
  * @topic Language
  * @topic Operators
+ *
+ * expression-edges
+ * unary-minus-versus-subtract
+ * deeply-nested-parens
  */
 /**
- * @version root
+ * @begin expression-edges
  * @summary Nested parentheses, a long addition chain, and assignment used as a statement sequence.
- * @topic Baseline
  */
 int MaxParens()
 {
@@ -33,30 +36,7 @@ int AssignThenRead()
 }
 /** @end */
 /**
- * @version invalid-unmatched-paren
- * @parent root
- * @summary An unmatched opening parenthesis is invalid.
- * @topic Negative
- */
-int Test()
-{
-	return ((1 + 2);
-}
-/** @end */
-/**
- * @version invalid-unmatched-parenthesis
- * @parent root
- * @summary Compile-rejection form retained from legacy unmatched parenthesis.
- * @topic Negative
- */
-void Test()
-{
-	int X = (1 + 2;
-}
-/** @end */
-/**
- * @version valid-unary-minus-versus-subtract
- * @parent root
+ * @begin unary-minus-versus-subtract
  * @summary Unary minus on the right operand of subtraction.
  * @topic Operators
  */
@@ -67,36 +47,12 @@ int UnaryMinusRight()
 }
 /** @end */
 /**
- * @version valid-deeply-nested-parens
- * @parent root
+ * @begin deeply-nested-parens
  * @summary Eight nested parenthesis pairs around an addition.
  * @topic Operators
  */
 int DeepParens()
 {
 	return ((((((((1 + 2))))))));
-}
-/** @end */
-/**
- * @version invalid-extra-closing-paren
- * @parent root
- * @summary An extra closing parenthesis is invalid.
- * @topic Negative
- */
-int Test()
-{
-	return (1 + 2));
-}
-/** @end */
-/**
- * @version invalid-empty-call-on-int
- * @parent root
- * @summary An integer cannot be called.
- * @topic Negative
- */
-void Test()
-{
-	int Value = 1;
-	Value();
 }
 /** @end */

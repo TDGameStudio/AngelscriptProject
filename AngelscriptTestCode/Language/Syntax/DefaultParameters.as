@@ -3,11 +3,18 @@
  * @summary Defaulted function parameters for bool, int, and float.
  * @topic Language
  * @topic Syntax
+ *
+ * default-parameters
+ * bool-default-parameters
+ * default-parameter-function
+ * float-default-parameters
+ * function-default-parameter-edges
+ * int-family-default-parameters
+ * string-default-parameter
  */
 /**
- * @version root
+ * @begin default-parameters
  * @summary Trailing defaults on mixed primitive parameters.
- * @topic Baseline
  */
 int WithDefaults(int Count = 1, bool Flag = true, float Scale = 1.0f)
 {
@@ -26,30 +33,7 @@ int CallPartialDefaults()
 }
 /** @end */
 /**
- * @version invalid-default-before-required
- * @parent root
- * @summary A required parameter cannot follow a defaulted one.
- * @topic Negative
- */
-int Bad(int Count = 1, int Extra)
-{
-	return Count + Extra;
-}
-/** @end */
-/**
- * @version invalid-default-type-mismatch
- * @parent root
- * @summary A default expression must match the parameter type.
- * @topic Negative
- */
-int Bad(int Count = true)
-{
-	return Count;
-}
-/** @end */
-/**
- * @version valid-bool-default-parameters
- * @parent root
+ * @begin bool-default-parameters
  * @summary Positive language form retained from legacy bool default parameters.
  * @topic Syntax
  */
@@ -74,8 +58,7 @@ bool EchoDefaultTrue(bool b = true)
 	}
 /** @end */
 /**
- * @version valid-default-parameter-function
- * @parent root
+ * @begin default-parameter-function
  * @summary Positive language form retained from legacy default parameter function.
  * @topic Syntax
  */
@@ -85,8 +68,7 @@ int Foo(int X = 5, float Y = 1.0f)
 	}
 /** @end */
 /**
- * @version valid-float-default-parameters
- * @parent root
+ * @begin float-default-parameters
  * @summary Positive language form retained from legacy float default parameters.
  * @topic Syntax
  */
@@ -111,8 +93,7 @@ float AddFloatDefault(float X, float Y = 1.5f)
 	}
 /** @end */
 /**
- * @version valid-function-default-parameter-edges
- * @parent root
+ * @begin function-default-parameter-edges
  * @summary Positive language form retained from legacy function default parameter edges.
  * @topic Syntax
  */
@@ -152,8 +133,7 @@ int MultipleDefaults(int A, int B = 10, int C = 20)
 	}
 /** @end */
 /**
- * @version valid-int-family-default-parameters
- * @parent root
+ * @begin int-family-default-parameters
  * @summary Positive language form retained from legacy int family default parameters.
  * @topic Syntax
  */
@@ -188,27 +168,7 @@ int AddWithDefault(int a, int b = 10)
 	}
 /** @end */
 /**
- * @version invalid-default-outside-class-scope
- * @parent root
- * @summary Compile-rejection form retained from legacy default outside class scope.
- * @topic Negative
- */
-int GlobalValue = 5;
-default GlobalValue = 10;
-/** @end */
-/**
- * @version invalid-non-default-parameter-after-default
- * @parent root
- * @summary Compile-rejection form retained from legacy non default parameter after default.
- * @topic Negative
- */
-void Foo(int X = 5, int Y)
-{
-}
-/** @end */
-/**
- * @version valid-string-default-parameter
- * @parent root
+ * @begin string-default-parameter
  * @summary A trailing string parameter with a default literal.
  * @topic Syntax
  */

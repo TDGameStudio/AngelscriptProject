@@ -3,11 +3,14 @@
  * @summary While-loop forms without observation wrappers.
  * @topic Language
  * @topic ControlFlow
+ *
+ * while
+ * while-zero-iterations
+ * while-nested
  */
 /**
- * @version root
+ * @begin while
  * @summary A counted while loop that advances a local.
- * @topic Baseline
  */
 int WhileLoop(int Limit)
 {
@@ -22,76 +25,7 @@ int WhileLoop(int Limit)
 }
 /** @end */
 /**
- * @version invalid-while-non-bool
- * @parent root
- * @summary A while condition must be boolean.
- * @topic Negative
- */
-void Test()
-{
-	while (1)
-	{
-		break;
-	}
-}
-/** @end */
-/**
- * @version invalid-while-empty-condition
- * @parent root
- * @summary Compile-rejection form retained from legacy while empty condition.
- * @topic Negative
- */
-void Test()
-{
-	while ()
-	{
-	}
-}
-/** @end */
-/**
- * @version invalid-while-integer-condition
- * @parent root
- * @summary Compile-rejection form retained from legacy while integer condition.
- * @topic Negative
- */
-void Test()
-{
-	while (5)
-	{
-	}
-}
-/** @end */
-/**
- * @version invalid-while-unparenthesized-condition
- * @parent root
- * @summary Compile-rejection form retained from legacy while unparenthesized condition.
- * @topic Negative
- */
-void Test()
-{
-	while true
-	{
-	}
-}
-/** @end */
-/**
- * @version invalid-while-variable-condition
- * @parent root
- * @summary Compile-rejection form retained from legacy while variable condition.
- * @topic Negative
- */
-void Test()
-{
-	int X = 1;
-	while (X)
-	{
-		break;
-	}
-}
-/** @end */
-/**
- * @version valid-while-zero-iterations
- * @parent root
+ * @begin while-zero-iterations
  * @summary While body is skipped when the condition starts false.
  * @topic ControlFlow
  */
@@ -106,8 +40,7 @@ int WhileZero()
 }
 /** @end */
 /**
- * @version valid-while-nested
- * @parent root
+ * @begin while-nested
  * @summary Nested while loops accumulate a product of iterations.
  * @topic ControlFlow
  */

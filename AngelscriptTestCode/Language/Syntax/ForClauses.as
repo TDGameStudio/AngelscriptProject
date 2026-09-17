@@ -3,11 +3,17 @@
  * @summary For-loop clause shapes including omitted and comma clauses.
  * @topic Language
  * @topic Syntax
+ *
+ * for-clauses
+ * for-basic-shapes
+ * for-comma-clauses
+ * for-omitted-clauses
+ * for-positive-syntax-forms
+ * for-infinite-with-break
  */
 /**
- * @version root
+ * @begin for-clauses
  * @summary A basic for, omitted clauses, and a comma increment.
- * @topic Baseline
  */
 int ForBasic()
 {
@@ -41,36 +47,7 @@ int ForCommaClauses()
 }
 /** @end */
 /**
- * @version invalid-for-without-parens
- * @parent root
- * @summary A for header requires parentheses.
- * @topic Negative
- */
-void Test()
-{
-	for int Index = 0; Index < 1; ++Index
-	{
-		return;
-	}
-}
-/** @end */
-/**
- * @version invalid-for-non-bool-condition
- * @parent root
- * @summary A for condition must be boolean.
- * @topic Negative
- */
-void Test()
-{
-	for (int Index = 0; Index; ++Index)
-	{
-		return;
-	}
-}
-/** @end */
-/**
- * @version valid-for-basic-shapes
- * @parent root
+ * @begin for-basic-shapes
  * @summary Positive language form retained from legacy for basic shapes.
  * @topic Syntax
  */
@@ -123,8 +100,7 @@ int ForCountUp()
 	}
 /** @end */
 /**
- * @version valid-for-comma-clauses
- * @parent root
+ * @begin for-comma-clauses
  * @summary Positive language form retained from legacy for comma clauses.
  * @topic Syntax
  */
@@ -139,8 +115,7 @@ int ForCommaClauses()
 	}
 /** @end */
 /**
- * @version valid-for-omitted-clauses
- * @parent root
+ * @begin for-omitted-clauses
  * @summary Positive language form retained from legacy for omitted clauses.
  * @topic Syntax
  */
@@ -205,8 +180,7 @@ int ForNoInit()
 	}
 /** @end */
 /**
- * @version valid-for-positive-syntax-forms
- * @parent root
+ * @begin for-positive-syntax-forms
  * @summary Positive language form retained from legacy for positive syntax forms.
  * @topic Syntax
  */
@@ -268,47 +242,7 @@ int BasicFor()
 	}
 /** @end */
 /**
- * @version invalid-for-header-without-semicolons
- * @parent root
- * @summary Compile-rejection form retained from legacy for header without semicolons.
- * @topic Negative
- */
-void Test()
-{
-	for (int I = 0 I < 10 ++I)
-	{
-	}
-}
-/** @end */
-/**
- * @version invalid-for-without-parentheses
- * @parent root
- * @summary Compile-rejection form retained from legacy for without parentheses.
- * @topic Negative
- */
-void Test()
-{
-	for int I = 0; I < 10; ++I
-	{
-	}
-}
-/** @end */
-/**
- * @version invalid-for-with-two-clauses-only
- * @parent root
- * @summary Compile-rejection form retained from legacy for with two clauses only.
- * @topic Negative
- */
-void Test()
-{
-	for (int I = 0; I < 10)
-	{
-	}
-}
-/** @end */
-/**
- * @version valid-for-infinite-with-break
- * @parent root
+ * @begin for-infinite-with-break
  * @summary A for with omitted clauses that exits by break.
  * @topic Syntax
  */

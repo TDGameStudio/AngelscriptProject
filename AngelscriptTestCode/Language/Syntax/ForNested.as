@@ -3,11 +3,14 @@
  * @summary Nested for loops without observation wrappers.
  * @topic Language
  * @topic Syntax
+ *
+ * for-nested
+ * for-nested-three-deep
+ * for-nested-with-break
  */
 /**
- * @version root
+ * @begin for-nested
  * @summary An inner for nested inside an outer for.
- * @topic Baseline
  */
 int NestedFors()
 {
@@ -23,36 +26,7 @@ int NestedFors()
 }
 /** @end */
 /**
- * @version invalid-inner-index-escape
- * @parent root
- * @summary A for-declared index is not visible after the loop.
- * @topic Negative
- */
-int Test()
-{
-	for (int Index = 0; Index < 1; ++Index)
-	{
-	}
-	return Index;
-}
-/** @end */
-/**
- * @version invalid-for-loop-variable-escapes-scope
- * @parent root
- * @summary Compile-rejection form retained from legacy for loop variable escapes scope.
- * @topic Negative
- */
-void Test()
-{
-	for (int I = 0; I < 5; ++I)
-	{
-	}
-	int X = I;
-}
-/** @end */
-/**
- * @version valid-for-nested-three-deep
- * @parent root
+ * @begin for-nested-three-deep
  * @summary Three nested for loops accumulate a product of trip counts.
  * @topic Syntax
  */
@@ -73,8 +47,7 @@ int NestedThree()
 }
 /** @end */
 /**
- * @version valid-for-nested-with-break
- * @parent root
+ * @begin for-nested-with-break
  * @summary Inner for break leaves the outer loop running.
  * @topic Syntax
  */

@@ -3,11 +3,17 @@
  * @summary Struct field declaration, in-class initializers, and annotated insertion points.
  * @topic Language
  * @topic Syntax
+ *
+ * fields-two
+ *    add-field; parent fields-two
+ * anonymous-struct-compiles
+ * struct-member-defaults
+ * struct-empty-body
  */
 /**
- * @version root
+ * @begin fields-two
  * @summary Two-field struct with integer and float in-class initializers.
- * @topic Baseline
+ * @topic Syntax
  */
 struct FStructFields
 {
@@ -16,8 +22,8 @@ struct FStructFields
 }
 /** @end */
 /**
- * @version add-field
- * @parent root
+ * @begin add-field
+ * @parent fields-two
  * @summary Insert a third annotated integer field after the first two members.
  * @topic Syntax
  */
@@ -29,20 +35,7 @@ struct FStructFields
 }
 /** @end */
 /**
- * @version invalid-duplicate-field
- * @parent root
- * @summary Duplicate member name is an invalid field declaration.
- * @topic Negative
- */
-struct FStructFields
-{
-	int X = 0;
-	float X = 1.0f;
-}
-/** @end */
-/**
- * @version valid-anonymous-struct-compiles
- * @parent root
+ * @begin anonymous-struct-compiles
  * @summary Positive language form retained from legacy anonymous struct compiles.
  * @topic Syntax
  */
@@ -52,8 +45,7 @@ struct
 }
 /** @end */
 /**
- * @version valid-struct-member-defaults
- * @parent root
+ * @begin struct-member-defaults
  * @summary Positive language form retained from legacy struct member defaults.
  * @topic Syntax
  */
@@ -64,62 +56,7 @@ struct FStructDefaults
 }
 /** @end */
 /**
- * @version invalid-duplicate-struct-name
- * @parent root
- * @summary Compile-rejection form retained from legacy duplicate struct name.
- * @topic Negative
- */
-struct FDup
-{
-	int X;
-}
-
-struct FDup
-{
-	int Y;
-}
-/** @end */
-/**
- * @version invalid-struct-inheritance
- * @parent root
- * @summary Compile-rejection form retained from legacy struct inheritance.
- * @topic Negative
- */
-struct FBase
-{
-	int X;
-}
-
-struct FChild : FBase
-{
-	int Y;
-}
-/** @end */
-/**
- * @version invalid-struct-invalid-member-type
- * @parent root
- * @summary Compile-rejection form retained from legacy struct invalid member type.
- * @topic Negative
- */
-struct FStructBadMember
-{
-	NonExistentType X;
-}
-/** @end */
-/**
- * @version invalid-struct-void-member
- * @parent root
- * @summary Compile-rejection form retained from legacy struct void member.
- * @topic Negative
- */
-struct FStructVoidMember
-{
-	void X;
-}
-/** @end */
-/**
- * @version valid-struct-empty-body
- * @parent root
+ * @begin struct-empty-body
  * @summary A struct with no members.
  * @topic Syntax
  */

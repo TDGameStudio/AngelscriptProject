@@ -3,11 +3,16 @@
  * @summary Nested blocks, chained addition, and short-circuit skip forms.
  * @topic Language
  * @topic Syntax
+ *
+ * blocks
+ * deeply-parenthesized-addition
+ * long-chained-addition
+ * multiple-statements-in-one-function
+ * short-circuit-skips-right-hand-side
  */
 /**
- * @version root
+ * @begin blocks
  * @summary Deep blocks, parenthesized addition, a long chain, and short-circuit skip.
- * @topic Baseline
  */
 int DeeplyNestedBlocks()
 {
@@ -48,32 +53,7 @@ int ShortCircuitSkip()
 }
 /** @end */
 /**
- * @version invalid-unmatched-opening-brace
- * @parent root
- * @summary A block must close.
- * @topic Negative
- */
-int Test()
-{
-	{
-		return 1;
-}
-/** @end */
-/**
- * @version invalid-extra-closing-brace
- * @parent root
- * @summary An extra closing brace is invalid.
- * @topic Negative
- */
-int Test()
-{
-	return 1;
-}
-}
-/** @end */
-/**
- * @version valid-deeply-parenthesized-addition
- * @parent root
+ * @begin deeply-parenthesized-addition
  * @summary Positive language form retained from legacy deeply parenthesized addition.
  * @topic Syntax
  */
@@ -83,8 +63,7 @@ void Test()
 	}
 /** @end */
 /**
- * @version valid-long-chained-addition
- * @parent root
+ * @begin long-chained-addition
  * @summary Positive language form retained from legacy long chained addition.
  * @topic Syntax
  */
@@ -94,8 +73,7 @@ void Test()
 	}
 /** @end */
 /**
- * @version valid-multiple-statements-in-one-function
- * @parent root
+ * @begin multiple-statements-in-one-function
  * @summary Positive language form retained from legacy multiple statements in one function.
  * @topic Syntax
  */
@@ -107,8 +85,7 @@ void Test()
 	}
 /** @end */
 /**
- * @version valid-short-circuit-skips-right-hand-side
- * @parent root
+ * @begin short-circuit-skips-right-hand-side
  * @summary Positive language form retained from legacy short circuit skips right hand side.
  * @topic Syntax
  */
@@ -153,69 +130,4 @@ bool RecordTrue(int&inout Calls)
 		}
 		return -1;
 	}
-/** @end */
-/**
- * @version invalid-garbage-tokens
- * @parent root
- * @summary Compile-rejection form retained from legacy garbage tokens.
- * @topic Negative
- */
-asdfgh jklmn @#$%
-/** @end */
-/**
- * @version invalid-missing-semicolon-between-declarations
- * @parent root
- * @summary Compile-rejection form retained from legacy missing semicolon between declarations.
- * @topic Negative
- */
-void Test()
-{
-	int X = 1 int Y = 2;
-}
-/** @end */
-/**
- * @version invalid-out-of-scope-use
- * @parent root
- * @summary Compile-rejection form retained from legacy out of scope use.
- * @topic Negative
- */
-int Entry()
-{
-	{
-		int Inner = 2;
-	}
-	return Inner;
-}
-/** @end */
-/**
- * @version invalid-top-level-assignment
- * @parent root
- * @summary Compile-rejection form retained from legacy top level assignment.
- * @topic Negative
- */
-int X = 5;
-X = 10;
-/** @end */
-/**
- * @version invalid-unmatched-parenthesis
- * @parent root
- * @summary Compile-rejection form retained from legacy unmatched parenthesis.
- * @topic Negative
- */
-void Test()
-{
-	int X = (1 + 2;
-}
-/** @end */
-/**
- * @version invalid-syntax-error-missing-semicolon
- * @parent root
- * @summary Adjacent declarations require a semicolon.
- * @topic Negative
- */
-void Test()
-{
-	int Left = 1
-	int Right = 2;
-}
 /** @end */

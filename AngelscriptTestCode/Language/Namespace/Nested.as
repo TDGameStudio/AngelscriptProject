@@ -3,11 +3,14 @@
  * @summary Nested namespace scope and qualified access.
  * @topic Language
  * @topic Namespace
+ *
+ * nested
+ * namespace-nested-access
+ * namespace-nested-scope
  */
 /**
- * @version root
+ * @begin nested
  * @summary An inner namespace reached through a two-segment qualifier.
- * @topic Baseline
  */
 namespace Outer
 {
@@ -26,19 +29,7 @@ int NestedAccess()
 }
 /** @end */
 /**
- * @version invalid-skip-inner-qualifier
- * @parent root
- * @summary The outer name alone does not expose the inner function.
- * @topic Negative
- */
-int Test()
-{
-	return Outer::Value();
-}
-/** @end */
-/**
- * @version valid-namespace-nested-access
- * @parent root
+ * @begin namespace-nested-access
  * @summary Positive language form retained from legacy namespace nested access.
  * @topic Namespace
  */
@@ -70,8 +61,7 @@ const int OuterValue = 10;
 	}
 /** @end */
 /**
- * @version valid-namespace-nested-scope
- * @parent root
+ * @begin namespace-nested-scope
  * @summary Positive language form retained from legacy namespace nested scope.
  * @topic Namespace
  */
@@ -79,17 +69,4 @@ namespace Inner
 	{
 		int Value = 1;
 	}
-/** @end */
-/**
- * @version invalid-namespace-missing-opening-brace
- * @parent root
- * @summary A namespace declaration requires an opening brace.
- * @topic Negative
- */
-namespace Game
-	int Score()
-	{
-		return 1;
-	}
-}
 /** @end */

@@ -2,7 +2,7 @@
 
 Use the test code database when several tests or modules need the same versioned AngelScript source material. The database owns source bytes and metadata; it does not compile scripts, run a reload, interpret diagnostics, or assign execution meaning to annotations.
 
-The public types are in namespace `AngelscriptTest`. Include the focused headers under `NewVersion/Framework/Source/` and `NewVersion/Framework/Catalog/` rather than a legacy test umbrella.
+The public types are in namespace `AngelscriptTest`. Include the focused headers under `Framework/Source/` and `Framework/Catalog/` rather than a legacy test umbrella.
 
 ## Choose a provider
 
@@ -15,43 +15,47 @@ Both providers feed the same Parser or Builder, admission rules, singleton and q
 
 ## Author a complete-version `.as` container
 
-Author shared fixtures below the repository `AngelscriptTestCode/` root. The relative path determines the public file Tag: `AngelscriptTestCode/Language/Counter.as` becomes `Language/Counter`. The extension and generated C++ symbol suffix are not part of the public identity.
+Author shared fixtures below the repository `AngelscriptTestCode/` root. The relative path determines the public file Tag: `AngelscriptTestCode/Language/Syntax/StructFields.as` becomes `Language/Syntax/StructFields`. The extension and generated C++ symbol suffix are not part of the public identity.
 
 Use Doxygen-style metadata comments. The first block describes the file; every following block describes one source version and is followed by that version's complete body and `/** @end */`.
 
 ```angelscript
 /**
  * @version v1
- * @summary Counter source variants.
+ * @summary Struct field declaration, in-class initializers, and annotated insertion points.
  * @topic Language
- * @topic Reload
+ * @topic Syntax
+ *
+ * fields-two
+ *   add-field
  */
 /**
- * @version root
- * @summary Define the initial counter.
- * @topic Baseline
+ * @begin fields-two
+ * @summary Two-field struct with integer and float in-class initializers.
+ * @topic Syntax
  */
-class Counter
+struct FStructFields
 {
-    int Value = 0;
+	int X = 0;
+	float Y = 0.0f;
 }
 /** @end */
 /**
- * @version add-step
- * @parent root
- * @summary Add a configurable counter step.
- * @topic Fields
- * @topic Reload
+ * @begin add-field
+ * @parent fields-two
+ * @summary Insert a third annotated integer field after the first two members.
+ * @topic Syntax
  */
-class Counter
+struct FStructFields
 {
-    int Value = 0;
-    int Step = 1;
+	int X = 0;
+	float Y = 0.0f;
+	int Z = 1;
 }
 /** @end */
 ```
 
-The file-level `@version v1` names the metadata grammar. It is not a source node and is not passed to `Get`. Node `@version` values are the per-file `VersionTag`s. Exactly one node has no `@parent`; every other node names its parent. Declaration order is irrelevant, siblings remain independent, and every body is complete source rather than a patch against its parent.
+Compile-fail cases for the same theme live in a sibling `StructFieldsCompileFail.as` (runtime-fail polarity uses `RuntimeFail`). The file-level `@version v1` names the metadata grammar. It is not a source node and is not passed to `Get`. Case identity is `@begin <tag>`. Several versions may omit `@parent`; write `@parent` only for a real same-program Family. A Tag spelled `root` has no privilege. Declaration order is irrelevant, siblings remain independent, and every body is complete source rather than a patch against its parent. Callables may carry a function-header block (`@function`, `@summary`, `@inputs`, `@return`, optional `@covers`).
 
 `@summary` is required at file and node level. Repeat `@topic` to attach zero or more filter labels. Topics are metadata for selection; `Reload`, `Negative`, or any other spelling does not schedule a reload or change admission behavior.
 
@@ -64,7 +68,7 @@ python AngelscriptTestCode/CodeGenTool/codegen.py check
 
 `generate` is the only writer. `check` performs the same discovery and rendering in memory and returns non-zero for missing, changed, signed stale, or unsafe extra output without changing the filesystem. The tool finds repository roots from its own location rather than the caller's current directory.
 
-The generator sorts normalized slash-separated `.as` paths, excludes all of `AngelscriptTestCode/CodeGenTool/`, and validates case-fold collisions before writing. Each author path maps reversibly beneath `Plugins/Angelscript/Source/AngelscriptTest/TestCode/Generated/`: `Language/Counter.as` becomes `Language/Counter.generated.cpp`. Output contains the original bytes, byte length and SHA-256, then registers a factory that calls the existing C++ parser during central activation. Python does not interpret metadata, annotations, version trees or source diffs.
+The generator sorts normalized slash-separated `.as` paths, excludes all of `AngelscriptTestCode/CodeGenTool/`, and validates case-fold collisions before writing. Each author path maps reversibly beneath `Plugins/Angelscript/Source/AngelscriptTest/TestCode/Generated/`: `Language/Syntax/StructFields.as` becomes `Language/Syntax/StructFields.generated.cpp`. Python parsing interprets file/version metadata, typed annotations and the version tree, then emits a structured C++ `FAngelscriptTestCodeBuilder` registration (`format=v2`). The checked-in projection does not call the runtime source parser during activation.
 
 Ordinary UBT never invokes Python or scans `AngelscriptTestCode/`; it only compiles the checked-in `.generated.cpp` files. Adding, deleting or renaming an author source therefore requires running `generate` and committing the matching source-set change. Equal output is not rewritten. Stale cleanup is restricted to signed `.generated.cpp` files under the dedicated generated root; unsigned or unrelated files are preserved and reported.
 
@@ -75,8 +79,8 @@ Annotations are removed from the selected version's clean source. Their coordina
 ```angelscript
 void Run()
 {
-    Counter Value;
-    Value./** @point member */Step = 2;
+    FStructFields Value;
+    Value./** @point member */X = 2;
     /** @breakpoint before-call */
     /** @range-begin call */Value.Tick()/** @range-end call */;
 }
@@ -94,8 +98,8 @@ Marker names must be unique in their category. Missing endpoints, crossing range
 Place a static registration in the provider module. The callback type is a function pointer, so a non-capturing lambda may be passed directly; captures and registration-time Builder execution are intentionally unsupported.
 
 ```cpp
-#include "NewVersion/Framework/Catalog/AngelscriptTestCodeRegistration.h"
-#include "NewVersion/Framework/Source/AngelscriptTestCodeBuilder.h"
+#include "Framework/Catalog/AngelscriptTestCodeRegistration.h"
+#include "Framework/Source/AngelscriptTestCodeBuilder.h"
 
 #if WITH_ANGELSCRIPT_TESTS
 
@@ -111,15 +115,15 @@ AngelscriptTest::FAngelscriptTestCodeRegistration SecondarySource(
     +[](const AngelscriptTest::FAngelscriptTestFileMeta& FileMeta)
     {
         AngelscriptTest::FAngelscriptTestCodeBuilder Builder(FileMeta);
-        Builder.AddRoot({
-            .Tag = TEXT("root"),
+        Builder.AddVersion({
+            .Tag = TEXT("initial"),
             .Summary = TEXT("Define the initial secondary fixture."),
             .Topics = {TEXT("Baseline")},
         }, AS_TEST_SOURCE_EXACT(
             "class Secondary { int Value = 1; }\n"));
         Builder.AddVersion({
             .Tag = TEXT("changed"),
-            .Parent = TEXT("root"),
+            .Parent = TEXT("initial"),
             .Summary = TEXT("Change the complete secondary fixture."),
             .Topics = {TEXT("Reload")},
         }, AS_TEST_SOURCE_EXACT(
@@ -130,6 +134,8 @@ AngelscriptTest::FAngelscriptTestCodeRegistration SecondarySource(
 
 #endif
 ```
+
+`AddRoot` remains only as a deprecated alias for a parentless `AddVersion` whose Tag happens to be `root`. Prefer ordinary `AddVersion` with an empty Parent.
 
 `AS_TEST_SOURCE_EXACT` preserves every literal byte. `AS_TEST_SOURCE` removes one raw-literal envelope and the exact common indentation prefix while preserving intentional blank lines. Neither macro registers material or parses markers by itself. For direct inline annotations, parse the owned literal explicitly:
 
@@ -156,7 +162,7 @@ Use the pair `(FileTag, VersionTag)` for exact lookup:
 
 ```cpp
 auto& Code = AngelscriptTest::FAngelscriptTestCode::GetInstance();
-auto Result = Code.Get(TEXT("Language/Counter"), TEXT("add-step"));
+auto Result = Code.Get(TEXT("Language/Syntax/StructFields"), TEXT("add-field"));
 if (!Result.IsSuccess())
 {
     const AngelscriptTest::FAngelscriptTestError* Error = Result.GetError();
@@ -174,10 +180,10 @@ Do not cache pointers or references returned by `GetCase()`, `GetError()`, metad
 Topic queries use AND semantics and deterministic ordinal output:
 
 ```cpp
-TArray<AngelscriptTest::FAngelscriptTestSourceCase> ReloadCases;
-const TArray<FString> RequiredVersionTopics = {TEXT("Reload"), TEXT("Fields")};
+TArray<AngelscriptTest::FAngelscriptTestSourceCase> SyntaxCases;
+const TArray<FString> RequiredVersionTopics = {TEXT("Syntax")};
 const auto CaseStatus = Code.FindCases(
-    TEXT("Language/Counter"), RequiredVersionTopics, ReloadCases);
+    TEXT("Language/Syntax/StructFields"), RequiredVersionTopics, SyntaxCases);
 
 TArray<AngelscriptTest::FAngelscriptTestFileMeta> LanguageFiles;
 const TArray<FString> RequiredFileTopics = {TEXT("Language")};

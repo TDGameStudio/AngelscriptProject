@@ -3,11 +3,14 @@
  * @summary Named argument calls with mixed positional order.
  * @topic Language
  * @topic Syntax
+ *
+ * named-arguments
+ * named-arguments-all-named
+ * named-arguments-trailing-only
  */
 /**
- * @version root
+ * @begin named-arguments
  * @summary A call that names later arguments and keeps one positional.
- * @topic Baseline
  */
 int Mix(int First, int Second, int Third)
 {
@@ -20,72 +23,7 @@ int NamedPartial()
 }
 /** @end */
 /**
- * @version invalid-named-unknown
- * @parent root
- * @summary A named argument must match a parameter name.
- * @topic Negative
- */
-int Mix(int First, int Second)
-{
-	return First + Second;
-}
-
-int Test()
-{
-	return Mix(First: 1, Missing: 2);
-}
-/** @end */
-/**
- * @version invalid-named-duplicate
- * @parent root
- * @summary The same parameter cannot be named twice.
- * @topic Negative
- */
-int Mix(int First, int Second)
-{
-	return First + Second;
-}
-
-int Test()
-{
-	return Mix(First: 1, First: 2);
-}
-/** @end */
-/**
- * @version invalid-named-argument-duplicate-name
- * @parent root
- * @summary Compile-rejection form retained from legacy named argument duplicate name.
- * @topic Negative
- */
-int Mix(int A, int B, int C)
-{
-	return 0;
-}
-
-int Run()
-{
-	return Mix(A: 1, A: 2, C: 3);
-}
-/** @end */
-/**
- * @version invalid-named-argument-unknown-name
- * @parent root
- * @summary Compile-rejection form retained from legacy named argument unknown name.
- * @topic Negative
- */
-int Mix(int A, int B, int C)
-{
-	return 0;
-}
-
-int Run()
-{
-	return Mix(A: 1, D: 2, C: 3);
-}
-/** @end */
-/**
- * @version valid-named-arguments-all-named
- * @parent root
+ * @begin named-arguments-all-named
  * @summary A call that names every argument.
  * @topic Syntax
  */
@@ -100,8 +38,7 @@ int CallNamed()
 }
 /** @end */
 /**
- * @version valid-named-arguments-trailing-only
- * @parent root
+ * @begin named-arguments-trailing-only
  * @summary A call that names only the trailing argument.
  * @topic Syntax
  */

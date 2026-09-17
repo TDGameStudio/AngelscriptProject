@@ -3,11 +3,16 @@
  * @summary If-else and else-if ladder forms.
  * @topic Language
  * @topic ControlFlow
+ *
+ * if-else
+ * if-else-false-condition
+ * else-if-chain
+ * unbraced-if-else
+ * compound-condition-if-else
  */
 /**
- * @version root
+ * @begin if-else
  * @summary A two-arm if-else and a three-arm else-if ladder.
- * @topic Baseline
  */
 int IfElseForms(int Value)
 {
@@ -40,22 +45,7 @@ int ElseIfLadder(int Value)
 }
 /** @end */
 /**
- * @version invalid-else-without-if
- * @parent root
- * @summary An else clause cannot stand alone.
- * @topic Negative
- */
-void Test()
-{
-	else
-	{
-		return;
-	}
-}
-/** @end */
-/**
- * @version valid-if-else-false-condition
- * @parent root
+ * @begin if-else-false-condition
  * @summary Else arm runs when the if condition is false.
  * @topic ControlFlow
  */
@@ -72,8 +62,7 @@ int IfElseFalse()
 }
 /** @end */
 /**
- * @version valid-else-if-chain
- * @parent root
+ * @begin else-if-chain
  * @summary Else-if chain selects the middle test.
  * @topic ControlFlow
  */
@@ -94,8 +83,7 @@ int ElseIfChain(int Value)
 }
 /** @end */
 /**
- * @version valid-unbraced-if-else
- * @parent root
+ * @begin unbraced-if-else
  * @summary Unbraced if-else binds a single statement per arm.
  * @topic ControlFlow
  */
@@ -110,8 +98,7 @@ int UnbracedIfElse(bool Flag)
 }
 /** @end */
 /**
- * @version valid-compound-condition-if-else
- * @parent root
+ * @begin compound-condition-if-else
  * @summary If-else with a conjunctive condition.
  * @topic ControlFlow
  */
@@ -124,20 +111,6 @@ int CompoundIfElse(int Left, int Right)
 	else
 	{
 		return 0;
-	}
-}
-/** @end */
-/**
- * @version invalid-else-if-without-if
- * @parent root
- * @summary Else-if cannot start a statement.
- * @topic Negative
- */
-void Test()
-{
-	else if (true)
-	{
-		return;
 	}
 }
 /** @end */

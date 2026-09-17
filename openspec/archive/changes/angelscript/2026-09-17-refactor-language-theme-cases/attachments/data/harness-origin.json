@@ -1,0 +1,112 @@
+{
+  "schema": 2,
+  "changeId": "angelscript/refactor-language-theme-cases",
+  "origin": "Draft",
+  "draftId": "angelscript/language-fixture-quality",
+  "scope": "theme-case-containers",
+  "reason": null,
+  "approvalRound": "R20",
+  "expectedExports": [
+    {
+      "Source": "design.md",
+      "Target": "attachments/drafts/design.md",
+      "Reason": "Accepted scoped design"
+    },
+    {
+      "Source": "handoff.md",
+      "Target": "attachments/drafts/handoff.md",
+      "Reason": "Accepted handoff"
+    },
+    {
+      "Source": "glossary.md",
+      "Target": "attachments/drafts/glossary.md",
+      "Reason": "Settled names"
+    },
+    {
+      "Source": "../../findings/target-overview.md",
+      "Target": "attachments/drafts/findings/target-overview.md",
+      "Reason": "First-change shape"
+    },
+    {
+      "Source": "../../findings/organize-principles.md",
+      "Target": "attachments/drafts/findings/organize-principles.md",
+      "Reason": "P1–P7"
+    },
+    {
+      "Source": "../../findings/current-markers.md",
+      "Target": "attachments/drafts/findings/current-markers.md",
+      "Reason": "Two marker layers"
+    },
+    {
+      "Source": "../../findings/header-tree-table.md",
+      "Target": "attachments/drafts/findings/header-tree-table.md",
+      "Reason": "Header tree vs body diff"
+    },
+    {
+      "Source": "../../findings/function-comment-fields.md",
+      "Target": "attachments/drafts/findings/function-comment-fields.md",
+      "Reason": "Function header fields"
+    },
+    {
+      "Source": "../../findings/mark-testable-function.md",
+      "Target": "attachments/drafts/findings/mark-testable-function.md",
+      "Reason": "Why @function"
+    },
+    {
+      "Source": "../../findings/skill-companion.md",
+      "Target": "attachments/drafts/findings/skill-companion.md",
+      "Reason": "Skill and spec companions"
+    },
+    {
+      "Source": "../../findings/filename-length.md",
+      "Target": "attachments/drafts/findings/filename-length.md",
+      "Reason": "Casting FileTags"
+    },
+    {
+      "Source": "../../findings/topics-open.md",
+      "Target": "attachments/drafts/findings/topics-open.md",
+      "Reason": "Topics are open"
+    },
+    {
+      "Source": "../../findings/polarity-names.md",
+      "Target": "attachments/drafts/findings/polarity-names.md",
+      "Reason": "Fail naming evidence"
+    },
+    {
+      "Source": "../../log.md#r3",
+      "Target": "attachments/talks/talk-20260917-152400-theme-pocket.md",
+      "Reason": "FileTag is a theme pocket"
+    },
+    {
+      "Source": "../../log.md#r9",
+      "Target": "attachments/talks/talk-20260917-152410-fail-files.md",
+      "Reason": "Two Fail files"
+    },
+    {
+      "Source": "../../log.md#r19",
+      "Target": "attachments/talks/talk-20260917-152420-author-markers.md",
+      "Reason": "@begin @function @summary"
+    },
+    {
+      "Source": "../../log.md#r20",
+      "Target": "attachments/talks/talk-20260917-152430-first-change-scope.md",
+      "Reason": "Approve and scope the Change"
+    },
+    {
+      "Source": "../../findings/target-overview.md",
+      "Target": "attachments/knowledges/theme-pocket-no-privileged-root.md",
+      "Reason": "Reusable pocket model"
+    },
+    {
+      "Source": "../../findings/topics-open.md",
+      "Target": "attachments/knowledges/open-topics.md",
+      "Reason": "Topic is not an enum"
+    },
+    {
+      "Source": "../../findings/function-comment-fields.md",
+      "Target": "attachments/knowledges/function-header.md",
+      "Reason": "Function header contract"
+    }
+  ],
+  "createdAt": "2026-09-17T07:27:54.0970662Z"
+}

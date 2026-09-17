@@ -3,11 +3,25 @@
  * @summary Integer, boolean, float, and void return forms.
  * @topic Language
  * @topic ControlFlow
+ *
+ * return
+ * function-return-bool-values
+ * function-return-control-flow
+ * function-return-float-values
+ * function-return-integer-widths
+ * return-early
+ * return-expression
+ * return-float-as-int
+ * return-int
+ * return-void
+ * script-quat-return
+ * script-matrix-return
+ * geometric-struct-parameters-and-returns
+ * string-function-return
  */
 /**
- * @version root
+ * @begin return
  * @summary Early return, expression return, multiple returns, and a void return.
- * @topic Baseline
  */
 int ReturnInt()
 {
@@ -57,33 +71,7 @@ int ReturnExpression(int Left, int Right)
 }
 /** @end */
 /**
- * @version invalid-missing-return
- * @parent root
- * @summary A value-returning function cannot fall off the end.
- * @topic Negative
- */
-int Test(bool Flag)
-{
-	if (Flag)
-	{
-		return 1;
-	}
-}
-/** @end */
-/**
- * @version invalid-return-type-mismatch
- * @parent root
- * @summary A boolean cannot be returned from an integer function.
- * @topic Negative
- */
-int Test()
-{
-	return true;
-}
-/** @end */
-/**
- * @version valid-function-return-bool-values
- * @parent root
+ * @begin function-return-bool-values
  * @summary Positive language form retained from legacy function return bool values.
  * @topic ControlFlow
  */
@@ -98,8 +86,7 @@ bool TrueReturn()
 	}
 /** @end */
 /**
- * @version valid-function-return-control-flow
- * @parent root
+ * @begin function-return-control-flow
  * @summary Positive language form retained from legacy function return control flow.
  * @topic ControlFlow
  */
@@ -136,8 +123,7 @@ int AddPair(int A, int B)
 	}
 /** @end */
 /**
- * @version valid-function-return-float-values
- * @parent root
+ * @begin function-return-float-values
  * @summary Positive language form retained from legacy function return float values.
  * @topic ControlFlow
  */
@@ -152,8 +138,7 @@ float FloatReturn()
 	}
 /** @end */
 /**
- * @version valid-function-return-integer-widths
- * @parent root
+ * @begin function-return-integer-widths
  * @summary Positive language form retained from legacy function return integer widths.
  * @topic ControlFlow
  */
@@ -198,8 +183,7 @@ int8 Int8Return()
 	}
 /** @end */
 /**
- * @version valid-return-early
- * @parent root
+ * @begin return-early
  * @summary Positive language form retained from legacy return early.
  * @topic ControlFlow
  */
@@ -253,8 +237,7 @@ int ClampedEarlyReturn(int Value)
 	}
 /** @end */
 /**
- * @version valid-return-expression
- * @parent root
+ * @begin return-expression
  * @summary Positive language form retained from legacy return expression.
  * @topic ControlFlow
  */
@@ -265,8 +248,7 @@ int ComputedReturn()
 	}
 /** @end */
 /**
- * @version valid-return-float-as-int
- * @parent root
+ * @begin return-float-as-int
  * @summary Positive language form retained from legacy return float as int.
  * @topic ControlFlow
  */
@@ -276,8 +258,7 @@ int TruncatedFloatReturn()
 	}
 /** @end */
 /**
- * @version valid-return-int
- * @parent root
+ * @begin return-int
  * @summary Positive language form retained from legacy return int.
  * @topic ControlFlow
  */
@@ -287,8 +268,7 @@ int FixedIntReturn()
 	}
 /** @end */
 /**
- * @version valid-return-void
- * @parent root
+ * @begin return-void
  * @summary Positive language form retained from legacy return void.
  * @topic ControlFlow
  */
@@ -298,41 +278,7 @@ void BareVoidReturn()
 	}
 /** @end */
 /**
- * @version invalid-return-string-for-int
- * @parent root
- * @summary Compile-rejection form retained from legacy return string for int.
- * @topic Negative
- */
-int Test()
-{
-	return "hello";
-}
-/** @end */
-/**
- * @version invalid-return-value-in-void-function
- * @parent root
- * @summary Compile-rejection form retained from legacy return value in void function.
- * @topic Negative
- */
-void Test()
-{
-	return 5;
-}
-/** @end */
-/**
- * @version invalid-return-without-value-in-int-function
- * @parent root
- * @summary Compile-rejection form retained from legacy return without value in int function.
- * @topic Negative
- */
-int Test()
-{
-	return;
-}
-/** @end */
-/**
- * @version valid-script-quat-return
- * @parent root
+ * @begin script-quat-return
  * @summary Authored language form for script quat return.
  * @topic ControlFlow
  */
@@ -355,8 +301,7 @@ FScriptQuat IdentityQuat()
 }
 /** @end */
 /**
- * @version valid-script-matrix-return
- * @parent root
+ * @begin script-matrix-return
  * @summary Authored language form for script matrix return.
  * @topic ControlFlow
  */
@@ -379,8 +324,7 @@ FScriptMatrix IdentityMatrix()
 }
 /** @end */
 /**
- * @version valid-geometric-struct-parameters-and-returns
- * @parent root
+ * @begin geometric-struct-parameters-and-returns
  * @summary Authored language form for geometric struct parameters and returns.
  * @topic ControlFlow
  */
@@ -398,8 +342,7 @@ FScriptVec Offset(FScriptVec Value, float Delta)
 }
 /** @end */
 /**
- * @version valid-string-function-return
- * @parent root
+ * @begin string-function-return
  * @summary A function that returns a string literal.
  * @topic ControlFlow
  */

@@ -51,6 +51,7 @@ class ConformanceTests(unittest.TestCase):
             self._check_unicode,
             self._check_annotations,
             self._check_branch_trailing_lf,
+            self._check_parentless_begin,
         )
         for check in cases:
             with self.subTest(check.__name__):
@@ -120,6 +121,23 @@ class ConformanceTests(unittest.TestCase):
         self.assertTrue(root.clean_source.endswith(b"\n"))
         self.assertEqual(149, map_clean(child, len(child.clean_source)))
         self.assertEqual(225, map_clean(root, len(root.clean_source)))
+
+    def _check_parentless_begin(self) -> None:
+        parsed = parse_source_file(load_fixture("parentless-begin.as"))
+        self.assertEqual("v1", parsed.format_version)
+        self.assertEqual("conformance/parentless-begin", parsed.source.file_tag)
+        self.assertEqual("Two parentless begin cases.", parsed.summary)
+        self.assertEqual(("Language",), parsed.topics)
+        self.assertEqual(("alpha", "beta"), tuple(version.tag for version in parsed.versions))
+        alpha, beta = parsed.versions
+        self.assertIsNone(alpha.parent)
+        self.assertIsNone(beta.parent)
+        self.assertIn(b"@function AlphaValue", alpha.body)
+        self.assertEqual(b"int Beta = 2;\n", beta.clean_source)
+        ranges = {item.name: (item.begin, item.end) for item in alpha.annotations.ranges}
+        self.assertIn("alpha-const", ranges)
+        self.assertEqual(1, ranges["alpha-const"][1] - ranges["alpha-const"][0])
+        self.assertEqual(b"1", alpha.clean_source[ranges["alpha-const"][0]:ranges["alpha-const"][1]])
 
     def test_negative_protocol_matrix(self) -> None:
         rows = (

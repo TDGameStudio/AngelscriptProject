@@ -3,11 +3,15 @@
  * @summary Nested if statements without observation wrappers.
  * @topic Language
  * @topic ControlFlow
+ *
+ * if-nested
+ * if-nested-three-deep
+ * if-nested-in-else
+ * if-nested-unbraced-inner
  */
 /**
- * @version root
+ * @begin if-nested
  * @summary An inner if nested in both arms of an outer if.
- * @topic Baseline
  */
 int IfNested(bool Outer, bool Inner)
 {
@@ -38,30 +42,7 @@ int IfNested(bool Outer, bool Inner)
 }
 /** @end */
 /**
- * @version invalid-dangling-else-token
- * @parent root
- * @summary A second else on the same if is invalid.
- * @topic Negative
- */
-void Test(bool Flag)
-{
-	if (Flag)
-	{
-		return;
-	}
-	else
-	{
-		return;
-	}
-	else
-	{
-		return;
-	}
-}
-/** @end */
-/**
- * @version valid-if-nested-three-deep
- * @parent root
+ * @begin if-nested-three-deep
  * @summary Three nested ifs all taking the true arm.
  * @topic ControlFlow
  */
@@ -90,8 +71,7 @@ int NestedThree(bool A, bool B, bool C)
 }
 /** @end */
 /**
- * @version valid-if-nested-in-else
- * @parent root
+ * @begin if-nested-in-else
  * @summary Inner if lives only in the outer else arm.
  * @topic ControlFlow
  */
@@ -117,8 +97,7 @@ int NestedInElse(bool Outer, bool Inner)
 }
 /** @end */
 /**
- * @version valid-if-nested-unbraced-inner
- * @parent root
+ * @begin if-nested-unbraced-inner
  * @summary Outer if contains an unbraced inner if.
  * @topic ControlFlow
  */
@@ -131,22 +110,5 @@ int NestedUnbraced(bool Outer, bool Inner)
 		else
 			Value = 2;
 	return Value;
-}
-/** @end */
-/**
- * @version invalid-if-missing-inner-condition
- * @parent root
- * @summary A nested if still requires a condition.
- * @topic Negative
- */
-void Test(bool Outer)
-{
-	if (Outer)
-	{
-		if
-		{
-			return;
-		}
-	}
 }
 /** @end */
