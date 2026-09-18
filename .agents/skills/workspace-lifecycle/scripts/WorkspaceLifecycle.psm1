@@ -807,7 +807,7 @@ function New-WorkspaceIdentityFromRegistration {
 }
 
 function Get-WorkspaceIdentity {
-    param([Parameter(Mandatory = $true)][string]$ProjectRoot)
+    param([string]$ProjectRoot = '')
 
     $root = Resolve-WorkspaceRepository -Path $ProjectRoot
     if (Test-Path (Join-Path $root '.harness/workspace.json')) { return Get-WorkspaceReplicaIdentity $root }
@@ -828,8 +828,7 @@ function Get-HarnessWorkspaceContext {
     )
 
     if ($Refresh) { [void](Clear-HarnessWorkspaceCache) }
-    $root = Resolve-WorkspaceRepository -Path $ProjectRoot
-    return Get-WorkspaceIdentity -ProjectRoot $root
+    return Get-WorkspaceIdentity -ProjectRoot $ProjectRoot
 }
 
 function Get-WorkspaceProjectFile {
@@ -892,10 +891,10 @@ function Set-WorkspaceManagedConfiguration {
 function Get-HarnessWorkspaceConfigStatus {
     [CmdletBinding()]
     param([Alias('WorkspaceRoot')][string]$ProjectRoot = '')
-    $root = Resolve-WorkspaceRepository -Path $ProjectRoot
+    $identity = Get-WorkspaceIdentity -ProjectRoot $ProjectRoot
+    $root = $identity.WorkspaceRoot
     $path = Join-Path $root 'AgentConfig.ini'
     $errors = New-Object System.Collections.Generic.List[string]
-    $identity = Get-WorkspaceIdentity -ProjectRoot $root
     $exists = Test-Path -LiteralPath $path -PathType Leaf
     $ignored = $false
     if (-not $exists) {
@@ -1299,9 +1298,9 @@ function Get-HarnessWorkspaceStatus {
     )
 
     if ($Refresh) { [void](Clear-HarnessWorkspaceCache) }
-    $root = Resolve-WorkspaceRepository -Path $ProjectRoot
-    $configStatus = Get-HarnessWorkspaceConfigStatus -ProjectRoot $root
+    $configStatus = Get-HarnessWorkspaceConfigStatus -ProjectRoot $ProjectRoot
     $identity = $configStatus.Identity
+    $root = $identity.WorkspaceRoot
     $result = [ordered]@{
         ProjectRoot        = $root
         DetailLevel        = if ($Detailed) { 'Detailed' } else { 'Fast' }

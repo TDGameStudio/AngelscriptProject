@@ -1,5 +1,11 @@
 # Harness Core Knowledge Index
 
+- [Workspace Query Cost and Freshness](query-performance.md)
+  - Summary: Remove repeated root resolution inside a query while retaining live identity/configuration checks; compare native-call counts and bounded before/after timings.
+  - Serves: Persistent PowerShell dispatch, workspace status cost and evidence-based performance tuning.
+  - Source: 2026-09-19 direct authorized maintenance, before commit `87d93ed8`, isolated Git/OpenSpec fixtures and `WorkspaceQueryPerformance.Tests.ps1`.
+  - Status: current; timings describe the recorded local samples, not a service-level guarantee
+
 - [Active Change Registration Checkpoint](change-registration-checkpoint.md)
   - Summary: Resolve one exact Git-registered WorkspaceRoot, canonical active Change, and Ready task before implementation, with an honest recovery path when registration was missed; Codex `/goal` is continuation only.
   - Serves: Unified workspace context, two-tier exploration, and OpenSpec-scoped execution readiness.

@@ -1,6 +1,6 @@
 {
-  "revision": "2026-09-19-gate-boundaries-v1",
+  "revision": "2026-09-19-workflow-quality-v1",
   "published_at": "2026-09-19",
-  "summary": "Create approval binds the exact title and goal; discussion replacement retains unanswered decisions and exported attachments retain byte checks. Pause and pending feedback survive ownership recovery and session transfer. Archive enforces current terminal evidence at the actual move; post-archive findings respect the selected repair scope. Workspace removal excludes queued, waiting and running workers through a shared run-admission interlock; cancellation previews remain read-only. The two human handoff Gates remain unchanged, with no repeated confirmation for already authorized direct work.",
-  "affected_skills": ["harness", "change-queue", "openspec-create-change", "openspec-update-change", "openspec-archive-change", "workspace-lifecycle", "unreal-engine-develop"]
+  "summary": "Queue guidance distinguishes ordinary task repair from planning-invalidating Replan. Apply checks current execution authority, handoff arrangement and pending input before Ensure plan. Replan prepares candidates without overwriting accepted planning, then applies the approved map transactionally. Workspace queries remove repeated root resolution inside one call while retaining live identity, HEAD, configuration and dispatcher checks; regression coverage checks native-call cost and freshness. The explained double loop and both human handoff Gates remain in force, including exact-scope approval, pause/input recovery, terminal archive evidence and workspace/run interlocks.",
+  "affected_skills": ["harness", "change-queue", "openspec-apply-change", "openspec-update-change", "workspace-lifecycle"]
 }

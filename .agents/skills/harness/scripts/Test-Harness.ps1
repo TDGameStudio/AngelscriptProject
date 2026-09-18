@@ -89,6 +89,7 @@ function Get-HarnessGateChecks {
             Workspace           = '.agents\skills\workspace-lifecycle\tests\WorkspaceLifecycle.Tests.ps1'
             WorkspaceReplica    = '.agents\skills\workspace-lifecycle\tests\WorkspaceReplica.Tests.ps1'
             WorkspaceRemovalActivity = '.agents\skills\workspace-lifecycle\tests\WorkspaceRemovalActivity.Tests.ps1'
+            WorkspaceQueryPerformance = '.agents\skills\workspace-lifecycle\tests\WorkspaceQueryPerformance.Tests.ps1'
             GitOperations       = '.agents\skills\git-operations\tests\GitOperations.Tests.ps1'
             PluginCommits       = '.agents\skills\git-operations\tests\PluginCommits.Tests.ps1'
             OpenSpecSkill       = '.agents\skills\openspec\tests\OpenSpecSkill.Tests.ps1'
