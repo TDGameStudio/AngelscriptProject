@@ -77,7 +77,7 @@ function Test-IsLikelyOpenSpecTextFile {
     $textExtensions = @(
         '.bat', '.cfg', '.cmd', '.conf', '.css', '.csv', '.editorconfig', '.fish',
         '.gitattributes', '.gitignore', '.html', '.ini', '.js', '.json', '.lock',
-        '.md', '.ps1', '.psd1', '.psm1', '.rs', '.sh', '.toml', '.ts', '.tsx',
+        '.md', '.ps1', '.psd1', '.psm1', '.py', '.rs', '.sh', '.toml', '.ts', '.tsx',
         '.txt', '.xml', '.yaml', '.yml', '.zsh'
     )
     $extension = $File.Extension.ToLowerInvariant()
@@ -249,6 +249,62 @@ function Get-OpenSpecOwningChangeRoot {
     return $AttachmentRoot
 }
 
+function Remove-OpenSpecLocalizedFixtureLiterals {
+    param([string]$Text, [string]$RelativePath)
+
+    $normalized = $RelativePath.Replace('\', '/')
+    $draftModule = '.agents/skills/harness/scripts/DraftLifecycle.psm1'
+    $unicodeLabelFixture = '.agents/skills/unreal-engine-develop/tests/UnrealEngineDevelop.Tests.ps1'
+    $draftFixtureFiles = @(
+        '.agents/skills/harness/tests/HarnessChangeGate.Tests.ps1',
+        '.agents/skills/harness/tests/HarnessDraft.Tests.ps1',
+        '.agents/skills/harness/tests/HarnessHandoff.Tests.ps1'
+    )
+    if ($normalized -eq $draftModule -or $normalized -in $draftFixtureFiles -or $normalized -eq $unicodeLabelFixture) {
+        $fixtureTokens = $null
+        $fixtureParseErrors = $null
+        [void][System.Management.Automation.Language.Parser]::ParseInput($Text, [ref]$fixtureTokens, [ref]$fixtureParseErrors)
+        $replacements = @($fixtureTokens | Where-Object {
+            if ($_.Kind -notin @('StringLiteral', 'StringExpandable', 'HereStringLiteral', 'HereStringExpandable')) { return $false }
+            $literal = $_.Text
+            if ($normalized -eq $unicodeLabelFixture) {
+                # Two exact Unicode build-label fixtures; comments and other strings stay audited.
+                $label = (-join @([char]0x8BCD, [char]0x6CD5, [char]0x5206, [char]0x6790)) + ' RED'
+                return $_.Kind -eq 'StringLiteral' -and $literal -cin @("'$label'", "'  $label  '")
+            }
+            if ($normalized -eq $draftModule) {
+                # Only the two generated local-draft strings are localized output.
+                return $literal.StartsWith('"---`nschema: harness-draft-v2`n') -or
+                    ($literal.StartsWith('"# ') -and $literal.Contains('`n`n## ') -and
+                     $literal.Contains((-join @([char]0x5F53, [char]0x524D, [char]0x4E0A, [char]0x4E0B, [char]0x6587))))
+            }
+            # Exact legacy README fixtures may contain their original-language fields.
+            return $literal.StartsWith('"---`ndraft: harness/') -and $literal.Contains('`nmode:')
+        } | Sort-Object { $_.Extent.StartOffset } -Descending)
+        foreach ($token in $replacements) {
+            $blank = [regex]::Replace($token.Text, '[^\r\n]', ' ')
+            $Text = $Text.Remove($token.Extent.StartOffset, $token.Text.Length).Insert($token.Extent.StartOffset, $blank)
+        }
+        if ($normalized -eq $draftModule) {
+            # Literal compatibility keys remain supported; other module text is audited.
+            foreach ($points in @(@(0x6B64,0x523B), @(0x7126,0x70B9), @(0x5DF2,0x51B3), @(0x4E0B,0x4E00,0x95EE), @(0x8BB2,0x6E05,0x4E8E), @(0x672A,0x8BB2), @(0x65E0))) {
+                $Text = $Text.Replace((-join @($points | ForEach-Object { [char]$_ })), '')
+            }
+        }
+    }
+    if ($normalized -eq '.agents/skills/harness/tests/test_discussions.py') {
+        $fixture = -join @([char]0x5B8C, [char]0x6574, [char]0x8BF4, [char]0x660E)
+        $Text = $Text.Replace("'$fixture'", "'fixture'")
+    }
+    if ($normalized -eq '.agents/skills/harness/tests/test_draft_record.py') {
+        $original = -join @([char]0x539F, [char]0x6587)
+        $record = -join @([char]0x8BB0, [char]0x5F55)
+        $Text = $Text.Replace(('"' + $original + ' user"'), '"fixture user"')
+        $Text = $Text.Replace(('"brief\n' + [char]0x2514 + [char]0x2500 + ' hook // ' + $record + '"'), '"fixture brief"')
+    }
+    return $Text
+}
+
 function Get-OpenSpecEnglishViolations {
     param(
         [Parameter(Mandatory = $true)][string]$ProjectRoot,
@@ -369,6 +425,7 @@ function Get-OpenSpecEnglishViolations {
         $relativePath = $file.FullName.Substring($ProjectRoot.Length).TrimStart('\', '/')
         $lineNumber = 0
         $auditedText = [System.IO.File]::ReadAllText($file.FullName)
+        $auditedText = Remove-OpenSpecLocalizedFixtureLiterals -Text $auditedText -RelativePath $relativePath
         if ($relativePath.Replace('\','/') -match '^openspec/changes/[^/]+/[^/]+/attachments/talks/(?:grill|talk)-[^/]+\.md$' -and
             $auditedText -match '(?m)^talk_schema:\s*"?harness-talk-v1"?\s*$') {
             # Only complete recorder frames are verbatim-source language exceptions.
@@ -389,7 +446,9 @@ function Get-OpenSpecEnglishViolations {
                     $languageLine = $languageLine.Replace($key, '')
                 }
             }
-            $languageLine = [regex]::Replace($languageLine, '`[^`\r\n]+`', '')
+            if ($file.Extension -eq '.md') {
+                $languageLine = [regex]::Replace($languageLine, '`[^`\r\n]+`', '')
+            }
             if ((Test-ContainsDisallowedOpenSpecLanguage -Text $languageLine) -or
                 (Test-ContainsForbiddenOpenSpecLanguageDefault -Text $line -RelativePath $relativePath)) {
                 $violations.Add("${relativePath}:$lineNumber") | Out-Null
@@ -609,6 +668,39 @@ try {
     [IO.File]::WriteAllText($conversationFile, $conversationText.Replace('talk_schema: harness-talk-v1', 'other: value'))
     Assert-Equal 1 @(Get-OpenSpecEnglishViolations -ProjectRoot $languageFixtureRoot -SurfacePathsSpecified $true -SurfacePaths @($conversationRelative)).Count 'Arbitrary files cannot claim a typed conversation exception'
     [IO.File]::WriteAllText($conversationFile, $conversationText)
+    # Localized generated draft data and exact Unicode fixtures are allowed;
+    # policy/comments and unrelated scripts at the same root remain English.
+    $contextLabel = -join @([char]0x5F53, [char]0x524D, [char]0x4E0A, [char]0x4E0B, [char]0x6587)
+    $sourcePhrase = -join @([char]0x5B8C, [char]0x6574, [char]0x8BF4, [char]0x660E)
+    $localizedFixtureCases = @(
+        @{ Path = '.agents/skills/harness/scripts/DraftLifecycle.psm1'; Text = ('$readme = "---`nschema: harness-draft-v2`ndraft: harness/local`n' + $contextLabel + '`n"') },
+        @{ Path = '.agents/skills/harness/tests/HarnessDraft.Tests.ps1'; Text = ('Write-Fixture "---`ndraft: harness/local`nmode: design`n' + $contextLabel + '`n"') },
+        @{ Path = '.agents/skills/harness/tests/test_discussions.py'; Text = ("self.assertEqual(1, text.count('$sourcePhrase'))") }
+    )
+    foreach ($localizedFixture in $localizedFixtureCases) {
+        $fixtureFile = Join-Path $languageFixtureRoot $localizedFixture.Path
+        [void][IO.Directory]::CreateDirectory([IO.Path]::GetDirectoryName($fixtureFile))
+        [IO.File]::WriteAllText($fixtureFile, $localizedFixture.Text)
+        Assert-Equal 0 @(Get-OpenSpecEnglishViolations -ProjectRoot $languageFixtureRoot -SurfacePathsSpecified $true -SurfacePaths @($localizedFixture.Path)).Count 'Exact localized draft/fixture data is not maintained policy'
+        [IO.File]::AppendAllText($fixtureFile, ("`n# Policy: " + [char]0x03B1))
+        Assert-Equal 1 @(Get-OpenSpecEnglishViolations -ProjectRoot $languageFixtureRoot -SurfacePathsSpecified $true -SurfacePaths @($localizedFixture.Path)).Count 'Localized fixture exception must not hide a non-English policy comment'
+    }
+    $unrelatedScriptRelative = '.agents/skills/harness/scripts/Other.psm1'
+    [IO.File]::WriteAllText((Join-Path $languageFixtureRoot $unrelatedScriptRelative), $localizedFixtureCases[0].Text)
+    Assert-Equal 1 @(Get-OpenSpecEnglishViolations -ProjectRoot $languageFixtureRoot -SurfacePathsSpecified $true -SurfacePaths @($unrelatedScriptRelative)).Count 'Generated-draft literal exception must not exempt unrelated scripts'
+    $unicodeLabelRelative = '.agents/skills/unreal-engine-develop/tests/UnrealEngineDevelop.Tests.ps1'
+    $unicodeLabelFile = Join-Path $languageFixtureRoot $unicodeLabelRelative
+    [void][IO.Directory]::CreateDirectory([IO.Path]::GetDirectoryName($unicodeLabelFile))
+    $unicodeLabel = (-join @([char]0x8BCD, [char]0x6CD5, [char]0x5206, [char]0x6790)) + ' RED'
+    $unicodeLabelText = "Invoke-Fixture -Label '  $unicodeLabel  '`nAssert-Equal '$unicodeLabel' result 'label preserved'"
+    [IO.File]::WriteAllText($unicodeLabelFile, $unicodeLabelText)
+    Assert-Equal 0 @(Get-OpenSpecEnglishViolations -ProjectRoot $languageFixtureRoot -SurfacePathsSpecified $true -SurfacePaths @($unicodeLabelRelative)).Count 'Only the exact padded and trimmed Unicode build-label tokens are fixture data'
+    foreach ($nonFixtureText in @("# Policy: '$unicodeLabel'", "Write-Output '$unicodeLabel policy'", "Write-Output `"$unicodeLabel`"")) {
+        [IO.File]::WriteAllText($unicodeLabelFile, ($unicodeLabelText + "`n" + $nonFixtureText))
+        Assert-Equal 1 @(Get-OpenSpecEnglishViolations -ProjectRoot $languageFixtureRoot -SurfacePathsSpecified $true -SurfacePaths @($unicodeLabelRelative)).Count 'Unicode build-label allowance must reject comments, near matches and other token kinds'
+    }
+    [IO.File]::WriteAllText((Join-Path $languageFixtureRoot $unrelatedScriptRelative), ("Write-Output '$unicodeLabel'"))
+    Assert-Equal 1 @(Get-OpenSpecEnglishViolations -ProjectRoot $languageFixtureRoot -SurfacePathsSpecified $true -SurfacePaths @($unrelatedScriptRelative)).Count 'Exact Unicode build-label token must remain audited outside its fixed fixture path'
     $selectedCleanRelative = 'openspec\changes\fixture\selected\clean.md'
     $unselectedViolationRelative = 'openspec\changes\fixture\unselected\bad.md'
     [System.IO.File]::WriteAllText((Join-Path $languageFixtureRoot $selectedCleanRelative), 'Selected English content.', [System.Text.UTF8Encoding]::new($false))
@@ -909,8 +1001,10 @@ Assert-True ($workflowDefinitionText -match '(?m)^[ \t]+profile:[ \t]+record-v1[
 Assert-True ($workflowDefinitionText -notmatch '(?m)^[ \t]+profile:[ \t]+requirements-v1[ \t]*\r?$') 'Angelscript workflow must not switch to requirements-v1.'
 
 $mandatoryLifecycleReferences = [ordered]@{
-    'brainstorming' = @('references/deep-exploration.md', '../grill/SKILL.md', 'references/drafts.md', 'references/naming.md')
-    'openspec-create-change' = @('../openspec/references/record-schema.md', '../openspec/references/attachments.md', '../openspec/references/knowledge.md', '../brainstorming/references/drafts.md')
+    'brainstorming' = @('references/deep-exploration.md', '../grill/SKILL.md', '../explaining-work/SKILL.md', 'references/drafts.md', 'references/naming.md')
+    'grill' = @('../explaining-work/SKILL.md', 'references/brief.md', 'references/rounds.md', 'references/hosts.md', 'references/coverage.md', '../brainstorming/references/naming.md')
+    'explaining-work' = @('references/method.md', 'references/source-walkthrough.md', 'references/focused-lenses.md', 'references/visual-catalog.md')
+    'openspec-create-change' = @('../harness/SKILL.md', '../harness/references/discussions.md', '../explaining-work/SKILL.md', '../openspec/references/attachments.md', '../openspec/references/knowledge.md', '../openspec-apply-change/SKILL.md')
     'openspec-apply-change' = @('../openspec/references/implementation-issues.md', '../harness/references/verification.md', '../brainstorming/references/naming.md')
     'openspec-archive-change' = @('../openspec/references/record-schema.md', '../openspec/references/attachments.md', '../harness/references/verification.md')
     'openspec-update-change' = @('../grill/SKILL.md', '../harness/references/discussions.md', '../openspec/references/specs.md')
@@ -936,6 +1030,8 @@ foreach ($file in @(Get-ChildItem -LiteralPath $portableSkillRoot -Recurse -File
 }
 $lifecycleSkillDirectories = @(Get-ChildItem -LiteralPath (Join-Path $projectRoot '.agents\skills') -Directory -Filter 'openspec-*')
 $lifecycleSkillDirectories += Get-Item -LiteralPath (Join-Path $projectRoot '.agents\skills\brainstorming')
+$lifecycleSkillDirectories += Get-Item -LiteralPath (Join-Path $projectRoot '.agents\skills\grill')
+$lifecycleSkillDirectories += Get-Item -LiteralPath (Join-Path $projectRoot '.agents\skills\explaining-work')
 foreach ($directory in $lifecycleSkillDirectories) {
     $entry = Join-Path $directory.FullName 'SKILL.md'
     if (-not (Test-Path -LiteralPath $entry -PathType Leaf)) { continue }
@@ -962,7 +1058,7 @@ $archiveText = Get-Content -LiteralPath (Join-Path $projectRoot '.agents\skills\
 $updateText = Get-Content -LiteralPath (Join-Path $projectRoot '.agents\skills\openspec-update-change\SKILL.md') -Raw
 $verifyText = Get-Content -LiteralPath (Join-Path $projectRoot '.agents\skills\openspec-verify-change\SKILL.md') -Raw
 $openSpecEntryText = Get-Content -LiteralPath (Join-Path $projectRoot '.agents\skills\openspec\SKILL.md') -Raw
-$visualExplainText = Get-Content -LiteralPath (Join-Path $projectRoot '.agents\skills\visual-explain\SKILL.md') -Raw
+$explainingWorkText = Get-Content -LiteralPath (Join-Path $projectRoot '.agents\skills\explaining-work\SKILL.md') -Raw
 $unrealDevelopText = Get-Content -LiteralPath (Join-Path $projectRoot '.agents\skills\unreal-engine-develop\SKILL.md') -Raw
 $skillsReadmeText = Get-Content -LiteralPath (Join-Path $projectRoot '.agents\skills\README.md') -Raw
 $liveConfigText = Get-Content -LiteralPath (Join-Path $projectRoot 'openspec\config.yaml') -Raw
@@ -978,7 +1074,6 @@ $knowledgeReferenceText = Get-Content -LiteralPath (Join-Path $projectRoot '.age
 $attachmentReferenceText = Get-Content -LiteralPath (Join-Path $projectRoot '.agents\skills\openspec\references\attachments.md') -Raw
 
 foreach ($entry in ([ordered]@{
-    'openspec-update-change' = $updateText
     'openspec-sync-specs' = $syncSpecText
     'openspec-verify-change' = $verifyText
 }).GetEnumerator()) {
@@ -989,10 +1084,11 @@ foreach ($entry in ([ordered]@{
 
 foreach ($token in @('clause-owned detail block', 'ordered or unordered lists', 'no Task state')) {
     Assert-True ($openSpecEntryText.Contains($token)) "OpenSpec entry is missing flexible Scenario detail guidance: $token"
-    Assert-True ($skillsReadmeText.Contains($token)) "Skills README is missing flexible Scenario detail guidance: $token"
     Assert-True ($liveConfigText.Contains($token)) "OpenSpec config is missing flexible Scenario detail guidance: $token"
     Assert-True ($openSpecReadmeText.Contains($token)) "OpenSpec README is missing flexible Scenario detail guidance: $token"
 }
+Assert-True ($skillsReadmeText.Contains('openspec/references/specs.md')) 'Skills discovery must route Scenario authoring to its complete owning contract.'
+Assert-True ($updateText.Contains('../openspec/references/specs.md')) 'Replan must retain the Scenario Card authoring reference.'
 
 $representativeScenarioDetails = [ordered]@{
     'openspec\specs\harness\core\spec.md' = 'Interpret Codex Goal continuation'
@@ -1061,18 +1157,16 @@ foreach ($token in @('same-name scenario', 'complete Scenario Card', 'new scenar
 $gitignoreText = Get-Content -LiteralPath (Join-Path $projectRoot '.gitignore') -Raw
 Assert-True ($gitignoreText -match '(?m)^/openspec/drafts/\s*$') 'Brainstorming drafts must be git-ignored.'
 $createChangeText = Get-Content -LiteralPath (Join-Path $projectRoot '.agents\skills\openspec-create-change\SKILL.md') -Raw
-foreach ($token in @('status: designed', '`change create`', 'attachments/drafts/', 'talks/talk-YYYYMMDD-HHmmss-<theme>.md', 'knowledges/<theme>.md', 'INDEX.md', 'status: handed-off', 'target_change', 'Do not write proposal, specs, design, or tasks here', 'openspec-apply-change', 'Never hand-create `change.yaml`')) {
+foreach ($token in @('harness.change.create', 'PlanOnly', 'HandoffRevision', 'ConvergenceSource', 'DecisionSource', 'TargetChange', 'handoff-followup', 'attachments/drafts/', 'INDEX.md', 'harness.change.seed.verify', 'openspec-apply-change')) {
     Assert-True ($createChangeText.Contains($token)) "Create-change contract is missing: $token"
 }
-foreach ($token in @('public name', 'Inspect the neighbours', '**Interfaces**', 'glossary.md', 'Naming assumed: <name>', 'Apply never asks the user', 'situation brief')) {
-    Assert-True ($namingText.Contains($token)) "Naming grill contract is missing: $token"
-}
-Assert-True (-not $namingText.Contains('Interactive session: stop')) 'Naming grill must not reintroduce an apply-stage interactive stop.'
-foreach ($token in @('before implementation mutation', 'not an active Change or Ready Task DAG', 'local coherence', '`Files`', 'prerequisites', 'exact verification', 'implementation-issues.md', 'Do not open `design`-mode brainstorming from a Ready task', 'Apply never asks the user questions', 'Naming assumed: <name>', 'that the task''s **Interfaces** does not list', 'never fills interfaces or cases', 'planning-invalidating evidence')) {
+# Naming and explanation quality are exercised by independent instruction consumers.
+# Static checks cover discoverability and links, not mandatory prose tokens.
+foreach ($token in @('before implementation mutation', 'not an active Change or Ready Task DAG', 'local coherence', '`Files`', 'prerequisites', 'exact verification', 'implementation-issues.md', 'linked design draft', 'Apply never asks the user questions', 'Naming assumed: <name>', 'that the task''s **Interfaces** does not list', 'never fills interfaces or cases', 'planning-invalidating evidence')) {
     Assert-True ($applyText.Contains($token)) "Apply contract is missing: $token"
 }
 Assert-True (-not $applyText.Contains('naming grill round')) 'Apply must not schedule an interactive naming grill round.'
-foreach ($token in @('Do not reopen', 'harness.change.seed.verify', 'attachments/INDEX.md', 'root `design.md`', '`## Call chains`', 'harness.change.plan.verify', 'unattended continuation', 'openspec-create-change', 'glossary')) {
+foreach ($token in @('harness.change.seed.verify', 'attachments/INDEX.md', 'root `design.md`', '`## Call chains`', 'harness.change.plan.verify', 'unattended continuation', 'openspec-create-change', 'glossary', 'arrangement Gate')) {
     Assert-True ($applyText.Contains($token)) "Apply planning contract is missing: $token"
 }
 foreach ($token in @('new public name', '**Interfaces**', 'naming grill')) {
@@ -1150,7 +1244,7 @@ foreach ($token in @('cases.md', 'group by role', 'kind', 'parameterized', 'chec
 Assert-True ($executionConventionsText.Contains('deferred RED')) 'Execution conventions must exclude deferred RED cases from the card pass set.'
 Assert-True (-not $applyText.Contains('a role tag and Given')) 'Apply must not describe cases as a role tag plus Given / When / Then only.'
 # Merged lifecycle (harness/refactor-apply-change-absorb-planning): apply step 0 Ensure plan; one preflight text in tasks.md.
-foreach ($token in @('Ensure plan', 'openspec.status', 'harness.change.seed.verify', 'skipped-draft reason', 'Do not reopen', 'stops and reports', 'one indexed talk', 'do not recreate seeded talks/knowledge or copy the draft transcript', 'harness.change.plan.verify')) {
+foreach ($token in @('Ensure plan', 'openspec.status', 'harness.change.seed.verify', 'skipped-draft reason', 'linked draft', 'stops and reports', 'Change-owned planning talk', 'do not recreate their talks/knowledge or copy the draft transcript', 'harness.change.plan.verify')) {
     Assert-True ($applyText.Contains($token)) "Apply Ensure plan step is missing: $token"
 }
 $preflightSection = [regex]::Match($taskReferenceText, '(?s)### Preflight\s*\n(.*?)(?=\n### |\z)').Groups[1].Value
@@ -1170,7 +1264,7 @@ foreach ($token in @('canonical active Change in the selected workspace', 'unatt
 }
 # Update workspace ownership, pending decisions and return-to-execution are
 # exercised through real routes in HarnessWorkflow.Tests.ps1.
-foreach ($token in @('canonical active Change in the selected workspace', 'lightweight task-local investigation', 'attended or unattended')) {
+foreach ($token in @('canonical active Change in the selected workspace', 'lightweight task-local investigation', 'unattended continuation')) {
     Assert-True ($applyText.Contains($token)) "Apply workspace contract is missing: $token"
 }
 # Codex /goal is defined once in Harness; other Skills defer through unattended continuation.
@@ -1178,17 +1272,15 @@ $goalMentionFiles = @(Get-ChildItem -LiteralPath (Join-Path $projectRoot '.agent
     Where-Object { $_.FullName -notmatch '\\(tests|external|web)\\' -and (Get-Content -LiteralPath $_.FullName -Raw) -match '/goal' } |
     ForEach-Object { $_.FullName.Substring($projectRoot.Length).TrimStart('\', '/') } | Sort-Object)
 $allowedGoalMentionFiles = @('.agents\skills\harness\SKILL.md')
-Assert-Equal ($goalMentionFiles -join ';') ($allowedGoalMentionFiles -join ';') 'Codex /goal is defined only by the Harness entry.'
+Assert-Equal @($goalMentionFiles | Where-Object { $_ -notin $allowedGoalMentionFiles }).Count 0 'Any Codex /goal-specific policy belongs only to the Harness entry; a host-neutral entry need not mention it.'
 foreach ($projectPolicyFile in @('openspec\config.yaml', 'openspec\README.md', 'AGENTS.md')) {
     Assert-True (-not ((Get-Content -LiteralPath (Join-Path $projectRoot $projectPolicyFile) -Raw) -match '/goal')) "$projectPolicyFile must say 'unattended continuation' and defer to harness/SKILL.md instead of restating Codex /goal."
 }
-foreach ($token in @('never opens `brainstorming`', 'never asks the user', 'single definition')) {
-    Assert-True ($harnessText.Contains($token)) "Harness /goal definition is missing: $token"
+foreach ($token in @('../brainstorming/SKILL.md', '../grill/SKILL.md', '../explaining-work/SKILL.md', '../change-queue/SKILL.md', 'references/discussions.md', 'references/replan.md', 'harness.execution.start', 'harness.change.seed.verify', 'harness.change.plan.verify')) {
+    Assert-True ($harnessText.Contains($token)) "Harness is missing the owning method or executable entry: $token"
 }
-foreach ($token in @('new feature, architecture refactor, or major behavior change', 'Brainstorm Gate', '`brainstorming`', 'openspec/drafts/<domain>/<topic>/', 'decision-complete exploration handoff is not an active Change', 'Ready Task DAG before implementation mutation', 'do not reopen `design`-mode brainstorming for that Change', 'lightweight investigation inside the Ready task', 'Apply never asks the user', 'update-change replan')) {
-    Assert-True ($harnessText.Contains($token)) "Harness exploration route is missing: $token"
-}
-Assert-True (-not $harnessText.Contains('Explore Gate')) 'Harness entry must name the Brainstorm Gate, not the retired Explore Gate.'
+# The exact Gate decisions and continuation behavior are executable Harness
+# fixtures; the router need not repeat every leaf's prose or old lifecycle name.
 
 # Single code-review Skill: reviewer stance in the Skill, coordinator triage in review.md (harness/refactor-code-review-single-skill).
 $codeReviewSkillPath = Join-Path $projectRoot '.agents\skills\code-review\SKILL.md'
@@ -1209,7 +1301,7 @@ foreach ($routedReviewText in @($skillsReadmeText, (Get-Content -Raw -LiteralPat
     Assert-True ($routedReviewText.Contains('code-review/SKILL.md') -or $routedReviewText.Contains('`code-review`')) 'Routing surfaces must name the single code-review Skill.'
     Assert-True (-not $routedReviewText.Contains('code-reviewer')) 'Routing surfaces must not reference the retired code-reviewer path.'
 }
-foreach ($token in @('before creating that Change', 'brainstorming/SKILL.md', 'openspec-create-change/SKILL.md', 'brainstorming/references/naming.md', 'Lightweight investigation inside a Ready task')) {
+foreach ($token in @('Get-HarnessCommand', 'brainstorming/SKILL.md', 'openspec-create-change/SKILL.md', 'explaining-work/SKILL.md', 'grill/SKILL.md', 'change-queue/SKILL.md', 'queries.md', 'evolution.md')) {
     Assert-True ($routingText.Contains($token)) "Harness route map is missing: $token"
 }
 foreach ($token in @('explicit user or external-agent request', 'never auto-starts Review', 'Verified work', 'close and archive directly', 'Local defects', 'planning-invalidating evidence', 'Replan', 'inline or asynchronously', 'immutable snapshot', 'detailed report', 'no Review file line limit', 'closed or superseded', 'open or deferred Critical or Required')) {
@@ -1244,10 +1336,19 @@ foreach ($entry in ([ordered]@{
 foreach ($token in @('New-HarnessContext -WorkspaceRoot', 'one explicit or discovered `WorkspaceRoot`', 'Unattended continuation reuses the same context', 'no repository mode', 'tracked `Tools/openspec` submodule', 'packaged `.agents/skills/openspec/bin/openspec.exe`')) {
     Assert-True ($openSpecEntryText.Contains($token)) "Portable OpenSpec workspace/package contract is missing: $token"
 }
-foreach ($token in @('three or more important relationships or mappings', 'multi-step sequence or state transition', 'hierarchy or layout', 'decision structure', 'Do not add a visual for a single fact', 'trivial one-step action', 'lightweight inline text diagram')) {
-    Assert-True ($visualExplainText.Contains($token)) "Visual-explain trigger contract is missing: $token"
+Assert-True ($explainingWorkText -match '(?m)^name: explaining-work\s*$') 'The system-explanation Skill must be discoverable under its confirmed name.'
+Assert-True (-not (Test-Path -LiteralPath (Join-Path $projectRoot '.agents\skills\visual-explain'))) 'The replaced visual-explain entry must not compete with explaining-work.'
+$visualCatalogRoot = Join-Path $projectRoot '.agents\skills\explaining-work\ascii'
+$visualCatalogText = Get-Content -LiteralPath (Join-Path $projectRoot '.agents\skills\explaining-work\references\visual-catalog.md') -Raw
+foreach ($category in @('calls-control-flow', 'changes-comparisons', 'code-shaped-views', 'data-format-layout', 'interaction-concurrency', 'marking-annotation', 'pipelines-phases', 'state-lifecycle', 'structure-architecture')) {
+    $categoryFile = Join-Path $visualCatalogRoot "$category.md"
+    Assert-True (Test-Path -LiteralPath $categoryFile -PathType Leaf) "Preserved visual category is missing: $category"
+    Assert-True ($visualCatalogText.Contains("ascii/$category.md")) "Preserved visual category is not discoverable: $category"
+    $categoryText = Get-Content -LiteralPath $categoryFile -Raw
+    Assert-True ($categoryText -match '(?m)^## .+') "Visual category has lost its example navigation: $category"
+    Assert-True ($categoryText.Contains('```')) "Visual category has lost its worked examples: $category"
 }
-foreach ($token in @('explicit/discovered WorkspaceRoot', 'unattended continuation', 'no repository mode or branch convention', 'harness.{status,observe,evolution.status,draft.create', 'change.plan.verify}', 'openspec.maintenance.status', 'Root `Tools` PowerShell entrypoints are legacy deletion candidates', 'runtime uses `.agents/skills/openspec/bin/openspec.exe`')) {
+foreach ($token in @('harness/SKILL.md', 'harness/references/routing.md', 'harness/references/queries.md', 'Get-HarnessCommand', 'change-queue/SKILL.md', 'openspec/SKILL.md', 'explaining-work/SKILL.md')) {
     Assert-True ($skillsReadmeText.Contains($token)) "Skills README routing contract is missing: $token"
 }
 foreach ($token in @('current-directory-discovered WorkspaceRoot', 'Unattended continuation is defined once in .agents/skills/harness/SKILL.md', 'Root Tools PowerShell entry points are legacy deletion candidates', 'normal runtime uses .agents/skills/openspec/bin/openspec.exe', 'No step-level TDD scripts, no forbidden placeholder phrases, no size quotas')) {
@@ -1282,9 +1383,13 @@ foreach ($token in @('drafts/<domain>/<topic>/', 'not CLI artifacts', 'Harness c
     Assert-True ($recordSchemaText.Contains($token)) "Record schema draft contract is missing: $token"
 }
 foreach ($token in @('openspec/drafts/', 'brainstorming')) {
-    Assert-True ($skillsReadmeText.Contains($token)) "Skills README is missing the brainstorming/draft route: $token"
+    if ($token -eq 'brainstorming') {
+        Assert-True ($skillsReadmeText.Contains('brainstorming/SKILL.md')) 'Skills discovery must route draft ownership to Brainstorming.'
+    }
     Assert-True ($openSpecReadmeText.Contains($token)) "OpenSpec README is missing the brainstorming/draft route: $token"
-    Assert-True ($agentsText.Contains($token)) "AGENTS is missing the brainstorming/draft route: $token"
+    if ($token -eq 'openspec/drafts/') {
+        Assert-True ($agentsText.Contains($token)) "AGENTS is missing the local draft boundary: $token"
+    }
     Assert-True ($projectReadmeRoutingText.Contains($token)) "Root README is missing the brainstorming/draft route: $token"
 }
 Assert-True ($liveConfigText.Contains('openspec/drafts/')) 'OpenSpec config must declare the draft language exception.'

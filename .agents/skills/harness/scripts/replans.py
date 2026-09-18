@@ -90,9 +90,11 @@ def replan_status(context, change):
             state = json.loads(path.read_text('utf8'))
             if not state.get('released') and (state.get('change') == change or state.get('scope') == 'Queue') and state.get('pendingInputs'):
                 inputs.append(state['sessionId'])
-    return dict(recoveryNeeded=pending, applied=[p.stem for p in sorted((root / 'attachments/replans').glob('*.md'))],
+    from handoff import get_handoff_status
+    handoff = get_handoff_status(context, change)
+    return dict(recoveryNeeded=pending, applied=[p.stem for p in sorted((root / 'attachments/replans').glob('*.md'))], handoff=handoff,
                 discussions=discussions, recordingSessions=recording, pendingInputSessions=inputs,
-                executionAllowed=not pending and not inputs and discussions['executionAllowed'])
+                executionAllowed=not pending and not inputs and discussions['executionAllowed'] and not handoff['pending'] and not handoff['issues'])
 
 def apply_replan(context, parameters, validator=None):
     change = parameters['Change']
@@ -109,6 +111,9 @@ def apply_replan(context, parameters, validator=None):
         local_path(root, name)
         if name not in hashes or not isinstance(body, str) or len(body.encode()) > 1_000_000:
             raise ValueError('Each candidate needs its baseline hash and bounded text')
+    from handoff import preview, consume_gate, followup_record
+    if parameters.get('PlanOnly'):
+        return preview(context, 'replan', parameters)
     requested_hash = digest(json.dumps({'talk': parameters['TalkId'], 'candidates': candidates, 'hashes': hashes}, sort_keys=True).encode())
     target = local_path(root, 'attachments/replans/' + replan_id + '.md')
     talk_path = record_path(context, change, parameters['TalkId'])
@@ -129,8 +134,16 @@ def apply_replan(context, parameters, validator=None):
             raise ValueError('Discussion workspace identity differs')
         if discussion['status'] != 'settled' or discussion['revision'] != parameters.get('ExpectedRevision'):
             raise ValueError('Replan requires the current settled discussion revision')
+        if discussion.get('purpose') == 'handoff-followup':
+            raise ValueError('Replan cannot consume a handoff follow-up discussion')
+        prepared = preview(context, 'replan', parameters)
+        receipt = consume_gate(context, 'replan', parameters, prepared)
+        followup = followup_record(context, change, parameters.get('SessionId'), receipt)
         if replan_status(context, change)['pendingInputSessions']:
             raise ValueError('Triage pending input before applying the plan')
+        handoff_state = replan_status(context, change)['handoff']
+        if handoff_state['pending'] or handoff_state['issues']:
+            raise ValueError('Complete the previous handoff arrangements before a new Replan')
         for name, expected in hashes.items():
             if current_hash(local_path(root, name)) != expected:
                 raise ValueError('Planning baseline changed: ' + name)
@@ -179,6 +192,8 @@ def apply_replan(context, parameters, validator=None):
                 if parameters.get('ResumeTask') and not any(t['id'] == parameters['ResumeTask'] for t in plan.get('tasks', [])):
                     raise ValueError('Resume task does not exist in candidate TaskPlan')
         # Check again after the potentially long validation call.
+        if preview(context, 'replan', parameters)['HandoffRevision'] != prepared['HandoffRevision']:
+            raise ValueError('Gate design revision changed during validation')
         if replan_status(context, change)['pendingInputSessions']:
             raise ValueError('New input arrived during validation; triage before applying')
         for name, expected in hashes.items():
@@ -200,7 +215,7 @@ def apply_replan(context, parameters, validator=None):
                        source_ref='talks/' + talk_path.name, scope=discussion['summary'], base_commit=commit,
                        base_tasks_sha256=hashes['tasks.md'], result_tasks_sha256=digest(after_tasks.encode('utf8')) if 'tasks.md' in candidates else hashes['tasks.md'],
                        created_at=now(), resume_task=parameters.get('ResumeTask', discussion['resume_task']), request_sha256=requested_hash,
-                       task_changes=task_changes, edge_changes=edge_changes)
+                       task_changes=task_changes, edge_changes=edge_changes, handoff_schema=1, handoff=receipt)
         text = '---\n' + '\n'.join(k + ': ' + json.dumps(v) for k, v in applied.items()) + '\n---\n\n'
         text += '## Trigger and Evidence\n\n- Source: ../talks/' + talk_path.name + '\n\n## Decision\n\n- ' + discussion['summary'] + '\n\n'
         text += '## Impact\n\n' + '\n'.join('- Artifact ~: ' + name for name in candidates) + '\n'
@@ -223,10 +238,12 @@ def apply_replan(context, parameters, validator=None):
                           revision=discussion['revision'] + 1, updated_at=now())
         index_path = root / 'attachments/INDEX.md'
         index_text = indexed(index_path.read_text('utf-8-sig'), discussion)
+        index_text = indexed(index_text, followup)
         index_text += '- replans/' + target.name + ' — applied — ' + discussion['summary'].replace('\n', ' ') + '\n'
         if len(index_text.splitlines()) > 120:
             raise ValueError('INDEX exceeds 120 lines')
         writes = {**candidates, 'attachments/talks/' + talk_path.name: render(discussion, original), 'attachments/INDEX.md': index_text,
+                  'attachments/talks/' + followup['talk_id'] + '.md': render(followup),
                   'attachments/replans/' + target.name: text}
         transaction = dict(change=change, replan_id=replan_id, writes=[dict(path=name, before=local_path(root, name).read_bytes().hex() if local_path(root, name).exists() else None,
                             after=body.encode('utf8').hex()) for name, body in writes.items()])

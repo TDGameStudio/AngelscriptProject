@@ -1,0 +1,6 @@
+{
+  "revision": "2026-09-19-gate-boundaries-v1",
+  "published_at": "2026-09-19",
+  "summary": "Create approval binds the exact title and goal; discussion replacement retains unanswered decisions and exported attachments retain byte checks. Pause and pending feedback survive ownership recovery and session transfer. Archive enforces current terminal evidence at the actual move; post-archive findings respect the selected repair scope. Workspace removal excludes queued, waiting and running workers through a shared run-admission interlock; cancellation previews remain read-only. The two human handoff Gates remain unchanged, with no repeated confirmation for already authorized direct work.",
+  "affected_skills": ["harness", "change-queue", "openspec-create-change", "openspec-update-change", "openspec-archive-change", "workspace-lifecycle", "unreal-engine-develop"]
+}

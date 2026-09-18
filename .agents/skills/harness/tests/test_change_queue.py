@@ -113,6 +113,27 @@ class ChangeQueueTests(unittest.TestCase):
         state = self.call('claim', SessionId='first')
         self.assertEqual('pause-requested', state['state'])
 
+    def test_pause_survives_release_claim_and_takeover_with_exact_scope(self):
+        self.populate()
+        claimed = self.call('claim', SessionId='first', AuthorizedUids=['change_feature-a'], SourceRef='user:one')
+        self.call('pause', Reason='inspect before continuing')
+        self.call('release', Token=claimed['controller']['token'])
+        reclaimed = self.call('claim', SessionId='first', AuthorizedUids=['change_feature-a'])
+        self.assertIn(reclaimed['state'], ('paused', 'pause-requested'))
+        self.assertEqual('inspect before continuing', reclaimed['pauseReason'])
+        taken = self.call('takeover', SessionId='second', PreviousControllerStopped=True)
+        self.assertIn(taken['state'], ('paused', 'pause-requested'))
+        self.assertEqual('inspect before continuing', taken['pauseReason'])
+        self.assertEqual(['change_feature-a'], taken['controller']['authorizedUids'])
+
+    def test_takeover_does_not_consume_a_user_pause(self):
+        self.populate()
+        self.call('claim', SessionId='first', AuthorizedUids=['change_feature-a'])
+        self.call('pause', Reason='wait for user')
+        taken = self.call('takeover', SessionId='second', PreviousControllerStopped=True, SourceRef='user:takeover')
+        self.assertIn(taken['state'], ('paused', 'pause-requested'))
+        self.assertEqual('wait for user', taken['pauseReason'])
+
     def test_transaction_recovers_after_assignment_before_local_queue_write(self):
         original = queue.save_state
         def interrupted(path, data):
@@ -204,6 +225,43 @@ class ChangeQueueTests(unittest.TestCase):
         status = self.call('status')
         self.assertEqual('record-blocked', status.get('recordState'))
         self.assertTrue(status.get('recordIssues'))
+
+    def test_single_authorized_item_releases_without_starting_next(self):
+        self.populate()
+        claimed = self.call('claim', SessionId='first', AuthorizedUids=['change_feature-a'], SourceRef='user:one')
+        self.assertEqual(['change_feature-a'], claimed['controller']['authorizedUids'])
+        next_marker = self.root / 'openspec/changes/fixture/feature-b/attachments/data/harness-execution.json'
+        before = next_marker.read_bytes()
+        source = self.root / 'openspec/changes/fixture/feature-a'
+        archive = self.root / 'openspec/archive/changes/fixture/2026-09-17-feature-a'
+        archive.parent.mkdir(parents=True)
+        source.rename(archive)
+        with (archive / 'change.yaml').open('a', encoding='utf8') as stream:
+            stream.write('closure:\n  kind: completed\n')
+        result = self.call('advance', Token=claimed['controller']['token'])
+        self.assertIsNone(result['controller'])
+        self.assertEqual('idle', result['state'])
+        self.assertFalse(result['items'][1]['started'])
+        self.assertEqual(before, next_marker.read_bytes())
+
+    def test_claim_requires_an_exact_authorized_prefix_and_same_retry(self):
+        self.populate()
+        with self.assertRaisesRegex(ValueError, 'prefix'):
+            self.call('claim', SessionId='first', AuthorizedUids=['change_feature-b'])
+        claimed = self.call('claim', SessionId='first', AuthorizedUids=['change_feature-a'], SourceRef='user:one')
+        retry = self.call('claim', SessionId='first', AuthorizedUids=['change_feature-a'], SourceRef='user:one')
+        self.assertEqual(claimed['revision'], retry['revision'])
+        with self.assertRaisesRegex(ValueError, 'authorization'):
+            self.call('claim', SessionId='first', AuthorizedUids=['change_feature-a', 'change_feature-b'], SourceRef='user:one')
+        with self.assertRaisesRegex(ValueError, 'source'):
+            self.call('claim', SessionId='first', AuthorizedUids=['change_feature-a'], SourceRef='user:another')
+
+    def test_membership_edit_cannot_change_authorized_prefix(self):
+        self.populate()
+        claimed = self.call('claim', SessionId='first')
+        with self.assertRaisesRegex(ValueError, 'authorized'):
+            self.call('remove', Change='fixture/feature-b', ExpectedRevision=claimed['revision'])
+        self.assertEqual(2, self.call('status')['counts']['remaining'])
 
 
 if __name__ == '__main__':

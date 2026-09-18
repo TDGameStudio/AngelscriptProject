@@ -28,6 +28,7 @@ description: Close and archive an OpenSpec change with explicit completed, aband
 - `abandoned` and `superseded` are explicit outcomes, not bypasses.
 - Supply a reason and a disposition for every incomplete task; `superseded` also identifies its replacement.
 - Do not mark incomplete tasks done.
+- An early Change without `tasks.md` may close as abandoned or superseded with fresh terminal evidence; do not invent tasks. A present task plan must still be valid.
 
 ## Procedure
 
@@ -40,6 +41,10 @@ close checks
 ```
 
 - The primitive never merges specs, validates implementation, edits attachments, or decides closure kind.
+- The public Harness archive route enforces the current terminal evaluation immediately before invoking that primitive. A separate successful status check cannot substitute for this mutation-time check.
+- Supply one closure file with an explicit root `kind: completed`, `kind: abandoned`, or `kind: superseded` (plain or quoted YAML, or a JSON object). The checked file bytes are the bytes consumed by archive.
 - Never hand-move the directory.
-- If a post-move gate exposes a new defect, do not edit the archive; open a follow-up change with independent evidence.
+- If a post-move check exposes a new defect, preserve the archive and capture its source evidence in the feedback inbox or a linked draft.
+  - Continue an already authorized bounded direct repair within its existing scope; do not manufacture another Change or repeat approval.
+  - For a new repair scope, let the user select it. A formal successor requires user-led convergence and its exact handoff Gate; recording a finding never creates one automatically.
 - Report the archived path, closure kind, evidence, historical-audit result, and post-move gate.

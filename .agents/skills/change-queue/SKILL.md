@@ -18,8 +18,9 @@ description: Configure, inspect, or execute an explicit ordered Change queue in 
 
 ## Execute
 
-1. Read `harness.queue.status`, then `claim` with this session's identity; this also reconciles an interrupted write.
-   - Keep its controller token and bind the authorized queue with `harness.execution.start` (`Scope=Queue`, exact SessionId and user SourceRef).
+1. Read `harness.queue.status`, then bind the exact authorized scope with `harness.execution.start` (Scope=Queue or the Scope=Change single-item adapter, exact SessionId and actual user SourceRef).
+   - All Change execution uses the same queue core. Never overwrite/reorder a configured queue or execute preceding members to reach a requested non-head target.
+   - The controller captures ordered AuthorizedUids and SourceRef; explicit claim/recovery retains that bound. A tail append does not expand it; changes to its remaining ordered prefix are rejected.
    - Existing occupation by another session needs explicit takeover; a token is not evidence that a chat is alive.
    - For `archive-pending`, advance the completed archive before reading active tasks.
    - `record-blocked` needs investigation, not Ensure plan.
@@ -28,13 +29,13 @@ description: Configure, inspect, or execute an explicit ordered Change queue in 
    - Resolve implementation paths against the execution workspace; prepare approved plugin dependencies through `workspace.prepare` when needed.
    - Checkpoint actual source identities before implementation and refresh them before closure.
 3. Check queue and `harness.execution.status` before tasks/closure and after long verification.
-   - Triage and acknowledge exact pending input IDs.
+   - Capture actual new input through `harness.execution.input` (InputId/SourceRef/Summary/Kind), then triage and acknowledge exact IDs. Acknowledgement grants no approval or resume authority.
    - Necessary unanswered decisions pause the whole current Change; do not skip to another member.
    - On a pause request, preserve progress and release the controller.
    - Do not claim that writing a pause request terminates a running tool or UE process.
 4. Repair ordinary failures inside the current task.
    - Feedback first expands affected decisions.
-   - Use independent `grill` with the exact Change's talk, then `harness.replan.apply`; retain valid work and return to new Ready nodes without another start request.
+   - Use Update with a linked draft and Change talk. Explain/Grill until user-led convergence, apply the exact approved Replan, then ask and apply its draft/execution arrangement Gate. Retain valid work and return only under the current arrangement; “later” cannot revive an old execution request.
    - Record unrelated ideas as follow-ups without enqueuing them.
    - Pause on a genuine unresolved blocker, without skipping to another Change.
 5. After verification, commit only owned plugin paths through `git.commit` with `PluginsOnly` and `PreserveOutsideStaged`.
@@ -43,7 +44,8 @@ description: Configure, inspect, or execute an explicit ordered Change queue in 
 6. Complete required spec synchronization and the existing terminal/archive protocol.
    - No automatic Review.
    - Advance only after the exact Change has a `completed` archive; interrupted archive-to-advance transitions are recoverable.
-7. Repeat until no pending members remain or a real blocker occurs.
+7. Repeat until the authorized UID range is exhausted or a real blocker occurs.
+   - A single-item request stops/releases after its completed archive without marking the following queue item started. Appended unapproved work remains pending outside this execution request.
    - Release on a normal stop while still owning a controller; final advance releases automatically.
    - Report archived, removed and remaining members separately, plus current task progress or `plan-needed`.
 

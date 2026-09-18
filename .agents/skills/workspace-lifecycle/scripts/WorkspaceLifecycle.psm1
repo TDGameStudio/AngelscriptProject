@@ -1439,6 +1439,19 @@ function Test-HarnessWorkspace {
     return [pscustomobject]@{ IsValid = $errors.Count -eq 0; Errors = @($errors | ForEach-Object { $_ }); Warnings = @($warnings | ForEach-Object { $_ }); Status = $status }
 }
 
+function Enter-WorkspaceRemovalLease {
+    param([Parameter(Mandatory = $true)][string]$Root)
+    $manifest = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../../unreal-engine-develop/scripts/UnrealEngineDevelop.psd1'))
+    $module = Import-Module $manifest -PassThru -ErrorAction Stop
+    $lease = & $module { param($Root) Enter-UnrealWorkspaceRemovalLease -WorkspaceRoot $Root } $Root
+    return [pscustomobject]@{ Module = $module; Lease = $lease }
+}
+
+function Exit-WorkspaceRemovalLease {
+    param($Lease)
+    if ($null -ne $Lease) { & $Lease.Module { param($Held) Exit-UnrealWorkspaceRemovalLease -Lease $Held } $Lease.Lease }
+}
+
 function Remove-HarnessWorkspace {
     [CmdletBinding(SupportsShouldProcess = $true, ConfirmImpact = 'Medium')]
     param(
@@ -1466,8 +1479,11 @@ function Remove-HarnessWorkspace {
         $isCanonicalResidueRoot = Test-WorkspacePathEqual -Left (Split-Path -Parent $target) -Right $container
         if ($targetItem.PSIsContainer -and $remainingEntries.Count -eq 0 -and $isCanonicalResidueRoot -and $DiscardIgnoredFiles) {
             if ($PSCmdlet.ShouldProcess($target, 'remove empty unregistered worktree residue; preserve branches')) {
-                [void](Assert-WorkspacePathChainSafe -Root $repository -Target $target -Purpose 'empty workspace residue removal')
-                Remove-Item -LiteralPath $target -Force -ErrorAction Stop
+                $removalLease = Enter-WorkspaceRemovalLease -Root $target
+                try {
+                    [void](Assert-WorkspacePathChainSafe -Root $repository -Target $target -Purpose 'empty workspace residue removal')
+                    Remove-Item -LiteralPath $target -Force -ErrorAction Stop
+                } finally { Exit-WorkspaceRemovalLease -Lease $removalLease }
             }
             return [pscustomobject]@{ WorktreeRoot = $target; Removed = -not (Test-Path -LiteralPath $target); BranchPreserved = $true; DiscardedIgnoredFiles = @() }
         }
@@ -1499,32 +1515,37 @@ function Remove-HarnessWorkspace {
         throw "Refusing to remove worktree '$target' because it contains ignored local data. Review it and rerun with -DiscardIgnoredFiles only when deletion is intended: $($ignoredFiles -join ', ')"
     }
     if ($PSCmdlet.ShouldProcess($target, 'remove clean registered worktree; preserve branch')) {
-        if (Test-WorkspacePathInside -Parent $repository -Child $target) {
-            [void](Assert-WorkspacePathChainSafe -Root $repository -Target $target -Purpose 'workspace removal')
-        }
-        else {
-            [void](Assert-WorkspaceExistingPathSafe -Target $target -Purpose 'workspace removal')
-        }
-        # Git requires --force for any worktree that has ever initialized a
-        # submodule. The explicit clean checks above are the safety gate; this
-        # flag only bypasses Git's structural submodule refusal.
-        [void](Invoke-WorkspaceGit -Repository $repository -Arguments @('worktree', 'remove', '--force', $target))
-        [void](Clear-HarnessWorkspaceCache)
-        if (Test-Path -LiteralPath $target) {
-            $targetItem = Get-Item -LiteralPath $target -Force -ErrorAction Stop
-            if (-not $targetItem.PSIsContainer) {
-                throw "Git unregistered worktree '$target' but the residual target is not a directory; it was preserved."
+        $removalLease = Enter-WorkspaceRemovalLease -Root $target
+        try {
+            $verification = Test-HarnessWorkspace -ProjectRoot $target -RequireClean
+            if (-not $verification.IsValid) { throw "Worktree changed before removal: $($verification.Errors -join '; ')" }
+            if (Test-WorkspacePathInside -Parent $repository -Child $target) {
+                [void](Assert-WorkspacePathChainSafe -Root $repository -Target $target -Purpose 'workspace removal')
             }
-            [void](Assert-WorkspacePathChainSafe -Root $repository -Target $target -Purpose 'post-remove empty directory cleanup')
-            $remainingEntries = @(Get-ChildItem -LiteralPath $target -Force -ErrorAction Stop)
-            if ($remainingEntries.Count -gt 0) {
-                throw "Git unregistered worktree '$target' but residual content remains; it was preserved for explicit recovery."
+            else {
+                [void](Assert-WorkspaceExistingPathSafe -Target $target -Purpose 'workspace removal')
             }
-            # A Windows process can briefly keep the worktree root open after
-            # Git removes every entry. Non-recursive deletion fails closed if
-            # any content appears after the empty-directory check.
-            Remove-Item -LiteralPath $target -Force -ErrorAction Stop
-        }
+            # Git requires --force for any worktree that has ever initialized a
+            # submodule. The explicit clean checks above are the safety gate; this
+            # flag only bypasses Git's structural submodule refusal.
+            [void](Invoke-WorkspaceGit -Repository $repository -Arguments @('worktree', 'remove', '--force', $target))
+            [void](Clear-HarnessWorkspaceCache)
+            if (Test-Path -LiteralPath $target) {
+                $targetItem = Get-Item -LiteralPath $target -Force -ErrorAction Stop
+                if (-not $targetItem.PSIsContainer) {
+                    throw "Git unregistered worktree '$target' but the residual target is not a directory; it was preserved."
+                }
+                [void](Assert-WorkspacePathChainSafe -Root $repository -Target $target -Purpose 'post-remove empty directory cleanup')
+                $remainingEntries = @(Get-ChildItem -LiteralPath $target -Force -ErrorAction Stop)
+                if ($remainingEntries.Count -gt 0) {
+                    throw "Git unregistered worktree '$target' but residual content remains; it was preserved for explicit recovery."
+                }
+                # A Windows process can briefly keep the worktree root open after
+                # Git removes every entry. Non-recursive deletion fails closed if
+                # any content appears after the empty-directory check.
+                Remove-Item -LiteralPath $target -Force -ErrorAction Stop
+            }
+        } finally { Exit-WorkspaceRemovalLease -Lease $removalLease }
     }
     $removed = -not (Test-Path -LiteralPath $target)
     if (-not $removed -and -not $WhatIfPreference) {

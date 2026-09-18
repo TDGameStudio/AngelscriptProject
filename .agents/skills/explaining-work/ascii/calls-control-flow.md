@@ -1,5 +1,21 @@
 # Calls & control flow
 
+## Preferred annotated caller and callee view
+
+- Use this unboxed shape for explanations; replace placeholders with verified source identifiers and explain each meaningful node.
+- The complete original examples below remain available. Their abbreviated labels are shape hints, not the explanation standard for a new reader.
+
+```text
+<entry or trigger>                                      // Starts this operation when <condition> holds.
+└─[calls] <Caller>::<Method>(<key args>)                 // Establishes <state> and chooses the subject.
+   └─[calls] <Subject>::<Method>(<key args>) ◆           // Owns the behavior under discussion.
+      ├─[calls] <Helper>(<arg>) → <result>              // Computes <meaning> and preserves <invariant>.
+      └─[writes] <Store>.<Operation>(<key>, <value>)     // Publishes data consumed by <next stage>.
+
+<Consumer>::<Method>()                                  // Runs at <later lifecycle point>.
+└─[reads] <Store>                                       // Uses <result>; absence causes <actual behavior>.
+```
+
 ## Show runtime control flow as a call tree
 
 ```

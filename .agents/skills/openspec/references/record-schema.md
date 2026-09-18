@@ -21,10 +21,11 @@ openspec/
 │   └── attachments/
 ├── drafts/<domain>/<topic>/          # brainstorming working records, not CLI artifacts
 │   ├── README.md
-│   ├── log.md
-│   ├── findings/
-│   └── designs/<scope>/{README,design,handoff,glossary}.md
-├── archive/drafts/<domain>/<date>-<topic>/ # ignored explicit completed/abandoned drafts
+│   ├── CONTEXT.md                  # key decisions, reasons, corrections and sources
+│   ├── research/                   # optional; naming candidates and useful investigation
+│   ├── attachments/INDEX.md        # optional attachment source and navigation
+│   └── designs/<scope>/{design,handoff}.md # handoff only after user-led convergence
+├── archive/drafts/<domain>/<date>-<topic>/ # ignored explicit move; unresolved state preserved
 └── archive/changes/<domain>/<date>-<change>/
 ```
 
@@ -36,7 +37,9 @@ New AngelscriptProject Change IDs use `<domain>/<type>-<scope>-<outcome>`. The l
 
 Use `refactor` when module boundaries, dependencies, or structural shape change. Use `improve` for quality, diagnostics, performance, readability, or ergonomics without a structural reshape. Keep both a concrete scope and an outcome; do not use a bare verb or bundle unrelated outcomes into one Change.
 
-Harness enforces this project policy for `harness.change.create` and `change move --to` targets. The generic `openspec.change create` route rejects creation; use the typed Harness route with `Origin = Draft` and exact scope, or `Origin = Direct` and a reason. An existing nonconforming active source may move to a conforming target. The portable CLI remains project-neutral, and immutable archive IDs and paths are never renamed by this policy.
+Harness enforces this project policy for `harness.change.create` and `change move --to` targets. The generic `openspec.change create` route rejects creation; use the typed Harness route with Origin=Draft and exact scope, or Origin=Direct with a concrete reason/HandoffText. Both formal operations use a read-only preview and the actual version-bound Gate. New schema 3 origins retain the consumed decision and expected followup; historical schemas remain accepted. Existing nonconforming active sources may move to conforming targets. The portable CLI remains project-neutral; immutable archive IDs and paths are never renamed by this policy.
+
+Old draft log/findings/glossary and scoped README layouts remain readable without migration. New drafts have no full conversation dual-writing requirement; explicit optional recording owns its separate transcript. Draft archive is a safe directory move after the user's choice, not an assertion that unresolved work was completed.
 
 Every newly marked Change keeps `attachments/data/harness-origin.json`. Draft-backed Changes pass `harness.change.seed.verify` after indexed, self-contained English export and before Ensure plan; Harness also checks the seed when `openspec.instructions` requests a planning artifact. Every new Change has a root `design.md` with `## Call chains`: actual caller-to-callee paths and `Measured at` (revision plus dirty paths) for code, or `none` with a reason for a non-code change. `harness.change.plan.verify`, `task.status`, and `openspec.instructions apply` enforce this on marked Changes. The exact pre-gate active IDs in `harness/scripts/legacy-change-plan-exemptions.json` retain their accepted contract; an unmarked new ID cannot claim grandfathering. The workflow's optional design artifact remains optional for those legacy IDs.
 

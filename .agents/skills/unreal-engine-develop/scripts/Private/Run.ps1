@@ -829,54 +829,112 @@ function Get-HarnessUnrealRunStatus {
     return Get-UnrealRunStatusRecord -WorkspaceRoot $configuration.WorkspaceRoot -RunId $RunId
 }
 
+function Enter-UnrealWorkspaceRemovalLease {
+    param([Parameter(Mandatory = $true)][string] $WorkspaceRoot)
+    $root = ConvertTo-UnrealCanonicalPath -Path $WorkspaceRoot
+    # Admission covers request publication and worker startup. Workspace ownership
+    # covers execution. Both remain held until the caller finishes removal.
+    $admission = Enter-UnrealLease -Scope 'workspace-admission' -Key $root -Policy Fail -TimeoutMs 0
+    if ($null -eq $admission) { throw "Workspace run admission is busy; retry removal after startup completes: $root" }
+    $workspace = $null
+    $retained = $false
+    try {
+        $runsRoot = Join-Path $root 'Saved/Harness/Unreal/Runs'
+        if (Test-Path -LiteralPath $runsRoot) {
+            $directories = @(Get-ChildItem -LiteralPath $runsRoot -Directory -Force -ErrorAction Stop | Select-Object -First 4097)
+            if ($directories.Count -gt 4096) { throw "Cannot safely inspect more than 4096 managed runs before workspace removal: $runsRoot" }
+            foreach ($directory in $directories) {
+                $runId = Assert-UnrealRunId -RunId $directory.Name
+                $paths = Get-UnrealRunPaths -WorkspaceRoot $root -RunId $runId
+                if ((Get-Item -LiteralPath $paths.MetadataPath -ErrorAction Stop).Length -gt 1MB) { throw "Run metadata is too large to inspect safely: $runId" }
+                $metadata = Read-UnrealJsonFile -Path $paths.MetadataPath
+                if ([string]$metadata.schemaVersion -ne $script:UnrealRunSchema -or [string]$metadata.runId -ne $runId -or
+                    -not (Test-UnrealPathEqual -Left ([string]$metadata.workspaceRoot) -Right $root)) { throw "Run metadata identity is invalid: $runId" }
+                if ([string]$metadata.state -notin $script:UnrealTerminalStates -or
+                    (Test-UnrealProcessAlive -ProcessId $metadata.workerPid -StartedAtUtc $metadata.workerStartedAtUtc)) {
+                    throw "Cannot remove workspace with managed run $runId (state $($metadata.state), worker PID $($metadata.workerPid)). Inspect ue.run.status; wait for completion or explicitly cancel with ue.run.cancel."
+                }
+            }
+        }
+        $workspace = Enter-UnrealLease -Scope 'workspace' -Key $root -Policy Fail -TimeoutMs 0
+        if ($null -eq $workspace) { throw "Workspace execution lease is busy; inspect ue.run.status and retry removal after execution ends: $root" }
+        foreach ($process in @(Get-HarnessUnrealProcessList -RequireComplete -Limit 256)) {
+            if ([string]::IsNullOrWhiteSpace([string]$process.WorkspaceRoot) -or
+                (Test-UnrealPathEqual -Left ([string]$process.WorkspaceRoot) -Right $root)) {
+                throw "Cannot remove workspace with active or uncorrelated Unreal process $($process.Id) ($($process.Name)); inspect ue.process.list."
+            }
+        }
+        $retained = $true
+        return [pscustomobject]@{ Admission = $admission; Workspace = $workspace }
+    }
+    finally {
+        if (-not $retained) { Exit-UnrealLease -Lease $workspace; Exit-UnrealLease -Lease $admission }
+    }
+}
+
+function Exit-UnrealWorkspaceRemovalLease {
+    param($Lease)
+    if ($null -eq $Lease) { return }
+    Exit-UnrealLease -Lease $Lease.Workspace
+    Exit-UnrealLease -Lease $Lease.Admission
+}
+
 function Start-UnrealRunRequest {
     param([Parameter(Mandatory = $true)] $Request, [switch] $NoWait)
     if ([string] $Request.schemaVersion -ne $script:UnrealRequestSchema) { throw "Unsupported Unreal request schema: $($Request.schemaVersion)" }
-    $paths = Get-UnrealRunPaths -WorkspaceRoot ([string] $Request.workspaceRoot) -RunId ([string] $Request.runId)
-    Assert-UnrealRequestPaths -Request $Request -ExpectedPaths $paths
-    Assert-UnrealExecutionDescription -Request $Request
-    if (-not (Test-UnrealIgnoredRunRoot -WorkspaceRoot ([string] $Request.workspaceRoot))) { throw 'Saved/Harness/Unreal/Runs must be ignored before a run can start.' }
-    if (Test-Path -LiteralPath $paths.RunRoot) { throw "Run directory already exists: $($paths.RunRoot)" }
-    $Request = Set-UnrealRunExecutionAssignment -Request $Request
-    $reservedMapping = [pscustomobject]@{ Execution = $Request.execution; Created = $false }
+    $root = ConvertTo-UnrealCanonicalPath -Path ([string]$Request.workspaceRoot)
+    $admission = Enter-UnrealLease -Scope 'workspace-admission' -Key $root -Policy ([string]$Request.concurrency.policy) -TimeoutMs ([int]$Request.timeoutMs)
+    if ($null -eq $admission) { throw "Workspace run admission lease is busy: $root" }
     try {
-        [void][System.IO.Directory]::CreateDirectory($paths.RunRoot)
-        [void][System.IO.Directory]::CreateDirectory($paths.TempPath)
-        Write-UnrealJsonFileAtomic -Path $paths.RequestPath -Value $Request
-        Write-UnrealJsonFileAtomic -Path $paths.MetadataPath -Value (New-UnrealRunMetadata -Request $Request)
-    }
-    catch {
-        Exit-UnrealExecutionDriveMapping -Mapping $reservedMapping -RunId ([string] $Request.runId)
-        throw
-    }
+        # Revalidate inside admission: removal may have completed while this call waited.
+        [void](ConvertTo-UnrealCanonicalPath -Path $root)
+        $paths = Get-UnrealRunPaths -WorkspaceRoot ([string] $Request.workspaceRoot) -RunId ([string] $Request.runId)
+        Assert-UnrealRequestPaths -Request $Request -ExpectedPaths $paths
+        Assert-UnrealExecutionDescription -Request $Request
+        if (-not (Test-UnrealIgnoredRunRoot -WorkspaceRoot ([string] $Request.workspaceRoot))) { throw 'Saved/Harness/Unreal/Runs must be ignored before a run can start.' }
+        if (Test-Path -LiteralPath $paths.RunRoot) { throw "Run directory already exists: $($paths.RunRoot)" }
+        $Request = Set-UnrealRunExecutionAssignment -Request $Request
+        $reservedMapping = [pscustomobject]@{ Execution = $Request.execution; Created = $false }
+        try {
+            [void][System.IO.Directory]::CreateDirectory($paths.RunRoot)
+            [void][System.IO.Directory]::CreateDirectory($paths.TempPath)
+            Write-UnrealJsonFileAtomic -Path $paths.RequestPath -Value $Request
+            Write-UnrealJsonFileAtomic -Path $paths.MetadataPath -Value (New-UnrealRunMetadata -Request $Request)
+        }
+        catch {
+            Exit-UnrealExecutionDriveMapping -Mapping $reservedMapping -RunId ([string] $Request.runId)
+            throw
+        }
 
-    $worker = ConvertTo-UnrealCanonicalPath -Path (Join-Path $PSScriptRoot '../Invoke-UnrealRunWorker.ps1')
-    $pwsh = ConvertTo-UnrealCanonicalPath -Path (Join-Path $PSHOME 'pwsh.exe')
-    $startInfo = [System.Diagnostics.ProcessStartInfo]::new()
-    $startInfo.FileName = $pwsh
-    $startInfo.WorkingDirectory = [string] $Request.workspaceRoot
-    $startInfo.UseShellExecute = $false
-    $startInfo.CreateNoWindow = $true
-    foreach ($argument in @('-NoLogo', '-NoProfile', '-NonInteractive', '-File', $worker, '-RequestPath', $paths.RequestPath)) { [void] $startInfo.ArgumentList.Add([string] $argument) }
-    $startInfo.Environment['HARNESS_WORKSPACE_ROOT'] = [string] $Request.workspaceRoot
-    $startInfo.Environment['HARNESS_PRIMARY_ROOT'] = [string] $Request.primaryRoot
-    $startInfo.Environment['HARNESS_GIT_COMMON_DIR'] = [string] $Request.gitCommonDir
-    $process = [System.Diagnostics.Process]::new()
-    $process.StartInfo = $startInfo
-    try { $workerStarted = $process.Start() }
-    catch {
-        [void](Update-UnrealRunMetadata -Path $paths.MetadataPath -Changes @{ state = 'Failed'; exitCode = 1; completedAtUtc = [DateTimeOffset]::UtcNow.ToString('o'); message = "Unable to start the Unreal worker: $($_.Exception.Message)" })
-        Exit-UnrealExecutionDriveMapping -Mapping $reservedMapping -RunId ([string] $Request.runId)
-        $process.Dispose()
-        throw
+        $worker = ConvertTo-UnrealCanonicalPath -Path (Join-Path $PSScriptRoot '../Invoke-UnrealRunWorker.ps1')
+        $pwsh = ConvertTo-UnrealCanonicalPath -Path (Join-Path $PSHOME 'pwsh.exe')
+        $startInfo = [System.Diagnostics.ProcessStartInfo]::new()
+        $startInfo.FileName = $pwsh
+        $startInfo.WorkingDirectory = [string] $Request.workspaceRoot
+        $startInfo.UseShellExecute = $false
+        $startInfo.CreateNoWindow = $true
+        foreach ($argument in @('-NoLogo', '-NoProfile', '-NonInteractive', '-File', $worker, '-RequestPath', $paths.RequestPath)) { [void] $startInfo.ArgumentList.Add([string] $argument) }
+        $startInfo.Environment['HARNESS_WORKSPACE_ROOT'] = [string] $Request.workspaceRoot
+        $startInfo.Environment['HARNESS_PRIMARY_ROOT'] = [string] $Request.primaryRoot
+        $startInfo.Environment['HARNESS_GIT_COMMON_DIR'] = [string] $Request.gitCommonDir
+        $process = [System.Diagnostics.Process]::new()
+        $process.StartInfo = $startInfo
+        try { $workerStarted = $process.Start() }
+        catch {
+            [void](Update-UnrealRunMetadata -Path $paths.MetadataPath -Changes @{ state = 'Failed'; exitCode = 1; completedAtUtc = [DateTimeOffset]::UtcNow.ToString('o'); message = "Unable to start the Unreal worker: $($_.Exception.Message)" })
+            Exit-UnrealExecutionDriveMapping -Mapping $reservedMapping -RunId ([string] $Request.runId)
+            $process.Dispose()
+            throw
+        }
+        if (-not $workerStarted) {
+            [void](Update-UnrealRunMetadata -Path $paths.MetadataPath -Changes @{ state = 'Failed'; exitCode = 1; completedAtUtc = [DateTimeOffset]::UtcNow.ToString('o'); message = 'Unable to start the Unreal worker.' })
+            Exit-UnrealExecutionDriveMapping -Mapping $reservedMapping -RunId ([string] $Request.runId)
+            $process.Dispose()
+            throw 'Unable to start the Unreal worker.'
+        }
+        [void](Update-UnrealRunMetadata -Path $paths.MetadataPath -Changes @{ workerPid = $process.Id; workerStartedAtUtc = $process.StartTime.ToUniversalTime().ToString('o') })
     }
-    if (-not $workerStarted) {
-        [void](Update-UnrealRunMetadata -Path $paths.MetadataPath -Changes @{ state = 'Failed'; exitCode = 1; completedAtUtc = [DateTimeOffset]::UtcNow.ToString('o'); message = 'Unable to start the Unreal worker.' })
-        Exit-UnrealExecutionDriveMapping -Mapping $reservedMapping -RunId ([string] $Request.runId)
-        $process.Dispose()
-        throw 'Unable to start the Unreal worker.'
-    }
-    [void](Update-UnrealRunMetadata -Path $paths.MetadataPath -Changes @{ workerPid = $process.Id; workerStartedAtUtc = $process.StartTime.ToUniversalTime().ToString('o') })
+    finally { Exit-UnrealLease -Lease $admission }
     if ($NoWait) {
         $process.Dispose()
         return Get-HarnessUnrealRunStatus -WorkspaceRoot ([string] $Request.workspaceRoot) -RunId ([string] $Request.runId)
@@ -1156,6 +1214,7 @@ function Stop-HarnessUnrealRun {
     $paths = Get-UnrealRunPaths -WorkspaceRoot $configuration.WorkspaceRoot -RunId $RunId
     $metadata = Read-UnrealJsonFile -Path $paths.MetadataPath
     $workerId = 0
+    $record = $null
     if ($null -ne $metadata.workerPid) { [void][int]::TryParse([string] $metadata.workerPid, [ref] $workerId) }
     if ($workerId -gt 0) {
         $record = Get-UnrealProcessRecordById -ProcessId $workerId
@@ -1164,10 +1223,10 @@ function Stop-HarnessUnrealRun {
             if ($commandLine -notmatch 'Invoke-UnrealRunWorker\.ps1' -or $commandLine.IndexOf($RunId, [System.StringComparison]::OrdinalIgnoreCase) -lt 0) {
                 throw "Recorded worker PID $workerId does not match run '$RunId'; refusing cancellation."
             }
-            if ($PSCmdlet.ShouldProcess("run $RunId (worker PID $workerId)", 'stop Unreal run process tree')) { Stop-UnrealProcessTree -ProcessId $workerId }
-            else { return $status }
         }
     }
+    if (-not $PSCmdlet.ShouldProcess("run $RunId (worker PID $workerId)", 'cancel Unreal run, stop its worker and clean execution mappings')) { return $status }
+    if ($null -ne $record) { Stop-UnrealProcessTree -ProcessId $workerId }
     $request = Read-UnrealJsonFile -Path $paths.RequestPath
     Exit-UnrealExecutionDriveMappingAfterWorker -Mapping ([pscustomobject]@{ Execution = $request.execution; Created = $false }) -RunId $RunId
     [void](Update-UnrealRunMetadata -Path $paths.MetadataPath -Changes @{ state = 'Cancelled'; exitCode = 3; completedAtUtc = [DateTimeOffset]::UtcNow.ToString('o'); message = 'Run cancelled by explicit request.' })

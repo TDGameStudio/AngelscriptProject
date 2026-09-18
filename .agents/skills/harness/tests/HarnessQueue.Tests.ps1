@@ -47,7 +47,19 @@ try {
     Invoke-FixtureHarness $main openspec.init @{} @('--project-id','queue-fixture','--title','Queue fixture') | Out-Null
     Invoke-FixtureHarness $main openspec.domain @{} @('create','fixture','--title','Fixture','--description','Queue fixture') | Out-Null
     foreach ($id in @('fixture/test-queue-first','fixture/test-queue-second')) {
-        Invoke-FixtureHarness $main harness.change.create @{ChangeId=$id; Title=$id; Goal='Exercise queue routing'; Origin='Direct'; Reason='Isolated acceptance fixture'} | Out-Null
+        $request = @{ChangeId=$id; Title=$id; Goal='Exercise queue routing'; Origin='Direct'; Reason='Isolated acceptance fixture'; HandoffText='Create this isolated queue fixture, then arrange execution separately.'; SessionId='fixture-setup'}
+        $preview = Invoke-FixtureHarness $main harness.change.create ($request + @{PlanOnly=$true})
+        $request.Gate = @{ConvergenceSource='fixture:user-converged';DecisionSource='fixture:user-create';Decision='create';TargetChange=$id;HandoffRevision=$preview.HandoffRevision}
+        $createdChange = Invoke-FixtureHarness $main harness.change.create $request
+        $questions = @(
+            @{id='draft-disposition';question='No draft';answer='not-applicable';source='not-applicable:no-draft'},
+            @{id='execution-disposition';question='Execution arrangement';answer='later';source='fixture:user-later'}
+        )
+        $arrangements = @{
+            draft=@{status='applied';decision='not-applicable';source='not-applicable:no-draft'}
+            execution=@{status='applied';decision='later';source='fixture:user-later'}
+        }
+        Invoke-FixtureHarness $main harness.talk.update @{Change=$id;TalkId=$createdChange.Followup;SessionId='fixture-setup';ExpectedRevision=1;Questions=$questions;Status='closed';Disposition='no-change';Arrangements=$arrangements} | Out-Null
     }
     $created = Invoke-FixtureHarness $main workspace.new @{Name='alpha';EditablePlugins=@('Foo')}
     $replica = New-HarnessContext -WorkspaceRoot $created.WorkspaceRoot
@@ -132,30 +144,17 @@ next
     foreach ($folder in @('harness','workspace-lifecycle')) {
         $scripts = Join-Path $fixture ".agents/skills/$folder/scripts"
         [void][IO.Directory]::CreateDirectory($scripts)
-        $files = if ($folder -eq 'harness') { @('Invoke-HarnessCodexHook.ps1','DraftLifecycle.psm1','DraftLifecycle.psd1','draft_record.py') }
+        $files = if ($folder -eq 'harness') { @('DraftLifecycle.psm1','DraftLifecycle.psd1','draft_record.py') }
             else { @('WorkspaceLifecycle.psm1','WorkspaceLifecycle.psd1','WorkspaceReplica.ps1','workspace_files.py') }
         foreach ($file in $files) { Copy-Item (Join-Path $projectRoot ".agents/skills/$folder/scripts/$file") $scripts }
     }
-    Invoke-FixtureHarness $replica harness.draft.create @{DraftId='fixture/hook';Title='Replica hook'} | Out-Null
+    Invoke-FixtureHarness $replica harness.draft.create @{DraftId='fixture/record';Title='Replica record'} | Out-Null
     $source = Join-Path $replica.WorkspaceRoot 'Saved/session.jsonl'
-    W $source ((@{type='session_meta';payload=@{id='replica-hook';cwd=$replica.WorkspaceRoot;cli_version='0.154.0'}} | ConvertTo-Json -Compress) + "`n")
-    Invoke-FixtureHarness $replica harness.draft.record @{Action='bind';SessionId='replica-hook';DraftId='fixture/hook';Source=$source;StartLine=2} | Out-Null
-    Add-Content $source (@{type='response_item';payload=@{type='message';role='assistant';phase='commentary';content=@(@{type='output_text';text='replica hook visible message'})}} | ConvertTo-Json -Depth 6 -Compress)
-    $hooks = Get-Content (Join-Path $projectRoot '.codex/hooks.json') -Raw | ConvertFrom-Json
-    $command = $hooks.hooks.Stop[0].hooks[0].commandWindows
-    $info = [Diagnostics.ProcessStartInfo]::new()
-    $info.FileName = (Get-Command pwsh).Source
-    $info.Arguments = $command.Substring($command.IndexOf(' ') + 1)
-    $info.WorkingDirectory = Join-Path $replica.WorkspaceRoot 'Plugins/Foo'
-    $info.UseShellExecute=$false; $info.CreateNoWindow=$true; $info.RedirectStandardInput=$true; $info.RedirectStandardOutput=$true; $info.RedirectStandardError=$true
-    $process = [Diagnostics.Process]::Start($info)
-    $process.StandardInput.WriteLine((@{hook_event_name='Stop';cwd=$replica.WorkspaceRoot;session_id='replica-hook';transcript_path=$source} | ConvertTo-Json -Compress))
-    $process.StandardInput.Close()
-    $stdout=$process.StandardOutput.ReadToEnd(); $stderr=$process.StandardError.ReadToEnd()
-    $process.WaitForExit()
-    Check ($process.ExitCode -eq 0 -and [string]::IsNullOrWhiteSpace($stdout + $stderr)) 'registered hook command resolves replica without blocking output'
-    $process.Dispose()
-    Check ((Get-Content (Join-Path $fixture 'openspec/drafts/fixture/hook/log.md') -Raw).Contains('replica hook visible message')) 'replica hook records to canonical draft using local session binding'
+    W $source ((@{type='session_meta';payload=@{id='replica-record';cwd=$replica.WorkspaceRoot;cli_version='0.154.0'}} | ConvertTo-Json -Compress) + "`n")
+    Invoke-FixtureHarness $replica harness.draft.record @{Action='bind';SessionId='replica-record';DraftId='fixture/record';Source=$source;StartLine=2} | Out-Null
+    Add-Content $source (@{type='response_item';payload=@{type='message';role='assistant';phase='commentary';content=@(@{type='output_text';text='replica record visible message'})}} | ConvertTo-Json -Depth 6 -Compress)
+    Invoke-FixtureHarness $replica harness.draft.record @{Action='sync';SessionId='replica-record'} | Out-Null
+    Check ((Get-Content (Join-Path $fixture 'openspec/drafts/fixture/record/attachments/transcript.md') -Raw).Contains('replica record visible message')) 'replica explicit recording writes the canonical optional transcript using local session binding'
     # Simulate a finished archive whose queue advance was interrupted.
     $queueFile = Join-Path $replica.WorkspaceRoot 'Saved/Harness/ChangeQueue/queue.json'
     $queueBeforeQuery = (Get-FileHash -LiteralPath $queueFile).Hash

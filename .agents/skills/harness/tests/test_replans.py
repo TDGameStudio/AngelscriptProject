@@ -1,5 +1,6 @@
 """Planning transaction failures must preserve the live accepted plan."""
 from pathlib import Path
+import json
 import subprocess
 import sys
 import unittest
@@ -26,13 +27,16 @@ class Replans(unittest.TestCase):
         self.parameters = dict(Change=self.change, SessionId='session-a', TalkId=discussion['talk_id'],
                                ExpectedRevision=2, ReplanId='replan-20260917-120000-contract', ResumeTask='1.1',
                                Candidates={'design.md': 'New design\n'},
-                               ExpectedHashes={'design.md': digest(b'Old design\n'), 'tasks.md': digest(b'Accepted task graph\n')})
+                               ExpectedHashes={'design.md': digest(b'Old design\n'), 'tasks.md': digest(b'Accepted task graph\n')}, HandoffText='Displayed plan')
+        prepared = replans.apply_replan(self.context, {**self.parameters, 'PlanOnly': True})
+        self.parameters['Gate'] = dict(ConvergenceSource='message:ready', DecisionSource='message:apply', Decision='replan',
+                                      TargetChange=self.change, HandoffRevision=prepared['HandoffRevision'])
 
     def test_design_only_replan_is_recorded_and_closes_discussion(self):
         result = replans.apply_replan(self.context, self.parameters, validator=lambda root: None)
         self.assertEqual('applied', result.get('status'))
         self.assertEqual('New design\n', (self.change_root / 'design.md').read_text('utf8'))
-        self.assertEqual([], talk(self.context, 'status', {'Change': self.change})['blockers'])
+        self.assertEqual([result['handoff']['post_talk_id']], talk(self.context, 'status', {'Change': self.change})['blockers'])
         self.assertEqual(result, replans.apply_replan(self.context, self.parameters, validator=lambda root: None))
         self.assertEqual(1, len(list((self.change_root / 'attachments/replans').glob('*.md'))))
 
@@ -92,6 +96,65 @@ class Replans(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'workspace'):
             replans.apply_replan({**self.context, 'WorkspaceId': 'foreign'}, self.parameters, validator=lambda root: None)
         self.assertEqual(before, {p: p.read_bytes() for p in self.root.rglob('*') if p.is_file()})
+
+    def test_missing_handoff_gate_rejects_without_changing_plan(self):
+        self.parameters.pop('Gate')
+        with self.assertRaisesRegex(ValueError, 'Gate|gate'):
+            replans.apply_replan(self.context, self.parameters, validator=lambda root: None)
+        self.assertEqual(b'Old design\n', (self.change_root / 'design.md').read_bytes())
+
+    def test_plan_only_is_read_only_and_returns_current_handoff_revision(self):
+        before = {p: p.read_bytes() for p in self.root.rglob('*') if p.is_file()}
+        result = replans.apply_replan(self.context, {**self.parameters, 'PlanOnly': True, 'HandoffText': 'Displayed plan'}, validator=lambda root: None)
+        self.assertEqual(64, len(result['HandoffRevision']))
+        self.assertEqual(before, {p: p.read_bytes() for p in self.root.rglob('*') if p.is_file()})
+
+    def test_changed_candidate_cannot_reuse_an_accepted_gate(self):
+        with self.assertRaisesRegex(ValueError, 'revision'):
+            replans.apply_replan(self.context, {**self.parameters, 'Candidates': {'design.md': 'A materially different plan\n'}}, validator=lambda root: None)
+        self.assertEqual(b'Old design\n', (self.change_root / 'design.md').read_bytes())
+
+    def test_missing_mandatory_followup_fails_closed(self):
+        result = replans.apply_replan(self.context, self.parameters, validator=lambda root: None)
+        (self.change_root / 'attachments/talks' / (result['handoff']['post_talk_id'] + '.md')).unlink()
+        state = replans.replan_status(self.context, self.change)
+        self.assertFalse(state['executionAllowed'])
+        self.assertTrue(state['handoff']['issues'])
+
+    def test_handoff_followup_cannot_be_used_as_replan_authority(self):
+        result = replans.apply_replan(self.context, self.parameters, validator=lambda root: None)
+        record = next(x for x in talk(self.context, 'status', {'Change': self.change})['records'] if x['talk_id'] == result['handoff']['post_talk_id'])
+        answered = self.update(record, Status='settled', Questions=[
+            dict(id='draft-disposition', question='Draft?', answer='not-applicable', source='not-applicable:no-draft'),
+            dict(id='execution-disposition', question='Execution?', answer='later', source='message:later')])
+        with self.assertRaisesRegex(ValueError, 'follow-up'):
+            replans.apply_replan(self.context, {**self.parameters, 'ReplanId': 'replan-20260917-130000-misroute',
+                                              'TalkId': answered['talk_id'], 'ExpectedRevision': answered['revision']}, validator=lambda root: None)
+
+    def test_latest_handoff_uses_the_instant_across_powershell_timezone_offsets(self):
+        from handoff import followup_record, get_handoff_status
+        from discussions import indexed, render
+        result = replans.apply_replan(self.context, self.parameters, validator=lambda root: None)
+        applied_path = self.change_root / 'attachments/replans' / (result['replan_id'] + '.md')
+        applied_path.write_text(applied_path.read_text('utf8').replace(result['handoff']['created_at'], '2026-09-18T17:00:06+00:00'), 'utf8')
+        earlier = {**result['handoff'], 'operation': 'create', 'decision': 'create', 'handoff_id': 'handoff-earlier',
+                   'post_talk_id': 'grill-earlier-creation', 'created_at': '2026-09-19T01:00:00+08:00'}
+        followup = followup_record(self.context, self.change, 'session-a', earlier)
+        (self.change_root / 'attachments/talks' / (earlier['post_talk_id'] + '.md')).write_text(render(followup), 'utf8')
+        index = self.change_root / 'attachments/INDEX.md'
+        index.write_text(indexed(index.read_text('utf8'), followup), 'utf8')
+        origin = self.change_root / 'attachments/data/harness-origin.json'
+        origin.parent.mkdir(parents=True, exist_ok=True)
+        origin.write_text(json.dumps({'schema': 3, 'gate': earlier}), 'utf8')
+        state = get_handoff_status(self.context, self.change)
+        self.assertEqual([], state['issues'])
+        self.assertEqual(result['handoff']['handoff_id'], state['handoff_id'])
+        for invalid in ('2026-09-19T01:00:00', 'not-a-timestamp', '', None):
+            with self.subTest(timestamp=invalid):
+                origin.write_text(json.dumps({'schema': 3, 'gate': {**earlier, 'created_at': invalid}}), 'utf8')
+                invalid_state = get_handoff_status(self.context, self.change)
+                self.assertTrue(invalid_state['pending'])
+                self.assertTrue(invalid_state['issues'])
 
 
 if __name__ == '__main__':

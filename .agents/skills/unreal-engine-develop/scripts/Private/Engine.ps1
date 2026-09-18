@@ -533,6 +533,7 @@ function Get-HarnessUnrealProcessList {
     param(
         [string] $WorkspaceRoot = '',
         [switch] $CurrentWorkspaceOnly,
+        [switch] $RequireComplete,
         [ValidateRange(1, 256)][int] $Limit = 128
     )
 
@@ -548,7 +549,8 @@ function Get-HarnessUnrealProcessList {
         'UnrealEditor', 'UnrealEditor-Cmd', 'UnrealBuildTool', 'AutomationTool',
         'RunUAT', 'ShaderCompileWorker', 'LiveCodingConsole', 'dotnet'
     )
-    $processes = @(Get-Process -ErrorAction SilentlyContinue | Where-Object { $_.ProcessName -in $interestingNames } | Sort-Object Id | Select-Object -First ($Limit * 4))
+    $processes = @(Get-Process -ErrorAction $(if ($RequireComplete) { 'Stop' } else { 'SilentlyContinue' }) | Where-Object { $_.ProcessName -in $interestingNames } | Sort-Object Id | Select-Object -First ($Limit * 4 + 1))
+    if ($RequireComplete -and $processes.Count -gt $Limit * 4) { throw 'Unreal process inspection exceeded its bounded limit; workspace quiescence is unknown.' }
     $commandLines = @{}
     if ([System.OperatingSystem]::IsWindows() -and $processes.Count -gt 0 -and $null -ne (Get-Command Get-CimInstance -ErrorAction SilentlyContinue)) {
         try {
@@ -566,6 +568,7 @@ function Get-HarnessUnrealProcessList {
     $results = [System.Collections.Generic.List[object]]::new()
     foreach ($process in $processes) {
         $commandLine = if ($commandLines.ContainsKey([int] $process.Id)) { [string] $commandLines[[int] $process.Id] } else { '' }
+        if ($RequireComplete -and [string]::IsNullOrWhiteSpace($commandLine)) { throw "Cannot inspect Unreal candidate process $($process.Id) ($($process.ProcessName)); workspace quiescence is unknown." }
         if ($process.ProcessName -eq 'dotnet' -and $commandLine -notmatch '(?i)UnrealBuildTool|AutomationTool') { continue }
         $executable = ''
         try { $executable = [string] $process.Path } catch { }
@@ -597,7 +600,10 @@ function Get-HarnessUnrealProcessList {
         $view.EngineMatch = $engineMatch
         $view.StartedAtUtc = $startedAt
         $results.Add($view)
-        if ($results.Count -ge $Limit) { break }
+        if ($results.Count -ge $Limit) {
+            if ($RequireComplete) { throw 'Unreal process results reached their bounded limit; workspace quiescence is unknown.' }
+            break
+        }
     }
     return @($results)
 }

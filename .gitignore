@@ -123,9 +123,8 @@ __pycache__/
 !.claude/commands/
 .claude-internal/
 
-# Codex local config (machine-specific MCP paths); publish only the bounded project hook.
+# Codex local config (machine-specific MCP paths).
 .codex/*
-!.codex/hooks.json
 
 # Local git worktrees
 .worktrees/

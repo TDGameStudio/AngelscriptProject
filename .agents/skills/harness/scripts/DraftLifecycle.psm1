@@ -10,6 +10,17 @@ function Get-HarnessRecordRoot {
     return [string]$Context.WorkspaceRoot
 }
 
+function Invoke-HarnessHandoff {
+    param($Context, [string]$Action, [hashtable]$Parameters)
+    $roots = @{ WorkspaceRoot = [string]$Context.WorkspaceRoot; OpenSpecRoot = (Get-HarnessRecordRoot $Context); HarnessRoot = [string]$Context.HarnessRoot }
+    $roots.WorkspaceId = if ('WorkspaceId' -in $Context.PSObject.Properties.Name) { [string]$Context.WorkspaceId } else { [string]$Context.WorkspaceRoot }
+    $output = @((@{context=$roots;parameters=$Parameters} | ConvertTo-Json -Depth 60 -Compress) | & python -X utf8 (Join-Path $Context.HarnessRoot '.agents/skills/harness/scripts/handoff.py') $Action)
+    $code = $LASTEXITCODE
+    $data = ($output -join "`n") | ConvertFrom-Json -Depth 60
+    if ($code) { throw "Handoff $Action failed: $($data.error)" }
+    return $data
+}
+
 function Assert-DraftId {
     param([Parameter(Mandatory = $true)][string]$DraftId)
     if ($DraftId -cnotmatch '^[a-z0-9]+(?:-[a-z0-9]+)*/[a-z0-9]+(?:-[a-z0-9]+)*$') {
@@ -89,10 +100,9 @@ function New-HarnessDraft {
     if (Test-Path -LiteralPath $root) { throw "Draft '$DraftId' already exists." }
     $date = [DateTime]::UtcNow.ToString('yyyy-MM-dd')
     [void][System.IO.Directory]::CreateDirectory($root)
-    $now = switch ($Mode) { 'research' { '调查' } 'proposal' { '摊候选' } 'design' { '收束这一刀' } }
-    $readme = "---`ndraft: $DraftId`nmode: $Mode`nstatus: exploring`nopened: $date`n---`n`n# $Title`n`n- **此刻**：$now`n- **焦点**：[log.md](log.md)`n- **已决**：无`n- **下一问**：待梳理`n- **讲清于**：未讲`n"
+    $readme = "---`nschema: harness-draft-v2`ndraft: $DraftId`nmode: $Mode`nstatus: exploring`nopened: $date`n---`n`n# $Title`n`n- [当前上下文](CONTEXT.md)`n"
     [System.IO.File]::WriteAllText((Join-Path $root 'README.md'), $readme, [System.Text.UTF8Encoding]::new($false))
-    [System.IO.File]::WriteAllText((Join-Path $root 'log.md'), "# Log`n", [System.Text.UTF8Encoding]::new($false))
+    [System.IO.File]::WriteAllText((Join-Path $root 'CONTEXT.md'), "# 当前上下文`n`n## 目标与边界`n`n待梳理。`n`n## 关键决定与来源`n`n无。`n`n## 未决与下一步`n`n继续调查和讨论；用户主动表示准备收束后才准备交接。`n", [System.Text.UTF8Encoding]::new($false))
     return [pscustomobject]@{ DraftId = $DraftId; Path = $root; Mode = $Mode }
 }
 
@@ -108,6 +118,13 @@ function Get-HarnessDraftStatus {
     $identity = Get-DraftMetadata -Text $readme -Name 'draft'
     $mode = Get-DraftMetadata -Text $readme -Name 'mode'
     $state = Get-DraftMetadata -Text $readme -Name 'status'
+    if ((Get-DraftMetadata -Text $readme -Name 'schema') -eq 'harness-draft-v2') {
+        if ($identity -cne $DraftId) { $issues.Add('README draft identity does not match the selected topic.') }
+        if ($mode -notin @('research','proposal','design')) { $issues.Add('README mode is missing or invalid.') }
+        if ($state -notin @('exploring','parked','abandoned')) { $issues.Add('README status is missing or invalid.') }
+        if (-not (Test-Path -LiteralPath (Join-Path $root 'CONTEXT.md') -PathType Leaf)) { $issues.Add('Draft requires CONTEXT.md.') }
+        return [pscustomobject]@{ DraftId=$DraftId;Path=$root;Mode=$mode;State=$state;Schema=2;Focus='CONTEXT.md';Next='';ExplainedRound='';Valid=($issues.Count -eq 0);Issues=@($issues.ToArray()) }
+    }
     if ($identity -cne $DraftId) { $issues.Add('README draft identity does not match the selected topic.') }
     if ($mode -notin @('research', 'proposal', 'design')) { $issues.Add('README mode is missing or invalid.') }
     if ($state -notin @('exploring', 'parked', 'abandoned')) { $issues.Add('README status is missing or invalid.') }
@@ -158,11 +175,16 @@ function Test-HarnessDraft {
         [Parameter(Mandatory = $true)]$Context,
         [Parameter(Mandatory = $true)][string]$DraftId,
         [Parameter(Mandatory = $true)][string]$Scope,
-        [Parameter(Mandatory = $true)][string]$ChangeId
+        [Parameter(Mandatory = $true)][string]$ChangeId,
+        [ValidateSet('Create','Replan')][string]$Operation='Create',
+        [hashtable]$Candidates=@{}, [hashtable]$ExpectedHashes=@{}
     )
     Assert-DraftScope -Scope $Scope
     $status = Get-HarnessDraftStatus -Context $Context -DraftId $DraftId
     if (-not $status.Valid) { throw "Draft '$DraftId' is not ready: $($status.Issues -join '; ')" }
+    if ('Schema' -in $status.PSObject.Properties.Name -and $status.Schema -eq 2) {
+        return Invoke-HarnessHandoff -Context $Context -Action draft-check -Parameters @{DraftId=$DraftId;Scope=$Scope;ChangeId=$ChangeId;Operation=$Operation;Candidates=$Candidates;ExpectedHashes=$ExpectedHashes}
+    }
     $designRoot = Join-Path $status.Path "designs/$Scope"
     [void](Assert-DraftPath -Root $status.Path -Path $designRoot)
     $designReadme = Join-Path $designRoot 'README.md'
@@ -230,7 +252,8 @@ function Test-HarnessDraft {
             if ($target) { $references.Add($target) }
         }
     }
-    return [pscustomobject]@{ DraftId = $DraftId; Scope = $Scope; ChangeId = $ChangeId; Path = $designRoot; ExplainedRound = $status.ExplainedRound; ApprovalRound = $round; ExpectedExports = @($exports.ToArray()); ReferencedFiles = @($references.ToArray() | Sort-Object -Unique) }
+    $checked = Invoke-HarnessHandoff -Context $Context -Action draft-check -Parameters @{DraftId=$DraftId;Scope=$Scope;ChangeId=$ChangeId;Operation=$Operation;Candidates=$Candidates;ExpectedHashes=$ExpectedHashes}
+    return [pscustomobject]@{ DraftId = $DraftId; Scope = $Scope; ChangeId = $ChangeId; Path = $designRoot; Schema=1; ExplainedRound = $status.ExplainedRound; ApprovalRound = $round; ExpectedExports = @($exports.ToArray()); ReferencedFiles = @($references.ToArray() | Sort-Object -Unique); DraftRevision=$checked.DraftRevision }
 }
 
 function Close-HarnessDraft {
@@ -238,10 +261,40 @@ function Close-HarnessDraft {
     param(
         [Parameter(Mandatory = $true)]$Context,
         [Parameter(Mandatory = $true)][string]$DraftId,
-        [Parameter(Mandatory = $true)][ValidateSet('completed', 'abandoned')][string]$Closure,
-        [string]$Reason = ''
+        [ValidateSet('completed', 'abandoned')][string]$Closure,
+        [string]$Reason = '', [string]$SourceRef = ''
     )
     $status = Get-HarnessDraftStatus -Context $Context -DraftId $DraftId
+    if ($SourceRef) {
+        $recordRoot = Get-HarnessRecordRoot $Context
+        $owners = @([string]$Context.WorkspaceRoot, $recordRoot)
+        $replicas = Join-Path $recordRoot '.workspaces'
+        $owners += @(Get-ChildItem -LiteralPath $replicas -Directory -ErrorAction SilentlyContinue | ForEach-Object { $_.FullName })
+        foreach ($owner in @($owners | Select-Object -Unique)) {
+            [void](Assert-DraftPath -Root $owner -Path (Join-Path $owner 'Saved/Harness/draft-record'))
+            $bindingRoot = Join-Path $owner 'Saved/Harness/draft-record'
+            foreach ($bindingFile in @(Get-ChildItem -LiteralPath $bindingRoot -Filter '*.json' -ErrorAction SilentlyContinue)) {
+                $binding = Get-Content -LiteralPath $bindingFile.FullName -Raw | ConvertFrom-Json
+                if ($null -ne $binding.active -and 'draft_id' -in $binding.active.PSObject.Properties.Name -and $binding.active.draft_id -eq $DraftId) { throw 'Unbind the active draft recorder before archive.' }
+            }
+        }
+        $archiveBase = Get-DraftRoot -Context $Context -DraftId $DraftId -Archive
+        $archive = Join-Path (Split-Path $archiveBase -Parent) ('{0}-{1}' -f [DateTime]::UtcNow.ToString('yyyyMMdd-HHmmss'), (Split-Path $archiveBase -Leaf))
+        [void](Assert-DraftPath -Root (Get-HarnessRecordRoot $Context) -Path $archive)
+        if (Test-Path -LiteralPath $archive) { throw "Draft archive target already exists: $archive" }
+        [void][System.IO.Directory]::CreateDirectory((Split-Path $archive -Parent))
+        Move-Item -LiteralPath $status.Path -Destination $archive -ErrorAction Stop
+        $readmePath = Join-Path $archive 'README.md'
+        $text = [IO.File]::ReadAllText($readmePath)
+        $safeSource = $SourceRef | ConvertTo-Json -Compress
+        $addition = "`narchived_at: $([DateTime]::UtcNow.ToString('o'))`narchive_source: $safeSource"
+        $text = [regex]::new('(?m)^opened:[^\r\n]*').Replace($text, [Text.RegularExpressions.MatchEvaluator]{ param($match) $match.Value + $addition }, 1)
+        if ($Reason) { $text += "`nArchive note: $Reason`n" }
+        [IO.File]::WriteAllText($readmePath, $text, [Text.UTF8Encoding]::new($false))
+        return [pscustomobject]@{DraftId=$DraftId;Path=$archive;State=$status.State;SourceRef=$SourceRef}
+    }
+    if ('Schema' -in $status.PSObject.Properties.Name -and $status.Schema -eq 2) { throw 'Draft archive requires its actual SourceRef.' }
+    if (-not $Closure) { throw 'Draft archive requires its actual SourceRef.' }
     if (-not $status.Valid) {
         # Preserve the pre-scoped flat handoff format during explicit archive.
         $legacyReadme = [IO.File]::ReadAllText((Join-Path $status.Path 'README.md'))
@@ -333,4 +386,4 @@ function Invoke-HarnessDraftRecord {
     return $result
 }
 
-Export-ModuleMember -Function New-HarnessDraft, Get-HarnessDraftStatus, Test-HarnessDraft, Close-HarnessDraft, Invoke-HarnessDraftRecord
+Export-ModuleMember -Function New-HarnessDraft, Get-HarnessDraftStatus, Test-HarnessDraft, Close-HarnessDraft, Invoke-HarnessDraftRecord, Invoke-HarnessHandoff

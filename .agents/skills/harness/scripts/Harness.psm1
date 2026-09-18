@@ -72,7 +72,7 @@ function Initialize-HarnessRoutes {
     $changeGateModule = '.agents/skills/harness/scripts/ChangeGate.psd1'
     $routes = New-Object System.Collections.Generic.List[object]
     foreach ($group in @('talk','replan','execution')) {
-        $actions = switch ($group) { talk { @('create','update','status') }; replan { @('apply','status') }; execution { @('start','checkpoint','status') } }
+        $actions = switch ($group) { talk { @('create','update','status') }; replan { @('apply','status') }; execution { @('start','checkpoint','status','input') } }
         $entry = switch ($group) { talk { 'Invoke-HarnessTalk' }; replan { 'Invoke-HarnessReplan' }; execution { 'Invoke-HarnessExecution' } }
         foreach ($action in $actions) {
             $routes.Add((New-HarnessRoute "harness.$group.$action" 'PowerShell' '.agents/skills/harness/scripts/Workflow.psm1' $entry @() @{Action=$action} 'Inspect or advance an explicitly owned workflow record.')) | Out-Null
@@ -128,12 +128,13 @@ function Initialize-HarnessRoutes {
     $routes.Add((New-HarnessRoute 'harness.draft.status' 'PowerShell' $draftModule 'Get-HarnessDraftStatus' @() @{} 'Inspect one exact brainstorming topic and its current links.')) | Out-Null
     $routes.Add((New-HarnessRoute 'harness.draft.record' 'PowerShell' $draftModule 'Invoke-HarnessDraftRecord' @() @{} 'Bind, sync, inspect or unbind one exact session transcript and draft.')) | Out-Null
     $routes.Add((New-HarnessRoute 'harness.draft.check' 'PowerShell' $draftModule 'Test-HarnessDraft' @() @{} 'Check one selected draft design before Change creation.')) | Out-Null
-    $routes.Add((New-HarnessRoute 'harness.draft.archive' 'PowerShell' $draftModule 'Close-HarnessDraft' @() @{} 'Explicitly archive one completed or abandoned local topic.')) | Out-Null
-    $routes.Add((New-HarnessRoute 'harness.change.create' 'PowerShell' $changeGateModule 'New-HarnessChange' @() @{} 'Create one Change after the exact draft or direct-origin preflight.')) | Out-Null
+    $routes.Add((New-HarnessRoute 'harness.draft.archive' 'PowerShell' $draftModule 'Close-HarnessDraft' @() @{} 'Move an explicitly selected local draft to its archive while preserving unresolved state.')) | Out-Null
+    $routes.Add((New-HarnessRoute 'harness.change.create' 'PowerShell' $changeGateModule 'New-HarnessChange' @() @{} 'Preview or create one exact draft/direct-origin handoff through its version-bound user Gate.')) | Out-Null
     $routes.Add((New-HarnessRoute 'harness.change.seed.verify' 'PowerShell' $changeGateModule 'Test-HarnessChangeSeed' @() @{} 'Check indexed self-contained draft exports before Ensure plan.')) | Out-Null
     $routes.Add((New-HarnessRoute 'harness.change.plan.verify' 'PowerShell' $changeGateModule 'Test-HarnessChangePlan' @() @{} 'Require a root design with call chains for a new Change.')) | Out-Null
     $routes.Add((New-HarnessRoute 'harness.observe' 'Internal' '' 'Add-HarnessObservation' @() @{} 'Record one bounded ignored workflow observation.')) | Out-Null
     $routes.Add((New-HarnessRoute 'harness.evolution.status' 'Internal' '' 'Get-HarnessEvolutionStatus' @() @{} 'Summarize observations or inspect one exact Change evolution lifecycle and optional terminal gate.')) | Out-Null
+    $routes.Add((New-HarnessRoute 'harness.evolution.triage' 'PowerShell' '.agents/skills/harness/scripts/Feedback.psm1' 'Set-HarnessEvolutionTriage' @() @{} 'Record selected, deferred or dismissed feedback and resolve an approved scope with evidence.')) | Out-Null
     $routes.Add((New-HarnessRoute 'openspec.maintenance.status' 'Internal' '' 'Get-HarnessOpenSpecMaintenanceStatus' @() @{} 'Compare packaged OpenSpec identity with its tracked source without mutation.')) | Out-Null
 
     $script:HarnessRoutes = @($routes | ForEach-Object { $_ })
@@ -385,6 +386,41 @@ function ConvertTo-HarnessNativeArguments {
     return @($arguments | ForEach-Object { $_ })
 }
 
+function Read-HarnessArchiveClosure {
+    param([string[]]$Arguments, [string]$RecordRoot)
+
+    $options = @()
+    for ($i = 0; $i -lt $Arguments.Count; $i++) {
+        if ($Arguments[$i] -ceq '--closure-file') {
+            if ($i + 1 -ge $Arguments.Count) { throw 'Archive requires a closure file path.' }
+            $options += @{ Index = $i + 1; Inline = $false; Path = $Arguments[$i + 1] }
+        }
+        elseif ($Arguments[$i].StartsWith('--closure-file=', [StringComparison]::Ordinal)) {
+            $options += @{ Index = $i; Inline = $true; Path = $Arguments[$i].Substring(15) }
+        }
+    }
+    if ($options.Count -ne 1) { throw 'Archive requires exactly one --closure-file argument.' }
+    $option = $options[0]
+    $path = [IO.Path]::GetFullPath([string]$option.Path, $RecordRoot)
+    $bytes = [IO.File]::ReadAllBytes($path)
+    $body = [Text.UTF8Encoding]::new($false, $true).GetString($bytes).TrimStart([char]0xfeff)
+    # Require an explicit root discriminator. The portable CLI validates the full
+    # closure schema; indirection/aliases cannot change the kind checked here.
+    if ($body.TrimStart().StartsWith('{', [StringComparison]::Ordinal)) {
+        $document = ConvertFrom-Json -InputObject $body -AsHashtable -ErrorAction Stop
+        $kind = [string]$document['kind']
+    }
+    else {
+        $matches = [regex]::Matches($body, '(?m)^kind[ \t]*:[ \t]*(?<quote>[''"]?)(?<kind>completed|abandoned|superseded)\k<quote>[ \t]*(?:#[^\r\n]*)?\r?$')
+        if ($matches.Count -ne 1 -or [regex]::Matches($body, '(?m)^kind[ \t]*:').Count -ne 1) {
+            throw 'Closure YAML must have one explicit root kind: completed, abandoned, or superseded (plain or quoted); JSON objects are also supported.'
+        }
+        $kind = $matches[0].Groups['kind'].Value
+    }
+    if ($kind -cnotin @('completed', 'abandoned', 'superseded')) { throw 'Invalid explicit archive closure kind.' }
+    return [pscustomobject]@{ Kind = $kind; Bytes = $bytes; ArgumentIndex = $option.Index; Inline = $option.Inline }
+}
+
 function Sort-HarnessTaskPlanTasks {
     param([object[]]$Tasks)
 
@@ -592,7 +628,7 @@ function Add-HarnessContextDefaults {
             Set-HarnessAuthoritativePathParameter -Values $values -Names @('RepositoryRoot') -CanonicalName 'RepositoryRoot' -ExpectedValue ([string]$Context.PrimaryRoot) -RouteName ([string]$Route.Name)
             Set-HarnessAuthoritativePathParameter -Values $values -Names @('WorktreeRoot') -CanonicalName 'WorktreeRoot' -ExpectedValue ([string]$Context.WorkspaceRoot) -RouteName ([string]$Route.Name)
         }
-        { $_ -in @('harness.status', 'harness.observe', 'harness.evolution.status', 'openspec.maintenance.status', 'harness.draft.create', 'harness.draft.status', 'harness.draft.record', 'harness.draft.check', 'harness.draft.archive', 'harness.change.create', 'harness.change.seed.verify', 'harness.change.plan.verify') } {
+        { $_ -in @('harness.status', 'harness.observe', 'harness.evolution.status', 'harness.evolution.triage', 'openspec.maintenance.status', 'harness.draft.create', 'harness.draft.status', 'harness.draft.record', 'harness.draft.check', 'harness.draft.archive', 'harness.change.create', 'harness.change.seed.verify', 'harness.change.plan.verify') } {
             if ($values.ContainsKey('Context')) {
                 throw (New-HarnessCodedException -Code 'ContextAuthorityMismatch' -Message "Route '$($Route.Name)' receives Context only from the Harness dispatcher; caller replacement is forbidden.")
             }
@@ -670,6 +706,8 @@ function Invoke-Harness {
         if ($null -eq $route) {
             throw "Unknown Harness command '$Command'. Use Get-HarnessCommand to list routes."
         }
+        # Route lookup is case-insensitive; policy uses that same resolved identity.
+        $Command = [string]$route.Name
         foreach ($required in @('HarnessRoot', 'WorkspaceRoot', 'PrimaryRoot', 'GitCommonDir', 'Topology', 'Branch', 'Head')) {
             if ($required -notin @($Context.PSObject.Properties.Name)) { throw "Invalid Harness context: missing '$required'." }
         }
@@ -682,7 +720,8 @@ function Invoke-Harness {
             }
         }
         Assert-HarnessOpenSpecChangeName -Command $Command -ArgumentList $ArgumentList
-        if ($Command -eq 'openspec.change' -and $ArgumentList.Count -ge 2 -and $ArgumentList[0] -eq 'archive') {
+        $isArchive = $Command -eq 'openspec.change' -and $ArgumentList.Count -ge 2 -and $ArgumentList[0] -ceq 'archive' -and '--help' -notin $ArgumentList -and '-h' -notin $ArgumentList
+        if ($isArchive) {
             Import-Module (Join-Path $Context.HarnessRoot '.agents/skills/harness/scripts/Workflow.psm1')
             $closureWorkflow = Invoke-HarnessReplan -Context $Context -Action status -Change ([string]$ArgumentList[1])
             if (-not $closureWorkflow.executionAllowed) { throw 'Pending discussion or Replan recovery prevents archive.' }
@@ -755,6 +794,18 @@ function Invoke-Harness {
                 throw "Executable for '$Command' was not found: $target"
             }
             $nativeArguments = @($route.Prefix) + @(ConvertTo-HarnessNativeArguments -Parameters $Parameters) + @($ArgumentList | ForEach-Object { [string]$_ })
+            $closureSnapshot = ''
+            if ($isArchive) {
+                $closure = Read-HarnessArchiveClosure -Arguments $nativeArguments -RecordRoot (Get-HarnessRecordRoot $Context)
+                $terminal = Get-HarnessEvolutionStatus -Context $Context -Change ([string]$ArgumentList[1]) -ClosureKind $closure.Kind -RequireTerminal
+                if ((Get-HarnessChangeInputSha256 -ChangeRoot $terminal.ChangeRoot) -cne $terminal.CurrentInputSha256) {
+                    throw 'Change inputs changed during terminal evaluation; refresh evaluation before archive.'
+                }
+                $closureSnapshot = Join-Path $Context.WorkspaceRoot "Saved/AgentTemp/harness-archive/$runId.yaml"
+                [void][IO.Directory]::CreateDirectory((Split-Path $closureSnapshot))
+                [IO.File]::WriteAllBytes($closureSnapshot, $closure.Bytes)
+                $nativeArguments[$closure.ArgumentIndex] = if ($closure.Inline) { "--closure-file=$closureSnapshot" } else { $closureSnapshot }
+            }
             $previousPreference = $ErrorActionPreference
             $ErrorActionPreference = 'Continue'
             $locationPushed = $false
@@ -769,6 +820,7 @@ function Invoke-Harness {
                     Pop-Location
                 }
                 $ErrorActionPreference = $previousPreference
+                if ($closureSnapshot -and (Test-Path -LiteralPath $closureSnapshot)) { Remove-Item -LiteralPath $closureSnapshot -Force }
             }
             $data = [pscustomobject]@{ Arguments = $nativeArguments; Output = @($output | ForEach-Object { [string]$_ }) }
             if ($exitCode -ne 0) {
@@ -826,6 +878,8 @@ function Get-HarnessStatus {
         try { $packageVersion = [string](Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json -ErrorAction Stop).version }
         catch { $packageVersion = 'invalid-manifest' }
     }
+    Import-Module (Join-Path $Context.HarnessRoot '.agents/skills/harness/scripts/Feedback.psm1')
+    $notice = Get-HarnessUpdateNotice -HarnessRoot $Context.HarnessRoot
     return [pscustomobject][ordered]@{
         SchemaVersion = $script:HarnessContextSchemaVersion
         HarnessRoot   = $Context.HarnessRoot
@@ -834,6 +888,8 @@ function Get-HarnessStatus {
         PowerShell    = [pscustomobject]@{ Edition = $PSVersionTable.PSEdition; Version = [string]$PSVersionTable.PSVersion }
         OpenSpec      = [pscustomobject]@{ Installed = Test-Path -LiteralPath $manifestPath -PathType Leaf; Version = $packageVersion }
         DetailedScan  = $false
+        Updates       = $notice.Updates
+        UpdatesIssue  = $notice.UpdatesIssue
     }
 }
 
@@ -846,7 +902,10 @@ function Add-HarnessObservation {
         [ValidatePattern('^[A-Za-z0-9._/-]{0,160}$')][string]$Change = '',
         [ValidatePattern('^[A-Za-z0-9._-]{0,80}$')][string]$Stage = '',
         [ValidatePattern('^[A-Za-z0-9._-]{0,100}$')][string]$CorrelationId = '',
-        [ValidateRange(0, [long]::MaxValue)][long]$DurationMs = 0
+        [ValidateRange(0, [long]::MaxValue)][long]$DurationMs = 0,
+        [ValidateLength(0,1000)][string]$SourceRef = '',
+        [ValidateLength(0,200)][string]$DedupKey = '',
+        [ValidateLength(0,200)][string]$OwnerDraftId = ''
     )
 
     $relativeProbe = 'Saved/Harness/Observations/__harness_probe__.json'
@@ -873,6 +932,9 @@ function Add-HarnessObservation {
         durationMs    = $DurationMs
         workspaceRoot = $Context.WorkspaceRoot
         head           = Get-HarnessLiveHead -WorkspaceRoot $Context.WorkspaceRoot
+        sourceRef      = $SourceRef
+        dedupKey       = $DedupKey
+        ownerDraftId   = $OwnerDraftId
     }
     try {
         [System.IO.File]::WriteAllText($temporary, ($record | ConvertTo-Json -Depth 6), [System.Text.UTF8Encoding]::new($false))
@@ -881,12 +943,14 @@ function Add-HarnessObservation {
     finally {
         if (Test-Path -LiteralPath $temporary -PathType Leaf) { Remove-Item -LiteralPath $temporary -Force }
     }
+    Import-Module (Join-Path $Context.HarnessRoot '.agents/skills/harness/scripts/Feedback.psm1')
+    $inboxPath = Write-HarnessFeedbackInbox -Context $Context
     return [pscustomobject][ordered]@{
         RunId       = $runId
         Path        = $path
         ObservedAt  = $observedAt
         Category    = $Category
-        Artifacts   = @($path)
+        Artifacts   = @($path,$inboxPath)
     }
 }
 
@@ -1237,11 +1301,18 @@ function Get-HarnessEvolutionStatus {
         [Parameter(Mandatory = $true)]$Context,
         [ValidatePattern('^[A-Za-z0-9][A-Za-z0-9._-]{0,63}/[A-Za-z0-9][A-Za-z0-9._-]{0,127}$')][string]$Change = '',
         [ValidateSet('completed', 'abandoned', 'superseded')][string]$ClosureKind = 'completed',
-        [switch]$RequireTerminal
+        [switch]$RequireTerminal,
+        [switch]$InboxOnly,
+        [ValidateRange(1,1000)][int]$Limit = 30
     )
 
     if ($RequireTerminal -and [string]::IsNullOrWhiteSpace($Change)) {
         throw 'RequireTerminal requires one exact Change identity.'
+    }
+    if ($InboxOnly) {
+        if ($Change -or $RequireTerminal) { throw 'InboxOnly cannot be combined with Change or RequireTerminal.' }
+        Import-Module (Join-Path $Context.HarnessRoot '.agents/skills/harness/scripts/Feedback.psm1')
+        return Get-HarnessFeedbackInbox -Context $Context -Limit $Limit
     }
 
     $observationRoot = Join-Path $Context.WorkspaceRoot 'Saved/Harness/Observations'
@@ -1326,11 +1397,17 @@ function Get-HarnessEvolutionStatus {
             $structuralErrors.Add("Change input digest is invalid: $($_.Exception.Message)") | Out-Null
         }
         try {
-            $taskPlan = Invoke-HarnessEvolutionTaskPlan -Context $Context -Change $Change
-            $taskPlanValid = $true
-            $taskCount = @($taskPlan.tasks).Count
-            $incompleteTaskIds = @($taskPlan.tasks | Where-Object { -not [bool]$_.done } | ForEach-Object { [string]$_.id })
-            foreach ($task in @($taskPlan.tasks)) { [void]$taskIds.Add([string]$task.id) }
+            if ($ClosureKind -ne 'completed' -and -not (Test-Path -LiteralPath (Join-Path $changeRoot 'tasks.md'))) {
+                # An explicitly abandoned/superseded idea may never have had tasks.
+                $taskPlanValid = $true
+            }
+            else {
+                $taskPlan = Invoke-HarnessEvolutionTaskPlan -Context $Context -Change $Change
+                $taskPlanValid = $true
+                $taskCount = @($taskPlan.tasks).Count
+                $incompleteTaskIds = @($taskPlan.tasks | Where-Object { -not [bool]$_.done } | ForEach-Object { [string]$_.id })
+                foreach ($task in @($taskPlan.tasks)) { [void]$taskIds.Add([string]$task.id) }
+            }
         }
         catch {
             $structuralErrors.Add("TaskPlan is invalid: $($_.Exception.Message)") | Out-Null
@@ -1608,7 +1685,7 @@ function Get-HarnessEvolutionStatus {
     elseif ($evaluationResult -ne 'passed') { $closureBlockers.Add("workflow evaluation result is '$evaluationResult'") | Out-Null }
     if (-not [bool]$resolvedChange.Archived) {
         if (-not $taskPlanValid) { $closureBlockers.Add('TaskPlan is invalid') | Out-Null }
-        elseif ($taskCount -eq 0) { $closureBlockers.Add('TaskPlan is empty') | Out-Null }
+        elseif ($taskCount -eq 0 -and ($ClosureKind -eq 'completed' -or (Test-Path -LiteralPath (Join-Path $changeRoot 'tasks.md')))) { $closureBlockers.Add('TaskPlan is empty') | Out-Null }
         elseif ($ClosureKind -eq 'completed' -and $incompleteTaskIds.Count -gt 0) { $closureBlockers.Add("incomplete task(s): $($incompleteTaskIds -join ', ')") | Out-Null }
         if ($evaluationValid -and $evaluationClosureKind -ne $ClosureKind) { $closureBlockers.Add("workflow evaluation closure_kind '$evaluationClosureKind' does not match requested '$ClosureKind'") | Out-Null }
         if ($evaluationValid -and -not $evaluationFresh) { $closureBlockers.Add('workflow evaluation is stale because input_sha256 does not match the current Change digest') | Out-Null }

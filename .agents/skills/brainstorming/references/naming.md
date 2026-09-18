@@ -1,43 +1,53 @@
-# Naming Grill
+## Public naming decisions
 
-Load this reference when a design or task introduces a new public name, or when apply discovers one the task did not list. Shared by `brainstorming` and `openspec-apply-change` (planning in `Ensure plan`, discovery during implementation).
+- Load when design introduces a public name or implementation discovers one not listed in its plan.
+- Public names include types, modules, namespaces, source/header files, public functions, Automation identities, Harness routes, capabilities and Skills. Private helpers and local variables do not require naming rounds.
+- Naming choices belong to the concept's responsibility, scope and users. Explain the role before asking the user to compare labels.
+- A name explicitly chosen by the user is settled. Do not re-ask it because a template expects a naming round.
 
-## What counts as a public name
+## Inspect the neighbours
 
-Types (classes, structs, enums, interfaces), modules and namespaces, source and header files, public functions and methods, Automation test identities, Harness routes, OpenSpec capability IDs, and Skill or reference names. Local variables and private helpers are not grilled.
+- Inspect sibling identifiers, prefixes/suffixes, shared vocabulary and relevant engine/library conventions.
+- State what the name must communicate: operation or entity, ownership, lifetime, scope and abstraction level where those distinguish candidates.
+- Derive a convention-backed recommendation and meaningful alternatives. Avoid replacing a precise responsibility with a fashionable generic word.
+- Check collisions and misleading similarity in the repository, relevant engine/library APIs and existing routes. Search external naming guidance only when useful or requested; naming advice does not override local semantics.
+- Prefer consistent familiar terms over clever abbreviations. Check how the name reads in a real caller, path, command or sentence.
 
-## Before asking
+## Ask with a more-names path
 
-1. Inspect the neighbours: sibling files, the owning module's prefixes and suffixes, existing test identities, and any glossary entry in the draft or in capability knowledge.
-2. Derive one convention-backed recommendation and one or two alternatives that differ in a way the user might care about (scope word, verb vs noun, abbreviation vs full word).
-3. Check for collisions with existing names in the repository and with well-known engine or standard-library names.
-
-## Round shape
-
-Track required names in the owning draft design or current Change discussion. Related independent naming decisions may share a round per [grill](../../grill/SKILL.md); dependent names wait. Send the situation brief first: inspected neighbours, conventions, responsibility and scope. The example below is a content guide; use the host's permitted question mechanism.
+- Track required names in the owning design. Related independent names may share a round; names depending on an unsettled responsibility wait.
+- Send the [Grill explanation](../../grill/references/brief.md) first: the role, current relevant architecture/terms, conventions, candidates and consequences.
+- Every naming question includes an explicit “Provide more names” choice. This is an actionable alternative, not approval of the recommendation.
+- Selecting it writes or expands `research/naming-<subject>.md` in the current draft. If the discussion has no draft, use the caller's authorized research owner rather than inventing a new lifecycle.
+- Organize additional candidates by useful semantic direction, with meaning, fit, ambiguity, collision checks and reasons to prefer/reject them. Do not dump synonyms or impose a candidate-count quota.
+- Link the candidate file and explain the meaningful differences in conversation, then return to a naming choice. The name stays unconfirmed until an actual answer chooses it.
+- Respect form limits: a recommendation, a meaningful alternative and “Provide more names” can be the visible choices, with the larger comparison in Markdown.
 
 ```text
-Round <N> — Naming
+N1 — Name of the store that owns <data> for <lifetime>
 
-Situation
-Pinned fact: Types/ holds `FAngelscriptTypeDatabase`, `FAngelscriptTypeIdTable`; suffix `Table` = flat lookup, `Database` = owning store. Source: Plugins/Angelscript/Source/AngelscriptCode/Public/Types/.
-Why now: design section 3 settled the ownership table; its class and header need names before tasks are written.
-
-Open decision: N1 — <what the thing is>
-    A. `FAngelscriptTypeOwnershipTable`  (matches `FAngelscript*Table` in Types/)
-    B. `FAngelscriptOwnedTypeRegistry`   (emphasizes registration; no sibling uses Registry)
-Recommendation: A — <reason>.
-Pinned fact: siblings are `FAngelscriptTypeDatabase`, `FAngelscriptTypeIdTable`. Source: <path>.
+A. <convention-backed name> — Communicates <responsibility> consistently with <neighbour>.
+B. <meaningful alternative> — Emphasizes <different aspect>; risks <ambiguity>.
+C. Provide more names — Expand research/naming-<subject>.md and continue comparing.
+Recommendation: A, because <role and convention evidence>.
 ```
 
-Record each settled name in designs/<scope>/glossary.md as `| term | chosen | rejected | reason |`, and in that design's Vocabulary and Naming section. Topic glossary.md holds shared vocabulary; include this design's required shared terms with provenance before export. Legacy flat designs retain their glossary path. Draft explanations default to the user's conversation language unless explicitly specified otherwise; Change exports use English and preserve identifiers.
+## Preserve vocabulary and apply it
 
-## Into tasks
+- Record selected names, responsibility, useful rejected alternatives, reason and answer source in the design's Vocabulary and Naming section. CONTEXT retains the key decision and link.
+- Keep legacy glossary records readable in place; do not create a separate glossary solely for the new contract.
+- After a naming answer, show the relevant architecture with the chosen terms, mapping former to new terms where needed. Update related explanations and interfaces consistently.
+- Every task's **Interfaces** lists new public names it introduces, with its design/decision source.
 
-Every task's **Interfaces** lists the new public names it introduces, with the source (`glossary.md` or the round). A task that introduces a public name without listing it fails the authoring preflight.
+## Names discovered during implementation
 
-## In apply
+- A clear authorized in-scope implementation need not stop for an omitted minor name. Derive the convention-backed name and record `Naming assumed: <name> — <reason>` in Evidence for later visibility.
+- A public rename or newly surfaced product/architecture choice can invalidate accepted planning truth; follow Harness's Replan discussion and Gate.
+- Do not treat the naming-more-options requirement as a new approval ceremony for every local implementation identifier.
+- Frequent assumed public names signal missing design detail; improve future planning rather than interrupting every task.
 
-Apply never asks the user. When implementation requires a new public name the task does not list, choose the convention-derived recommendation you would have put first in a naming round, write `Naming assumed: <name> — <one-line reason>` in the task's **Evidence**, and continue. Verification lists every `Naming assumed` entry so the user reviews them before the task closes; a rejected name is renamed before commit. Frequent assumed names mean the tasks stage skipped the naming round — fix that in planning, not by asking during apply.
+## External reference directions
 
-Renaming an existing public name is a design decision, not a naming grill; it needs its own round or a Change.
+- [Epic C++ Coding Standard](https://dev.epicgames.com/documentation/unreal-engine/epic-cplusplus-coding-standard-for-unreal-engine) is the engine-specific source for C++ identifier conventions. Inspect neighbouring project code before applying a rule; a correct prefix does not explain a type's responsibility.
+- [Epic asset naming guidance](https://dev.epicgames.com/documentation/unreal-engine/recommended-asset-naming-conventions-in-unreal-engine-projects) applies to content assets. Do not transfer asset prefixes mechanically to C++ classes, Harness routes or Skills.
+- [Code Clarity](https://github.com/Lakr233/code-clarity) is an external Skill with naming and repository-convention methods. Its useful direction is to inspect local examples and communicate intent. Its cross-language examples and broader refactoring preferences are not this repository's policy; no installation is required for the naming round.

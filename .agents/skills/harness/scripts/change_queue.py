@@ -36,6 +36,24 @@ def current(state):
     return next((item for item in state['items'] if item['disposition'] == 'pending'), None)
 
 
+def authorized_pending(state):
+    """Return the remaining fixed controller scope, without authorizing new items."""
+    owner = state.get('controller')
+    if not owner or 'authorizedUids' not in owner:
+        raise ValueError('Controller authorization is missing; release and explicitly claim the queue again')
+    authorized = owner['authorizedUids']
+    if not isinstance(authorized, list) or len(authorized) != len(set(authorized)):
+        raise ValueError('Controller authorization is invalid')
+    by_uid = {item['uid']: item for item in state['items']}
+    if any(uid not in by_uid or by_uid[uid]['disposition'] == 'removed' for uid in authorized):
+        raise ValueError('An authorized queue member is missing or removed')
+    remaining = [uid for uid in authorized if by_uid[uid]['disposition'] == 'pending']
+    pending = [item['uid'] for item in state['items'] if item['disposition'] == 'pending']
+    if pending[:len(remaining)] != remaining:
+        raise ValueError('Queue order differs from the authorized prefix')
+    return remaining
+
+
 def inspect_record(context, item):
     if not item:
         return {'recordState': 'none', 'currentArchive': None, 'recordIssues': []}
@@ -177,6 +195,11 @@ def operate(context, action, parameters):
                 raise ValueError('Reorder must contain exactly the pending Changes')
             if state['controller'] and head and (not ids or ids[0] != head['changeId']):
                 raise ValueError('Pause and release the controller before changing the active head')
+            if state['controller']:
+                remaining = authorized_pending(state)
+                authorized_ids = {item['uid']: item['changeId'] for item in state['items']}
+                if ids[:len(remaining)] != [authorized_ids[uid] for uid in remaining]:
+                    raise ValueError('Pause and release before changing the authorized queue prefix')
             existing = {x['changeId']: x for x in state['items']}
             new = []
             for change_id in ids:
@@ -211,12 +234,29 @@ def operate(context, action, parameters):
             if state['controller'] and action == 'claim':
                 if state['controller']['sessionId'] != session:
                     raise ValueError('Queue is occupied; explicit takeover is required')
+                authorized_pending(state)
+                if 'AuthorizedUids' in parameters and parameters['AuthorizedUids'] != state['controller']['authorizedUids']:
+                    raise ValueError('Controller authorization differs from this claim')
+                if parameters.get('SourceRef') and parameters['SourceRef'] != state['controller'].get('sourceRef'):
+                    raise ValueError('Controller authorization source differs from this claim')
                 return result(state, context)
             else:
                 if state['controller'] and not parameters.get('PreviousControllerStopped'):
                     raise ValueError('Confirm the previous controller has stopped before takeover')
-                state['controller'] = {'sessionId': session, 'token': uuid.uuid4().hex}
-            state['state'], state['pauseReason'] = 'claimed', None
+                pending_uids = [item['uid'] for item in state['items'] if item['disposition'] == 'pending']
+                authorized = parameters.get('AuthorizedUids', pending_uids)
+                if (not isinstance(authorized, list) or (pending_uids and not authorized) or
+                        len(authorized) != len(set(authorized)) or pending_uids[:len(authorized)] != authorized):
+                    raise ValueError('Controller authorization must be an exact ordered pending prefix')
+                if state['controller'] and action == 'takeover':
+                    old_scope = authorized_pending(state)
+                    if 'AuthorizedUids' not in parameters:
+                        authorized = old_scope
+                    elif authorized != old_scope:
+                        raise ValueError('Takeover cannot widen or replace the existing authorization')
+                state['controller'] = {'sessionId': session, 'token': uuid.uuid4().hex,
+                                       'authorizedUids': authorized, 'sourceRef': parameters.get('SourceRef', '')}
+            state['state'] = 'pause-requested' if state['pauseReason'] else 'claimed'
             item = current(state)
             if item:
                 if change_path(context, item['changeId']).exists():
@@ -227,21 +267,34 @@ def operate(context, action, parameters):
         elif action == 'pause':
             state['state'] = 'pause-requested' if state['controller'] else 'paused'
             state['pauseReason'] = parameters.get('Reason') or 'Pause requested'
+        elif action == 'resume':
+            # Internal execution adapter operation; acquiring ownership never resumes.
+            controller()
+            authorized_pending(state)
+            source = parameters.get('SourceRef')
+            if not source or source in state.get('resumeSources', []):
+                raise ValueError('Resuming a pause requires its new resolving source')
+            state.setdefault('resumeSources', []).append(source)
+            state['state'], state['pauseReason'] = 'claimed', None
         elif action == 'release':
             controller()
             state['controller'] = None
             state['state'] = 'paused' if state['pauseReason'] else 'idle'
         elif action == 'checkpoint':
             controller()
+            authorized_pending(state)
             item = current(state)
             if not item:
                 raise ValueError('No current Change')
             mark(item, repositories=parameters.get('Repositories'))
         elif action == 'advance':
             controller()
+            remaining = authorized_pending(state)
             item = current(state)
             if not item:
                 return result(state, context)
+            if not remaining or remaining[0] != item['uid']:
+                raise ValueError('Current Change is outside controller authorization')
             if change_path(context, item['changeId']).exists():
                 raise ValueError('Current Change is still active; completed archive required')
             record = inspect_record(context, item)
@@ -251,8 +304,8 @@ def operate(context, action, parameters):
             item['archive'] = record['currentArchive']
             head = current(state)
             if head:
-                if state['pauseReason']:
-                    state['controller'], state['state'] = None, 'paused'
+                if state['pauseReason'] or not authorized_pending(state):
+                    state['controller'], state['state'] = None, 'paused' if state['pauseReason'] else 'idle'
                 else:
                     mark(head)
                     head['started'] = True

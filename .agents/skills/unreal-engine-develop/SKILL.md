@@ -41,7 +41,7 @@ Invoke-Harness -Command ue.status -Context $context
 | List, plan, or run declarative UE suites | `ue.suite.list`, `ue.suite.plan`, `ue.suite.run` |
 | Inspect or explicitly cancel a managed run | `ue.run.status`, `ue.run.cancel` |
 
-- Use `Get-HarnessCommand <route>` for the live parameter contract.
+- Use `Get-HarnessCommand <route>` for live route metadata and its owning entrypoint. Use this leaf and its focused references for typed parameters; the registry does not return parameter schemas.
 
 ## Plan, launch, observe
 

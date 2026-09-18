@@ -90,7 +90,7 @@ function New-SimpleParentFixture {
 
     $parent = Join-Path $FixtureRoot 'parent'
     Initialize-TestRepository -Path $parent
-    [System.IO.File]::WriteAllText((Join-Path $parent '.gitignore'), ".worktrees/`nAgentConfig.ini`nlocal.payload`n")
+    [System.IO.File]::WriteAllText((Join-Path $parent '.gitignore'), ".worktrees/`n.workspaces/`nAgentConfig.ini`nlocal.payload`n")
     [System.IO.File]::WriteAllText((Join-Path $parent 'Fixture.uproject'), "{}`n")
     [System.IO.File]::WriteAllText((Join-Path $parent 'README.md'), "fixture`n")
     [void](Invoke-TestGit -Repository $parent -Arguments @('add', '.gitignore', 'Fixture.uproject', 'README.md'))
@@ -126,6 +126,16 @@ function New-SubmoduleFixture {
     [void](Invoke-TestGit -Repository $parent -Arguments @('commit', '-m', 'pin child A'))
 
     return [pscustomobject]@{ Parent = $parent; Child = $child; CommitA = $commitA; CommitB = $commitB }
+}
+
+function New-LegacyWorkspaceFixture {
+    param([string]$RepositoryRoot, [string]$Name)
+    # workspace.new creates minimal replicas now. These compatibility cases need
+    # a retained parent Git worktree, including its exact pinned submodules.
+    $root = Join-Path $RepositoryRoot ".worktrees/$Name"
+    [void](Invoke-TestGit -Repository $RepositoryRoot -Arguments @('worktree', 'add', '-b', $Name, $root, 'HEAD'))
+    [void](Initialize-HarnessWorkspace -ProjectRoot $root)
+    return [pscustomobject]@{WorktreeRoot=$root}
 }
 
 function Remove-JunctionOnly {
@@ -177,10 +187,10 @@ $regressions = @(
                 $parent = New-SimpleParentFixture -FixtureRoot $fixture
                 $external = Join-Path $fixture 'external-container'
                 [void](New-Item -ItemType Directory -Path $external -Force)
-                [void](New-Item -ItemType Junction -Path (Join-Path $parent '.worktrees') -Target $external)
+                [void](New-Item -ItemType Junction -Path (Join-Path $parent '.workspaces') -Target $external)
                 Assert-ThrowsMatch {
                     New-HarnessWorkspace -Name 'escaped-physical' -RepositoryRoot $parent | Out-Null
-                } 'reparse|physical|canonical' 'creation refuses a junction-backed canonical container'
+                } 'reparse|physical|canonical|traverses a link' 'creation refuses a junction-backed canonical container'
                 Assert-True (-not (Test-Path -LiteralPath (Join-Path $external 'escaped-physical'))) 'refused creation writes nothing through the junction'
             }
             finally {
@@ -195,7 +205,7 @@ $regressions = @(
             try {
                 [void](New-Item -ItemType Directory -Path $fixture -Force)
                 $parent = New-SimpleParentFixture -FixtureRoot $fixture
-                $created = New-HarnessWorkspace -Name 'swapped' -RepositoryRoot $parent
+                $created = New-LegacyWorkspaceFixture -Name 'swapped' -RepositoryRoot $parent
                 $container = Join-Path $parent '.worktrees'
                 $external = Join-Path $fixture 'external-container'
                 [void](New-Item -ItemType Directory -Path $external -Force)
@@ -223,7 +233,7 @@ $regressions = @(
             try {
                 [void](New-Item -ItemType Directory -Path $fixture -Force)
                 $data = New-SubmoduleFixture -FixtureRoot $fixture
-                $worktree = (New-HarnessWorkspace -Name 'tracked' -RepositoryRoot $data.Parent).WorktreeRoot
+                $worktree = (New-LegacyWorkspaceFixture -Name 'tracked' -RepositoryRoot $data.Parent).WorktreeRoot
                 $submodule = Join-Path $worktree 'Modules/Child'
                 [void](Invoke-TestGit -Repository $submodule -Arguments @('checkout', '--detach', $data.CommitB))
                 $marker = Join-Path $submodule 'stable.txt'
@@ -249,7 +259,7 @@ $regressions = @(
             try {
                 [void](New-Item -ItemType Directory -Path $fixture -Force)
                 $data = New-SubmoduleFixture -FixtureRoot $fixture
-                $worktree = (New-HarnessWorkspace -Name 'untracked' -RepositoryRoot $data.Parent).WorktreeRoot
+                $worktree = (New-LegacyWorkspaceFixture -Name 'untracked' -RepositoryRoot $data.Parent).WorktreeRoot
                 $submodule = Join-Path $worktree 'Modules/Child'
                 [void](Invoke-TestGit -Repository $submodule -Arguments @('checkout', '--detach', $data.CommitB))
                 $payload = Join-Path $submodule 'untracked.bin'
@@ -275,7 +285,7 @@ $regressions = @(
             try {
                 [void](New-Item -ItemType Directory -Path $fixture -Force)
                 $data = New-SubmoduleFixture -FixtureRoot $fixture
-                $worktree = (New-HarnessWorkspace -Name 'wrong-head' -RepositoryRoot $data.Parent).WorktreeRoot
+                $worktree = (New-LegacyWorkspaceFixture -Name 'wrong-head' -RepositoryRoot $data.Parent).WorktreeRoot
                 $submodule = Join-Path $worktree 'Modules/Child'
                 [void](Invoke-TestGit -Repository $submodule -Arguments @('checkout', '--detach', $data.CommitB))
                 [void](Invoke-TestGit -Repository $data.Parent -Arguments @('config', 'submodule.sdk.ignore', 'all'))
@@ -299,7 +309,7 @@ $regressions = @(
             try {
                 [void](New-Item -ItemType Directory -Path $fixture -Force)
                 $data = New-SubmoduleFixture -FixtureRoot $fixture
-                $worktree = (New-HarnessWorkspace -Name 'deinitialized' -RepositoryRoot $data.Parent).WorktreeRoot
+                $worktree = (New-LegacyWorkspaceFixture -Name 'deinitialized' -RepositoryRoot $data.Parent).WorktreeRoot
                 [void](Invoke-TestGit -Repository $worktree -Arguments @('submodule', 'deinit', '-f', '--', 'Modules/Child'))
                 $submodulePath = Join-Path $worktree 'Modules/Child'
                 [void](New-Item -ItemType Directory -Path $submodulePath -Force)

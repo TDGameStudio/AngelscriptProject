@@ -34,17 +34,56 @@ try {
     Assert-Equal 'Succeeded' $created.status 'a named topic can be created'
     $draftRoot = Join-Path $fixtureRoot 'openspec/drafts/harness/fixture'
     Assert-True (Test-Path (Join-Path $draftRoot 'README.md')) 'create writes a topic README'
-    Assert-True (Test-Path (Join-Path $draftRoot 'log.md')) 'create writes a conversation log'
+    Assert-True (Test-Path (Join-Path $draftRoot 'CONTEXT.md')) 'create writes resumable decision context'
+    Assert-True (-not (Test-Path (Join-Path $draftRoot 'log.md'))) 'new drafts do not require duplicated conversations'
 
     $status = Invoke-Harness -Command harness.draft.status -Context $context -Parameters @{ DraftId = 'harness/fixture' }
     Assert-Equal 'Succeeded' $status.status 'a new topic has readable status'
-    Assert-True $status.data.Valid 'the initial five-line current state is valid'
-    Assert-Equal 'log.md' $status.data.Focus 'the initial focus resolves to its own log'
+    Assert-True $status.data.Valid 'the initial context navigation is valid'
+    Assert-Equal 'CONTEXT.md' $status.data.Focus 'the initial focus resolves to its context'
 
     $duplicate = Invoke-Harness -Command harness.draft.create -Context $context -Parameters @{ DraftId = 'harness/fixture'; Title = 'Overwrite' }
     Assert-Equal 'Failed' $duplicate.status 'create never overwrites an existing topic'
     $escape = Invoke-Harness -Command harness.draft.create -Context $context -Parameters @{ DraftId = 'harness/../escape'; Title = 'Escape' }
     Assert-Equal 'Failed' $escape.status 'topic identity cannot traverse outside drafts'
+
+    $modern = Invoke-Harness harness.draft.create -Context $context -Parameters @{DraftId='harness/modern';Title='Modern'}
+    $modernRoot = $modern.data.Path
+    $modernScope = Join-Path $modernRoot 'designs/one'
+    [void][IO.Directory]::CreateDirectory($modernScope)
+    [IO.File]::WriteAllText((Join-Path $modernScope 'design.md'), "---`ndesign: one`nstatus: designed`n---`n`n# Current architecture`n`nA -> B`n`n[Evidence](../../research/evidence.md)`n")
+    [void][IO.Directory]::CreateDirectory((Join-Path $modernRoot 'research'))
+    [void][IO.Directory]::CreateDirectory((Join-Path $modernRoot 'attachments'))
+    [IO.File]::WriteAllText((Join-Path $modernRoot 'research/evidence.md'), '[Diagram](../attachments/diagram.png)')
+    [IO.File]::WriteAllBytes((Join-Path $modernRoot 'attachments/diagram.png'), [byte[]]@(1,2,3))
+    [IO.File]::WriteAllText((Join-Path $modernScope 'handoff.md'), "## OpenSpec Handoff`n`n- Scope: one`n- Target Change: harness/improve-modern-draft`n`n## Exploration Carryover`n`n| Source | Target | Reason |`n| --- | --- | --- |`n| design.md | attachments/drafts/design.md | Accepted design |`n| handoff.md | attachments/drafts/handoff.md | Accepted handoff |`n")
+    $modernParams = @{DraftId='harness/modern';Scope='one';ChangeId='harness/improve-modern-draft'}
+    $modernReady = Invoke-Harness harness.draft.check -Context $context -Parameters $modernParams
+    if ($modernReady.status -ne 'Succeeded') { throw $modernReady.error.message }
+    Assert-Equal 64 $modernReady.data.DraftRevision.Length 'modern design is checked without scope README or glossary'
+    Add-Content -LiteralPath (Join-Path $modernRoot 'CONTEXT.md') -Value 'Navigation changed'
+    $same = Invoke-Harness harness.draft.check -Context $context -Parameters $modernParams
+    Assert-Equal $modernReady.data.DraftRevision $same.data.DraftRevision 'context notes do not invalidate accepted design'
+    [IO.File]::WriteAllBytes((Join-Path $modernRoot 'attachments/diagram.png'), [byte[]]@(1,2,4))
+    $dependencyChanged = Invoke-Harness harness.draft.check -Context $context -Parameters $modernParams
+    Assert-True ($same.data.DraftRevision -ne $dependencyChanged.data.DraftRevision) 'transitive attachment edits invalidate an unconsumed Gate'
+    Add-Content -LiteralPath (Join-Path $modernScope 'design.md') -Value 'B now owns C'
+    $changed = Invoke-Harness harness.draft.check -Context $context -Parameters $modernParams
+    Assert-True ($modernReady.data.DraftRevision -ne $changed.data.DraftRevision) 'design edits invalidate a previously shown version'
+    $transcript = Join-Path $fixtureRoot 'session.jsonl'
+    $meta = @{type='session_meta';payload=@{id='archive-fixture';cwd=$fixtureRoot;cli_version='0.154.0'}} | ConvertTo-Json -Depth 8 -Compress
+    $message = @{type='response_item';payload=@{type='message';role='user';content=@(@{type='input_text';text='Optional recorded message'})}} | ConvertTo-Json -Depth 8 -Compress
+    [IO.File]::WriteAllText($transcript, "$meta`n$message`n")
+    $bound = Invoke-Harness harness.draft.record -Context $context -Parameters @{Action='bind';DraftId='harness/modern';SessionId='archive-fixture';Source=$transcript;StartLine=2}
+    Assert-Equal 'Succeeded' $bound.status 'explicit recording binds a modern draft without a log'
+    Assert-True (Test-Path -LiteralPath (Join-Path $modernRoot 'attachments/transcript.md')) 'optional transcript stays outside current decisions'
+    $boundArchive = Invoke-Harness harness.draft.archive -Context $context -Parameters @{DraftId='harness/modern';SourceRef='message:archive'}
+    Assert-Equal 'Failed' $boundArchive.status 'archive cannot strand an active recorder'
+    $unbound = Invoke-Harness harness.draft.record -Context $context -Parameters @{Action='unbind';SessionId='archive-fixture'}
+    Assert-Equal 'Succeeded' $unbound.status 'explicit recorder can finish before archive'
+    $unresolved = Invoke-Harness harness.draft.archive -Context $context -Parameters @{DraftId='harness/modern';SourceRef='message:archive-unresolved';Reason='User retains unresolved questions in the archive'}
+    Assert-Equal 'Succeeded' $unresolved.status 'explicit user archive can preserve unresolved research'
+    Assert-True ((Get-Content -LiteralPath (Join-Path $unresolved.data.Path 'README.md') -Raw) -match 'status: exploring') 'archive does not fabricate completion'
 
     $designRoot = Join-Path $draftRoot 'designs/selected'
     [void](New-Item -ItemType Directory -Path $designRoot -Force)

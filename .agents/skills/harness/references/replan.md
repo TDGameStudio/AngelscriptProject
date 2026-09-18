@@ -4,8 +4,8 @@ Replan only when verified evidence makes the current plan false: a requirement o
 
 A pending task whose concrete scope now contains independently acceptable products, hidden prerequisite interfaces or a proving command that cannot cover its outcome has an invalid task boundary. Repeated independently verified partial deliveries under one permanently pending node are evidence to inspect that boundary, not a numeric trigger. Split the remaining outcomes, preserve completed work and map existing evidence without claiming it proves newer code. Shared files constrain scheduling; do not invent dependency edges solely to order writers. Ordinary failed assertions and routine RED/GREEN remain task-local.
 
-- Expand the affected decision tree before revising accepted truth. Independent `grill` handles attended decisions in the current session; unanswered choices stay in Change-owned `talks/grill-*` and pause the whole Change. No pending discussion is an applied Replan.
-- Use `harness.replan.apply` with the settled discussion revision and exact candidate/baseline map; see [discussion operations](discussions.md). The staged CLI validation and recoverable journal implement the following protocol. A successful update returns to execution without another start request.
+- Expand the affected decision tree in a linked local draft before revising accepted truth. Independent `grill` explains the current architecture after every user answer and asks the next frontier; the Change talk retains impact/provenance/return state. Necessary unanswered choices pause the whole Change.
+- Only user-led convergence enters the exact-revision Replan Gate. Use `harness.replan.apply -PlanOnly` to preview, present the full [handoff Gate explanation](handoff-gate.md) including accepted plan, actual implementation and proposed revision, then actual Gate provenance to apply the exact candidate/baseline map; see [discussion operations](discussions.md). Successful application opens the mandatory draft/execution arrangement Gate before returning to execution. No settled discussion or old execution request bypasses either Gate.
 
 ## Apply atomically
 
@@ -15,7 +15,7 @@ A pending task whose concrete scope now contains independently acceptable produc
 3. Resolve non-obvious major decisions in `attachments/talks/`; record material implementation problems in `attachments/implementation/`.
 4. Update proposal/spec/design current truth before changing tasks.
 5. Compute and validate the candidate DAG before tracked writes.
-6. Write one immutable applied record, update `tasks.md`, verify the new DAG, then resume at `resume_task`.
+6. Write one immutable applied record, update `tasks.md`, verify the new DAG, then record and apply the post-handoff arrangement before any resume at `resume_task`.
 
 Store records flat under `attachments/replans/`:
 
@@ -42,4 +42,4 @@ resume_task: <X.Y>
 
 Use these short sections: Trigger and Evidence; Decision; Impact; Old Task Disposition; Diff Snapshot; Preserved Work; References and Result. The Diff Snapshot contains affected path status, diff stat, Task `+/-/~`, edge `+/-`, and artifact `~` changes. It does not embed a full unified diff.
 
-Keep a typical record within 120 lines. Put detailed analysis in implementation or talk attachments. A sidecar patch is allowed only at `attachments/data/replans/<id>-before.patch` when uncommitted local text cannot be recovered from Git; never store binary, generated, large, or otherwise recoverable patches. Applied records are immutable.
+Keep the applied record focused on the actual decision and evidence; preserve useful detail without a fixed line quota. Put detailed analysis in implementation or talk attachments. A sidecar patch is allowed only at `attachments/data/replans/<id>-before.patch` when uncommitted local text cannot be recovered from Git; never store binary, generated, large, or otherwise recoverable patches. Applied records are immutable.

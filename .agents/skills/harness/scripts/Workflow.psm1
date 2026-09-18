@@ -21,7 +21,8 @@ function Invoke-HarnessTalk {
     param([Parameter(Mandatory)]$Context, [ValidateSet('create','update','status')][string]$Action,
         [Parameter(Mandatory)][string]$Change, [string]$TalkId, [string]$SessionId,
         [string]$Kind, [string]$Theme, [string]$Summary, [string]$SourceRef, [string]$ResumeTask,
-        [string]$Scope, [string]$Status, [string]$Disposition, [object[]]$Questions, [int]$ExpectedRevision)
+        [string]$Scope, [string]$Status, [string]$Disposition, [object[]]$Questions, [int]$ExpectedRevision,
+        [string]$Purpose, [hashtable]$Arrangements, [string]$ReplacementTalkId, [string]$ResolutionSource)
     $values = @{}; foreach ($key in $PSBoundParameters.Keys) { if ($key -notin @('Context','Action')) { $values[$key] = $PSBoundParameters[$key] } }
     Invoke-HarnessWorkflowCore -Context $Context -Group talk -Action $Action -Parameters $values
 }
@@ -29,16 +30,18 @@ function Invoke-HarnessTalk {
 function Invoke-HarnessReplan {
     param([Parameter(Mandatory)]$Context, [ValidateSet('apply','status')][string]$Action,
         [Parameter(Mandatory)][string]$Change, [string]$TalkId, [string]$SessionId, [string]$ReplanId,
-        [int]$ExpectedRevision, [hashtable]$Candidates, [hashtable]$ExpectedHashes, [string]$ResumeTask)
-    $values = @{}; foreach ($key in $PSBoundParameters.Keys) { if ($key -notin @('Context','Action')) { $values[$key] = $PSBoundParameters[$key] } }
+        [int]$ExpectedRevision, [hashtable]$Candidates, [hashtable]$ExpectedHashes, [string]$ResumeTask,
+        [switch]$PlanOnly, [hashtable]$Gate, [string]$HandoffText, [string]$DraftId, [string]$Scope)
+    $values = @{}; foreach ($key in $PSBoundParameters.Keys) { if ($key -notin @('Context','Action')) { $values[$key] = if ($PSBoundParameters[$key] -is [switch]) { [bool]$PSBoundParameters[$key] } else { $PSBoundParameters[$key] } } }
     Invoke-HarnessWorkflowCore -Context $Context -Group replan -Action $Action -Parameters $values
 }
 
 function Invoke-HarnessExecution {
-    param([Parameter(Mandatory)]$Context, [ValidateSet('start','checkpoint','status')][string]$Action,
+    param([Parameter(Mandatory)]$Context, [ValidateSet('start','checkpoint','status','input')][string]$Action,
         [Parameter(Mandatory)][string]$SessionId, [string]$Change, [ValidateSet('Change','Queue')][string]$Scope,
         [string]$SourceRef, [string]$State, [string]$Reason, [string]$Phase, [string]$ResumeTask,
-        [string[]]$AcknowledgeInputs, [int]$ExpectedRevision, [string]$PreviousSessionId, [switch]$PreviousSessionStopped, [string]$ProgressRef)
+        [string[]]$AcknowledgeInputs, [int]$ExpectedRevision, [string]$PreviousSessionId, [switch]$PreviousSessionStopped, [string]$ProgressRef,
+        [string]$InputId, [string]$Summary, [ValidateSet('feedback','pause')][string]$Kind)
     $values = @{}
     foreach ($key in $PSBoundParameters.Keys) {
         if ($key -in @('Context','Action')) { continue }

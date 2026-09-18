@@ -52,6 +52,21 @@ class DraftRecording(unittest.TestCase):
             self.assertIn(body, self.text())
         self.assertEqual("covered", result["status"])
 
+    def test_modern_draft_only_creates_optional_transcript_on_explicit_bind(self):
+        self.log.unlink()
+        (self.draft / 'README.md').write_text('---\nschema: harness-draft-v2\ndraft: harness/example\n---\n', 'utf8')
+        context = self.draft / 'CONTEXT.md'
+        context.write_text('Key decisions only.\n', 'utf8')
+        self.assertEqual('unbound', self.run_record('status')['status'])
+        self.assertFalse((self.draft / 'attachments').exists())
+        self.message('Explicitly recorded original')
+        self.assertEqual('covered', self.bind()['status'])
+        transcript = self.draft / 'attachments/transcript.md'
+        self.assertIn('Explicitly recorded original', transcript.read_text('utf8'))
+        self.assertEqual('Key decisions only.\n', context.read_text('utf8'))
+        self.assertFalse(self.log.exists())
+        self.assertEqual('unbound', self.run_record('unbind')['status'])
+
     def test_replica_records_canonical_log_with_local_binding(self):
         replica = self.root / '.workspaces/child'
         replica.mkdir(parents=True)

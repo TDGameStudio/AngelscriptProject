@@ -1,4 +1,4 @@
-"""One append-only recorder shared by Harness and Codex hooks (stdlib only).
+"""One append-only recorder shared by Harness public record routes (stdlib only).
 
 Codex JSONL is not a stable API. This adapter recognizes 0.154.x; unknown
 records stop the coverage checkpoint rather than silently losing messages.
@@ -144,7 +144,10 @@ def binding_target(workspace, binding):
         from discussions import record_path, record_lock
         target = record_path({'OpenSpecRoot': records_root}, binding['change'], binding['talk_id'])
         return target, record_lock(records_root, target)
-    target = local_path(records_root, 'openspec/drafts/' + binding['draft_id'] + '/log.md')
+    relative = binding.get('record_file', 'log.md')
+    if relative not in ('log.md', 'attachments/transcript.md'):
+        raise ValueError('Unsupported exact draft recording target')
+    target = local_path(records_root, 'openspec/drafts/' + binding['draft_id'] + '/' + relative)
     return target, target.with_suffix('.record.lock')
 
 
@@ -256,8 +259,13 @@ def record(workspace, session, action, *, draft_id=None, source=None, start_line
                 raise ValueError("Bind needs an exact domain/topic draft ID")
             if not source or not start_line or start_line < 2:
                 raise ValueError("Bind needs a transcript and explicit first message line (>= 2)")
-            target, _ = binding_target(workspace, dict(records_root=str(records_root), draft_id=draft_id, change=change, talk_id=talk_id))
-            if not target.is_file():
+            record_file = 'log.md'
+            if not talk_id:
+                readme = local_path(records_root, 'openspec/drafts/' + draft_id + '/README.md')
+                if readme.is_file() and re.search(r'^schema:\s*harness-draft-v2\s*$', readme.read_text('utf-8-sig'), re.M):
+                    record_file = 'attachments/transcript.md'
+            target, target_lock = binding_target(workspace, dict(records_root=str(records_root), draft_id=draft_id, change=change, talk_id=talk_id, record_file=record_file))
+            if not target.is_file() and record_file != 'attachments/transcript.md':
                 raise ValueError("Bind requires an existing draft log")
             if talk_id:
                 from discussions import read_record
@@ -285,7 +293,16 @@ def record(workspace, session, action, *, draft_id=None, source=None, start_line
                 questions = set()
                 for raw in lines[:start_line - 1]:
                     visible(json.loads(raw), questions)
-                active = {"draft_id": draft_id, 'change': change, 'talk_id': talk_id, "source": source, "records_root": str(records_root), "start_line": start_line,
+                if record_file == 'attachments/transcript.md':
+                    with locked(target_lock):
+                        target.parent.mkdir(parents=True, exist_ok=True)
+                        if not target.exists():
+                            target.write_text('# Optional conversation transcript\n', encoding='utf8')
+                        index = target.parent / 'INDEX.md'
+                        index_text = index.read_text('utf-8-sig') if index.exists() else '# Attachments\n\n'
+                        if '](transcript.md)' not in index_text:
+                            index.write_text(index_text + '- [Optional conversation transcript](transcript.md)\n', encoding='utf8')
+                active = {"draft_id": draft_id, 'change': change, 'talk_id': talk_id, 'record_file': record_file, "source": source, "records_root": str(records_root), "start_line": start_line,
                           "through_line": start_line - 1, "prefix_sha256": digest(b"".join(lines[:start_line - 1])), "questions": sorted(questions)}
                 state["active"] = active
         if not active:

@@ -26,12 +26,12 @@ Archive never promotes knowledge automatically. Closure names the source attachm
 
 Raw `harness.observe` records stay ignored under `Saved/Harness/` and are not capability knowledge. Before closure, summarize only reusable timing, friction, repairs, transferred owners, and raw-data provenance in one indexed `harness-workflow-evaluation-v1` record. Promote an invariant from that evaluation only through the same evidence and verification gate above.
 
-If self-hosting exposes a repeatable safety, correctness, lifecycle, evidence, or high-friction gap, admit it to one exact active Change as an indexed `openspec-material-issue-v2` record. An admitted issue cannot remain in conversation, raw observations, or a handoff: resolve or reject it with exact evidence, or supersede it with an exact existing v2 owner. When the source Change has already moved to the immutable archive, use a suitable active owner or create a successor rather than rewriting history. Admission alone starts neither Review nor Replan.
+If self-hosting exposes a repeatable safety, correctness, lifecycle, evidence or friction gap, automatically collect it and show a batch for user scope selection. Repair already authorized problems within their scope; admit material in-scope issues to an indexed `openspec-material-issue-v2` owner without treating collection as authority to change unrelated Skills. An admitted issue cannot remain in conversation, raw observations, or a handoff: resolve or reject it with exact evidence, or supersede it with an exact existing v2 owner. When the source Change has moved to the immutable archive, collect the new finding and present the repair scope to the user. Preserve history; do not automatically create a successor. A selected repair uses the normal direct-work or user-led handoff route. Admission alone starts neither Review nor Replan.
 
 ## Evolution loop
 
 ```text
-change evidence -> repair -> verification -> re-review
+observed evidence -> selected repair -> verification -> explicit requested review, if any
         |                               |
         +------ reusable invariant -----+
                         |

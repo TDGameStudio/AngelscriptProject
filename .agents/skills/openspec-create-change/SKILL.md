@@ -1,73 +1,37 @@
 ---
 name: openspec-create-change
-description: Create a Change from one selected approved brainstorming design and its confirmed handoff. Export English design, handoff, names and cited evidence, materialize confirmed talks/knowledge, then route to Ensure plan. One invocation per scoped handoff; a topic may yield several Changes. Resume an existing target without replaying creation.
+description: Create one exact Change only after user-led discussion convergence and a version-bound handoff Gate, export its accepted design and evidence, then ask and apply the post-handoff draft/execution arrangement. Resume an existing handoff without replaying creation.
 ---
 
-# Create a Change from a Scoped Design
+# Create a Change
 
-- This Skill owns `change create` and the export of one accepted handoff.
-- It connects brainstorming to openspec-apply-change, whose Ensure plan writes planning artifacts.
-- Use only when OpenSpec work is selected; explicitly requested direct edits without a Change do not enter this route.
+## Enter on actual user convergence
 
-## Preconditions
+- Harness owns the [double loop and Gates](../harness/SKILL.md). Grill does not suggest creation; wait until the user proactively says the design is ready. “Ready” permits preparing the handoff, not silently creating it.
+- Read the selected draft's README/CONTEXT and `designs/<scope>/design.md`. Old scope README/log/glossary layouts remain readable; do not migrate them. Confirm one exact scope and target `<domain>/<type>-<scope>-<outcome>`.
+- Prepare `handoff.md` with scope, target, accepted names, exclusions, unresolved followups and carryover sources/targets/reasons. Include only needed decision talks, reusable knowledge, research and binary attachments. A separate glossary is optional; names can live in the design.
+- Read [the handoff Gate explanation](../harness/references/handoff-gate.md) before presenting this operation. Use [explaining-work](../explaining-work/SKILL.md) to give the full background, current and proposed architecture, terms/classes/call paths, concrete changes, reasons, proof and carryover. Present it in the conversation for a reader unfamiliar with the system; a short summary or linked design is insufficient.
 
-1. Resolve the exact source: openspec/drafts/<domain>/<topic>/designs/<scope>/, with selected legacy material prepared per the [draft contract](../brainstorming/references/drafts.md).
-   - Never select by timestamp or newest directory.
-   - The selected README has status: designed, or the same handoff is being resumed after target creation.
-   - A topic still exploring or currently in research mode is not a blocker; a sibling's approval is not authority.
-2. The selected design is accepted, its relevant glossary names are settled, and handoff.md contains OpenSpec Handoff and a confirmed Exploration Carryover (each source, target, reason).
-   - The selected README has explicit `approval_round: R<n>`; the handoff has exact `Scope` and `Target Change` fields and a `Source / Target / Reason` table covering required copies and confirmed carryover.
-   - Missing user-owned choices remain open; do not invent them or repeat settled approval.
-3. The Change ID follows <domain>/<type>-<scope>-<outcome> per the [record schema](../openspec/references/record-schema.md) and is confirmed in the selected glossary/handoff.
-   - Parked or abandoned work is not ready for creation.
-   - A material accepted-design revision before export requires the affected approval to be revisited.
+## Preview and create
 
-## Steps
+- Call `harness.change.create` with `PlanOnly=$true`, exact ChangeId, Title, Goal, Origin, DraftId/Scope (or Direct Reason and HandoffText), and SessionId. The preview returns `HandoffRevision` without mutation.
+- Display the complete account for that preview, followed by a visibly marked Gate naming its exact target/revision and immediate effect. Only then actually ask create this version, continue explanation/discussion, or park through a host mechanism permitted to collect approval. Do not combine this with the later archive/execution arrangement.
+- After the actual answer, repeat the same inputs with `Gate=@{ ConvergenceSource=<actual source>; DecisionSource=<actual source>; Decision='create'; TargetChange=<exact id>; HandoffRevision=<presented revision> }` and no PlanOnly.
+- A changed material design, handoff/export source or target needs a new preview and user decision. CONTEXT/navigation progress alone does not invalidate it. Never fabricate source references or infer approval from a passing checker.
+- The new origin persists the receipt and expected exports, and creates an indexed `handoff-followup` talk. A private consumed intent and native manifest ownership checkpoint permit exact retries without replacing approval; historical schemas keep their earlier contracts. Query the exact target before retrying after interruption. If ownership cannot be proven, retain the CreationRecoveryRequired issue and inspect actual evidence; do not manufacture a marker for an unrelated unmarked Change.
+- Explicit direct maintenance need not create any Change. An explicitly requested formal direct-origin Change still presents its concrete scope and uses the same Gate with an actual direct-origin reason.
 
-1. Inspect whether the exact named Change already exists.
-   - If it does, read tasks.md and attachments/INDEX.md first and verify the source identity and existing seeded material.
-   - Resume missing export/index/status steps only; do not create another Change, overwrite accepted planning, or replay already materialized talks/knowledge.
-   - A complete export with a stale local designed state needs only that state/navigation repaired before Ensure plan.
-   - An unrelated identity/content conflict must be resolved, never overwritten.
-2. If absent, import Harness once and call `harness.change.create` with `Origin = Draft`, the exact `DraftId` and `Scope`, plus `ChangeId`, `Title`, and `Goal`.
-   - This runs the pre-creation `harness.draft.check` gate, freezes expected exports and approval identity in the schema 2 origin marker, then creates the record with the portable CLI in the selected workspace.
-   - The generic `openspec.change create` route rejects creation.
-   - Never hand-create `change.yaml`.
-   - Keep one handoff tied to this target identity, including if later steps are interrupted.
-3. Export only the selected design.md, handoff.md and applicable glossary.md into attachments/drafts/.
-   - Copy English source text; faithfully translate other languages into English, preserving identifiers, accepted scope and rationale.
-   - Mark translated sources with plain-text source identity and approval provenance; keep originals local.
-   - If no names apply, seed an explicit not-applicable glossary.
-   - Topic-shared terms needed by the design must be included in this selected glossary, not all sibling names.
-4. Export cited findings needed by the design, handoff, confirmed talks or knowledge beneath attachments/drafts/findings/, following required local references transitively so the output is self-contained.
-   - Preserve nested relative identity to avoid basename collisions.
-   - English explanatory text and diagram labels are required throughout the Change; do not carry a non-English original as an attachment exception.
-   - Rewrite links into the Change copies; no Change file may depend on an openspec/drafts/ path.
-   - A textual provenance identifier is allowed.
-   - Do not invent decisions when translation is ambiguous.
-5. Materialize exactly the confirmed Exploration Carryover:
-   - Talk candidates become attachments/talks/talk-YYYYMMDD-HHmmss-<theme>.md with Context, Evidence, Options, Settled Decision, Consequences and Flip Condition, useful Visual, and Sources.
-     - Use English explanations and identify original discussion rounds as textual provenance.
-   - Knowledge candidates become attachments/knowledges/<theme>.md with Reusable Insight, Evidence, Boundaries, Application and Sources, disposition candidate per the [knowledge contract](../openspec/references/knowledge.md).
-   - Unconfirmed items, sibling research and the full log.md stay local.
-   - Do not regenerate an existing confirmed item merely because the session resumed.
-6. Write attachments/INDEX.md per the [attachment contract](../openspec/references/attachments.md): source scope and current position, hard conclusions, forbidden items, and every attachment indexed once with its reading reason.
-   - Check English output, preserved meaning and local link closure.
-7. Run `harness.change.seed.verify` after export, then strict change validation and the Harness attachment audit.
-   - The seed gate checks every frozen expected export, required copies, local link closure, and attachment indexing; it cannot prove translation quality or chat/log equality.
-   - Once seeded material is complete, set only the selected design README to status: handed-off with handed_off and target_change; update topic navigation while preserving its current activity and unfinished siblings.
-   - Existing schema 1 Change origins retain their earlier verification contract.
-   - Exported local originals remain in the draft.
-8. Invoke openspec-apply-change, whose Ensure plan consumes the same attachments/drafts/handoff.md, design.md and glossary.md destination paths and writes planning artifacts.
+## Export an independently usable seed
 
-## Boundaries
+- Export accepted design and handoff in English to `attachments/drafts/design.md` and `handoff.md`. Translate explanations and diagram labels faithfully, preserving real names and behavior. Keep local original wording in the draft; do not invent an unclear decision during translation.
+- Copy actually required research below `attachments/drafts/research/` and source attachments below `attachments/drafts/attachments/`, preserving nested relative identity and binary bytes. Legacy findings/glossary sources keep their readable compatibility mapping. Follow needed local links transitively; exported files must not depend on ignored draft paths.
+- Materialize exactly confirmed decision talks with Context, Evidence, Options, Settled Decision, Consequences/Flip Condition, useful visual and Sources. Materialize admitted knowledge with insight, proof, boundaries, application and provenance under the [knowledge contract](../openspec/references/knowledge.md). Resume existing outputs instead of duplicating them.
+- Keep full CONTEXT, optional transcripts, unrelated research and sibling designs local. An export list is a user-owned boundary, not an instruction to copy the entire topic.
+- Maintain [attachments/INDEX.md](../openspec/references/attachments.md) with one entry per attachment, source scope, hard conclusions, reading reason and relevant exclusions. Validate expected exports, local link closure and English meaning; a hash checker cannot judge translation quality.
+- Pass `harness.change.seed.verify`, strict Change validation and the attachment audit before Ensure plan. Update only selected scope handoff metadata and topic navigation, preserving unfinished sibling status.
 
-- One selected design, one handoff, one Change.
-  - A second Change in the topic requires its own scoped design and confirmed handoff; never overwrite the first design as a way to authorize the second.
-- Do not write proposal, specs, design, or tasks here; those are Change planning artifacts owned by Ensure plan.
-  - Source design content is not rewritten during export; only scoped state and topic navigation are updated.
-- A Change created without a draft for a clear fix or mechanical documentation skips this Skill but still uses `harness.change.create` with `Origin = Direct` and a concrete `Reason`.
-  - Ensure plan states the skipped-gate assumption and does not fabricate attachments/drafts/.
-  - An explicit no-Change request creates no Change at all.
-- Unattended continuation may consume an already accepted handoff but never invents names, confirms carryover or opens brainstorming.
-  - Report a missing prerequisite through the existing continuation route.
+## Ask the arrangement Gate and return
+
+- Creation success always leads to the post-handoff Gate: show the created target and unresolved scopes, ask archive/retain draft and execute now/queue/wait. Without a draft, record `not-applicable` and ask only execution.
+- Follow [discussion operations](../harness/references/discussions.md) to record actual answers, apply their arrangements and close the purpose-specific talk. Archive uses the safe directory move; retain leaves discussion available. No generic `closed` shortcut or implicit execution.
+- Only the chosen execution arrangement permits [Ensure plan and Apply](../openspec-apply-change/SKILL.md), through the queue. If waiting, leave an accurate return position. This Skill creates/exports the handoff; Apply authors root proposal/spec/design/tasks.

@@ -337,7 +337,7 @@ Export-ModuleMember -Function Invoke-HarnessUnrealUbt, Invoke-HarnessUnrealBuild
     Copy-Item -LiteralPath $sourceOpenSpec -Destination (Join-Path $taskWorkspaceExeDirectory 'openspec.exe')
     $taskWorkspaceHarnessScripts = Join-Path $taskWorkspaceRoot '.agents\skills\harness\scripts'
     [void](New-Item -ItemType Directory -Path $taskWorkspaceHarnessScripts -Force)
-    foreach ($leaf in @('ChangeGate.psd1', 'ChangeGate.psm1', 'DraftLifecycle.psd1', 'DraftLifecycle.psm1')) {
+    foreach ($leaf in @('ChangeGate.psd1', 'ChangeGate.psm1', 'DraftLifecycle.psd1', 'DraftLifecycle.psm1', 'Workflow.psm1', 'handoff.py', 'discussions.py', 'replans.py', 'execution.py', 'change_queue.py', 'workflow.py', 'draft_record.py', 'source_identity.py')) {
         Copy-Item -LiteralPath (Join-Path $repoRoot ".agents\skills\harness\scripts\$leaf") -Destination $taskWorkspaceHarnessScripts
     }
     [void](Invoke-FixtureGit -Repository $taskWorkspaceRoot -Arguments @('init', '-b', 'main'))
@@ -391,10 +391,14 @@ goal: Prove semantic naming never rewrites historical archives.
         'fixture/chore-record-tree-maintenance'
     )
     foreach ($changeId in $validSemanticChangeIds) {
-        $validSemanticChange = Invoke-Harness -Command 'harness.change.create' -Context $taskWorkspaceContext -Parameters @{
+        $semanticParameters = @{
             ChangeId = $changeId; Title = "Semantic fixture $changeId"; Goal = 'Exercise one allowed semantic Change type'
-            Origin = 'Direct'; Reason = 'Fixture has no user-owned design decision'
+            Origin = 'Direct'; Reason = 'Fixture has no user-owned design decision'; SessionId='semantic-fixture'; HandoffText="Create the exact semantic fixture $changeId to exercise this allowed type."
         }
+        $semanticPreview = Invoke-Harness -Command harness.change.create -Context $taskWorkspaceContext -Parameters ($semanticParameters + @{PlanOnly=$true})
+        if ($semanticPreview.status -ne 'Succeeded') { throw "Semantic preview: $($semanticPreview.error.message)" }
+        Assert-Equal 'Succeeded' $semanticPreview.status 'semantic target supports a read-only concrete handoff preview'
+        $validSemanticChange = Invoke-Harness -Command harness.change.create -Context $taskWorkspaceContext -Parameters ($semanticParameters + @{Gate=@{ConvergenceSource='fixture:ready';DecisionSource='fixture:create';Decision='create';TargetChange=$changeId;HandoffRevision=$semanticPreview.data.HandoffRevision}})
         Assert-Equal 'Succeeded' $validSemanticChange.status "semantic Change type is accepted for '$changeId'"
         $validSemanticLeaf = ($changeId -split '/', 2)[1]
         $validSemanticManifestPath = Join-Path $taskWorkspaceRoot "openspec\changes\fixture\$validSemanticLeaf\change.yaml"
@@ -450,10 +454,12 @@ goal: Prove semantic naming never rewrites historical archives.
     Assert-True (Test-Path -LiteralPath $legacyArchiveRoot -PathType Container) 'semantic route validation leaves the historical archive path in place'
     Assert-Equal $legacyArchiveHash (Get-FileHash -LiteralPath $legacyArchiveManifestPath -Algorithm SHA256).Hash 'semantic route validation leaves the historical archive manifest byte-for-byte unchanged'
 
-    $taskWorkspaceChange = Invoke-Harness -Command 'harness.change.create' -Context $taskWorkspaceContext -Parameters @{
+    $taskCreateParameters = @{
         ChangeId = 'fixture/test-task-dag'; Title = 'Task DAG'; Goal = 'Verify Harness task recognition'
-        Origin = 'Direct'; Reason = 'Fixture tests a parsed Task DAG'
+        Origin = 'Direct'; Reason = 'Fixture tests a parsed Task DAG'; SessionId='task-fixture'; HandoffText='Create a fixture Change to exercise native task parsing.'
     }
+    $taskPreview = Invoke-Harness -Command harness.change.create -Context $taskWorkspaceContext -Parameters ($taskCreateParameters + @{PlanOnly=$true})
+    $taskWorkspaceChange = Invoke-Harness -Command harness.change.create -Context $taskWorkspaceContext -Parameters ($taskCreateParameters + @{Gate=@{ConvergenceSource='fixture:ready';DecisionSource='fixture:create';Decision='create';TargetChange=$taskCreateParameters.ChangeId;HandoffRevision=$taskPreview.data.HandoffRevision}})
     Assert-Equal 'Succeeded' $taskWorkspaceChange.status 'Task Graph fixture change is created'
     [System.IO.File]::WriteAllText((Join-Path $taskWorkspaceRoot 'openspec\changes\fixture\test-task-dag\design.md'), "## Call chains`n`nnone — fixture Task DAG parsing has no code path.`n")
     $taskWorkspacePath = Join-Path $taskWorkspaceRoot 'openspec\changes\fixture\test-task-dag\tasks.md'
@@ -760,7 +766,7 @@ second
     }
     Assert-Equal 0 @(Get-Module UnrealEngineDevelop -All).Count 'non-Unreal routes must not import the Unreal leaf'
     Assert-Equal 'Succeeded' $observation.status 'harness.observe writes one ignored bounded record'
-    Assert-Equal 1 @($observation.artifacts).Count 'observation path is exposed as an artifact'
+    Assert-Equal 2 @($observation.artifacts).Count 'observation and derived inbox paths are exposed as artifacts'
     Assert-True (Test-Path -LiteralPath $observation.data.Path -PathType Leaf) 'observation file exists below the selected workspace'
     $observationRecord = Get-Content -LiteralPath $observation.data.Path -Raw | ConvertFrom-Json
     Assert-Equal 'harness-observation-v1' $observationRecord.schemaVersion 'observation records use a versioned schema'

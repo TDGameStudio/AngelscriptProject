@@ -1,49 +1,41 @@
 ---
 name: grill
-description: Discover and resolve consequential decisions through explained frontier rounds. Called by Brainstorming or a Change Replan; return to the caller when the current scope is decision-complete.
+description: "Explain and resolve consequential design choices through evidence, concrete current architecture, comparable options and user answers. Called by Brainstorming for new work or a Replan draft; keep exploring until the user requests convergence, then return the explained scope to its handoff Gate."
 ---
 
-# Grill
+## Own the questioning method
 
-- Take the caller's objective, accepted decisions, record owner and return position.
-  - Brainstorming owns its draft; an existing Change owns one `attachments/talks/grill-<time>-<theme>.md`.
-  - Use Harness [discussion operations](../harness/references/discussions.md) for recording and state.
-- Inspect evidence first.
-  - For every substantive requirement, design or plan change, expand the affected decisions: scope, behavior, interfaces, dependencies, failures and acceptance.
-  - Carry forward still-valid decisions with reasons; an explicit direction is not necessarily a complete design.
-- Resolve discoverable facts and authorized implementation details yourself.
-  - Ask new consequential choices, invalidated decisions and unsettled user-owned behavior.
-  - Routine defects stay in the task.
+- Take the objective, accepted decisions, owning draft or discussion and return position from the caller. Brainstorming owns the draft; Harness owns execution and handoff.
+- Use [decision coverage](references/coverage.md) to expand affected choices and preserve still-valid decisions. Resolve discoverable facts and authorized engineering details yourself.
+- Read [visible explanations](references/brief.md) before a substantive system/design round and [rounds and answers](references/rounds.md) when forming or processing questions.
+- Use [host interaction](references/hosts.md) for the actual question mechanism and permitted fallback. A Skill cannot enable a tool or turn optional clarification into an approval mechanism.
+- Do not turn every factual clarification into a ceremony. Questions must change scope, behavior, architecture, naming or another consequential user-owned choice.
 
-## Explain and ask
+## Explain before asking and after answers
 
-1. Send a visible situation brief before the question tool: evidence, affected and settled decisions, what can be decided now, option consequences and recommendation.
-   - Later rounds explain the delta; a link or form alone is insufficient.
-2. Ask the unblocked frontier.
-   - Related independent questions may share a round within host limits; dependent questions wait.
-   - Use stable question IDs, meaningful alternatives and relevant flip conditions.
-3. Accept partial, out-of-order and free-text answers.
-   - Reflect what changed, preserve the actual answer source and recompute the frontier, including new questions revealed by the answer.
-4. Preserve delivered explanations, forms, replies and useful diagrams through the caller's recorder.
-   - Update current conclusions without rewriting originals or superseded decisions.
+- Use [explaining-work](../explaining-work/SKILL.md) to inspect and explain the whole architecture relevant to the question: roles, current terms, both sides of call relationships, important code, lifecycle, data and applicable controls.
+- Present the current situation and evidence, settled/reopened/open choices, viable options with consequences, recommendation and material conditions that could change it.
+- Send this explanation in the conversation before a form or question. A file link, recorded context or bare short-label form does not satisfy it.
+- Ask the unblocked decision frontier. Related independent questions may share a round within actual host limits; dependent questions wait.
+- Accept partial, out-of-order and free-text answers. Reflect what each answer settles, then show the updated relevant architecture, terminology and behavior in the conversation before the next question.
+- Own continuation once this discussion is active: after that explanation, actually submit the next ready consequential question in the same turn. Do not require another user message saying "continue", or replace a question with a promise to ask later. Follow the delivery and waiting rules in [host interaction](references/hosts.md).
+- Preserve key decisions, reasons, open points and answer provenance in the caller's context/design. Do not require a transcript duplicate or save prepared-but-unsent explanations as delivered.
+- For naming questions, confirm public naming through [naming](../brainstorming/references/naming.md) and include a meaningful “Provide more names” path that writes a candidate comparison to the draft's research Markdown. Do not add naming alternatives to unrelated design questions.
 
-- Use concise Markdown lists, numbered questions and useful comparison tables.
-  - Explain call chains with [visual-explain](../visual-explain/SKILL.md); no marker vocabulary is required.
-- Use the actual permitted question tool.
-  - If it fails, is cancelled or invisible, ask one concise text question in the permitted channel; do not repeatedly probe the same form.
-- Preselection, silence, cancellation and elapsed time are not answers.
-  - Required unanswered choices remain pending; recommendations remain recommendations.
-- Confirm new public names through [naming](../brainstorming/references/naming.md).
-  - Existing authorization persists; do not ask another generic permission to continue approved work.
+## Let the user choose convergence
 
-## Return to the caller
+- Continue useful research and design discussion without steering toward creation or Replan merely because the model sees no open questions.
+- Do not offer handoff, draft archive, Change creation or application as a routine closing option in ordinary Grill rounds.
+- A user request to converge, create the Change or apply a Replan activates the caller's handoff preparation. The caller first makes the selected design concrete and reviewable, then asks its explicit Gate.
+- Technical readiness, an empty frontier, “looks reasonable,” a recommendation or elapsed time is not the handoff decision.
+- The same rule applies to a new Change and an existing Change's Replan. Preserve the existing Change and execution return point while a draft explores the revision.
+- Direct authorization for a specific edit remains valid; do not manufacture a new draft or repeat already-settled permission.
 
-- Finish when the affected decision tree is covered, necessary choices and authority are settled, and the scope has an executable next step.
-  - Do not stop after a fixed round count or time budget.
-- Waiting for a necessary answer pauses all implementation in the current Change.
-  - Continue read-only investigation, retain questions and the return position, and resume after actual answers.
-  - Unattended continuation records the question and waits without inventing an answer.
-- Return decisions to Brainstorming's design/handoff or Update's Replan.
-  - The caller continues the authorized workflow; a Grill or Replan boundary alone is not a reason to send a final answer.
-- Record unrelated ideas as follow-up topics unless the user changes the objective.
-  - Follow-ups do not silently expand the Change or enqueue another one.
+## Continue rounds and return deliberately
+
+- An ordinary answer continues this Grill in the same topic; completing a round does not return a completed discussion to the caller. Return the current design and exact continuation point when the user requests convergence or pause, or when input is required and cannot currently be obtained. Grill never edits implementation, applies a Replan or starts a queue.
+- Necessary unanswered current-scope choices keep implementation paused; independent read-only investigation may continue.
+- Waiting for a specific answer leaves the discussion open. On the answer's arrival, resume explanation and questioning without a separate restart request. A host-required end to the current reply does not complete the discussion.
+- User silence or cancellation is not acceptance. Follow host policy for optional working assumptions, keeping them separate from confirmed decisions.
+- Keep unrelated ideas as follow-up topics. Do not silently expand the current scope or enqueue work.
+- A completed round is not permission to terminate an unfinished authorized task; the caller retains the exact next step, user pause or waiting condition.

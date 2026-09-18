@@ -17,15 +17,15 @@ description: Take an active OpenSpec Change from created to implemented - write 
 0. **Ensure plan.**
    - Call `openspec.status --change <id> --json`.
      - For a draft-backed new Change created by `openspec-create-change`, pass `harness.change.seed.verify` before planning.
-     - Read the selected English handoff, design and glossary through `attachments/INDEX.md`; settled names come from the glossary.
+     - Read the selected English handoff/design and actually exported evidence through `attachments/INDEX.md`; settled names come from design terminology or a legacy optional glossary.
      - For a direct-origin Change, use its recorded skipped-draft reason and state the assumption in the proposal.
    - For each missing artifact, call `openspec.instructions <artifact> --change <id> --json` and follow its rules as constraints.
      - Write proposal, durable specs delta where needed ([Scenario Cards](../openspec/references/specs.md)), `tasks.md` ([task contract](../openspec/references/tasks.md)), and **a root `design.md` for every new Change**.
      - The new design's `## Call chains` shows the real code path and `Measured at` revision/dirty note, or `none` with a reason for a non-code change.
      - Keep Files, Cases and Verification in the Task Cards.
      - Existing unmarked Changes retain their accepted design requirement.
-   - Do not reopen [`brainstorming`](../brainstorming/SKILL.md) design mode for this Change.
-     - A newly surfaced non-obvious decision becomes one indexed talk in the same edit ([attachments](../openspec/references/attachments.md)); do not recreate seeded talks/knowledge or copy the draft transcript.
+   - Preserve seeded decisions; do not recreate their talks/knowledge or copy the draft transcript.
+     - A newly surfaced user-owned decision routes through Update to a linked draft and its Change-owned planning talk ([attachments](../openspec/references/attachments.md)); explain/Grill it and obtain the real handoff Gates before changing accepted truth.
      - A public name that neither glossary nor convention settles stops planning; it is not an implementation-time `Naming assumed`.
    - Run the plan-acceptance moment of the [Task authoring preflight](../openspec/references/tasks.md), record and index `attachments/data/planning-validation.md`, pass `harness.change.plan.verify`, then validate strictly.
      - Repair failures while the plan is still unaccepted.
@@ -64,14 +64,15 @@ description: Take an active OpenSpec Change from created to implemented - write 
 openspec.status -> Ensure plan (missing artifacts, plan-acceptance preflight) -> task.status -> read current truth -> choose Ready feature group -> grouped RED -> implement -> grouped GREEN -> check proven task
 ```
 
-- Do not open `design`-mode brainstorming from a Ready task, attended or unattended; a `research` draft may be opened to understand code, but its findings feed the task or a replan, never a new design.
+- Keep routine Ready-task investigation local. When evidence invalidates accepted design or surfaces a user-owned decision, hand it to Update, which may open/reuse a linked design draft; implementation waits for the actual Replan and arrangement Gates.
   - Use lightweight task-local investigation and fix in-scope technical failures autonomously.
   - A finding is triaged before replan; use `openspec-update-change` only when the plan boundary is invalid or a user-owned decision has surfaced.
   - Stop only for a real authorization boundary, not ordinary ambiguity, test failure, or review feedback.
   - Never weaken specified behavior to make a task pass.
 
 - On explicit Change execution, inspect `harness.execution.status`; when unbound, use `harness.execution.start` with `Scope=Change` and the actual request source.
-  - Reuse a caller's existing Queue binding.
+  - Reuse a caller's existing Queue binding. Scope=Change is a bounded adapter over the same queue core; never replace/reorder a configured queue or silently start earlier/later members.
+  - A newly created/applied handoff must complete its purpose-specific arrangement Gate before execution; an older binding is insufficient.
   - Query again at task/closure boundaries; triage input before mutation and pause implementation for unresolved Change decisions.
-- Apply never asks the user questions inside implementation: hand planning-invalidating decisions to Update, which calls independent `grill` and returns through applied Replan to this task.
+- Apply never asks the user questions inside implementation: hand planning-invalidating decisions to Update, which calls independent `grill` and returns through approved Replan plus the post-handoff execution arrangement to this task.
   - This handoff does not end the authorized execution loop.

@@ -9,7 +9,8 @@ function Invoke-HarnessChangeQueue {
         [Parameter(Mandatory)][ValidateSet('status','set','remove','reorder','claim','release','pause','takeover','advance','checkpoint')][string]$Action,
         [string]$TargetWorkspaceRoot = '', [string[]]$Changes = @(), [string]$Change = '',
         [int]$ExpectedRevision = -1, [string]$SessionId = '', [string]$Token = '',
-        [string]$Reason = '', [switch]$PreviousControllerStopped, [object[]]$Repositories = @()
+        [string]$Reason = '', [switch]$PreviousControllerStopped, [object[]]$Repositories = @(),
+        [string[]]$AuthorizedUids, [string]$SourceRef = ''
     )
     Import-Module (Join-Path $Context.HarnessRoot '.agents/skills/workspace-lifecycle/scripts/WorkspaceLifecycle.psd1')
     $selected = Get-HarnessWorkspaceContext -WorkspaceRoot $Context.WorkspaceRoot
@@ -28,6 +29,8 @@ function Invoke-HarnessChangeQueue {
     }
     $parameters = @{Changes=$Changes; Change=$Change; ExpectedRevision=$ExpectedRevision; SessionId=$SessionId; Token=$Token; Reason=$Reason; PreviousControllerStopped=[bool]$PreviousControllerStopped}
     if ($PSBoundParameters.ContainsKey('Repositories')) { $parameters.Repositories = $Repositories }
+    if ($PSBoundParameters.ContainsKey('AuthorizedUids')) { $parameters.AuthorizedUids = @($AuthorizedUids) }
+    if ($PSBoundParameters.ContainsKey('SourceRef')) { $parameters.SourceRef = $SourceRef }
     $payload = @{context=$selected; parameters=$parameters} | ConvertTo-Json -Depth 40 -Compress
     $output = @($payload | & python -X utf8 (Join-Path $PSScriptRoot 'change_queue.py') $Action 2>&1)
     if ($LASTEXITCODE) { throw "Change queue failed: $($output -join "`n")" }

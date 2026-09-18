@@ -38,19 +38,21 @@ Invoke-Harness -Command openspec.change -Context $context -ArgumentList @('list'
 
 ## Lifecycle routes
 
+- [Harness](../harness/SKILL.md) owns user-led convergence, both handoff Gates and queue execution. This leaf supplies deterministic record operations; it does not bypass those decisions.
+
 - Before creating or renaming a Change, follow the project `<domain>/<type>-<scope>-<outcome>` convention in [record schema](references/record-schema.md).
 - Harness rejects a nonconforming target before the portable CLI runs; historical archives remain immutable.
 
 - Brainstorming before a new feature, architecture refactor, or major behavior-change record: `brainstorming`; it records shared rounds/research under `openspec/drafts/<domain>/<topic>/` and independent designs under `designs/<scope>/`.
   - Topic mode follows the current focus; scoped designs own approval/handoff state.
-  - Never reopen its `design` mode for an existing Change's scope.
+  - Existing Change design feedback goes through Update into a linked draft; the Change retains accepted truth until the actual Replan Gate.
 - Create the Change from one selected approved scoped design and seed English attachments (design/handoff, confirmed talks and knowledge, INDEX): `openspec-create-change` calls `harness.change.create` and `harness.change.seed.verify`.
-  - A clear direct-origin Change also uses `harness.change.create` with a reason.
+  - An explicitly requested direct-origin formal Change also uses the concrete preview and version-bound Gate with a reason. Direct edits may remain outside Changes.
   - The generic `openspec.change create` route is closed.
 - Write missing planning artifacts and implement: `openspec-apply-change` (`Ensure plan`, then Ready nodes).
 - Revise existing artifacts or apply an evidence-gated replan: `openspec-update-change`.
 - Implement ready Task DAG nodes and resolve task-local technical uncertainty: `openspec-apply-change`.
-  - Do not restart brainstorming or ask the user inside a Ready task.
+  - Keep routine uncertainty task-local; route invalidated planning/user-owned choices through Update and the Harness discussion loop.
   - An unlisted new public name is derived from convention and recorded as `Naming assumed`.
 - Verify a fixed snapshot: `openspec-verify-change`.
 - Merge durable delta specs: `openspec-sync-specs`.

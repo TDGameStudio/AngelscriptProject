@@ -1,5 +1,24 @@
 # Changes & comparisons
 
+## Preferred unboxed design comparison
+
+- Use an unboxed tree or a comparison table in ordinary conversation. Explain the current relevant architecture first, then attach each option to the relationship or behavior it changes.
+- Preserve the original boxed comparison below as a reference for a specifically requested framed artifact; it is not the default chat style.
+
+```text
+Option A: <name>                            // Changes <responsibility> for <reason>.
+├─[flow] <entry> → <owner> → <consumer>     // Shows where data and control cross the changed boundary.
+├─[benefit] <concrete outcome>              // Explains which user need this serves.
+└─[cost] <concrete consequence>             // Explains the limitation or trade-off.
+
+Option B: <name>                            // Places the same responsibility at <different boundary>.
+├─[flow] <entry> → <owner> → <consumer>     // Makes the corresponding difference visible.
+├─[benefit] <concrete outcome>              // Uses the same comparison criterion as option A.
+└─[cost] <concrete consequence>             // Shows what changes for the same consumer.
+```
+
+- Follow with the recommended option, why it fits the actual constraints and evidence that would change the recommendation. Label a recommendation as unaccepted until the user answers.
+
 ## Show a file-layout change as a diff-marked file tree
 
 ```diff

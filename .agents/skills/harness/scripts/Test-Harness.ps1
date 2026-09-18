@@ -81,15 +81,21 @@ function Get-HarnessGateChecks {
             HarnessQueue       = '.agents\skills\harness\tests\HarnessQueue.Tests.ps1'
             HarnessChangeGate  = '.agents\skills\harness\tests\HarnessChangeGate.Tests.ps1'
             HarnessEvolution   = '.agents\skills\harness\tests\HarnessEvolution.Tests.ps1'
+            HarnessMutationGate = '.agents\skills\harness\tests\HarnessMutationGate.Tests.ps1'
+            HarnessFeedback    = '.agents\skills\harness\tests\HarnessFeedback.Tests.ps1'
             HarnessCutover     = '.agents\skills\harness\tests\HarnessCutover.Tests.ps1'
             HarnessGateContract = '.agents\skills\harness\tests\Test-Harness.Tests.ps1'
             Protocol            = '.agents\skills\harness\tests\Protocol.Tests.ps1'
             Workspace           = '.agents\skills\workspace-lifecycle\tests\WorkspaceLifecycle.Tests.ps1'
             WorkspaceReplica    = '.agents\skills\workspace-lifecycle\tests\WorkspaceReplica.Tests.ps1'
+            WorkspaceRemovalActivity = '.agents\skills\workspace-lifecycle\tests\WorkspaceRemovalActivity.Tests.ps1'
             GitOperations       = '.agents\skills\git-operations\tests\GitOperations.Tests.ps1'
             PluginCommits       = '.agents\skills\git-operations\tests\PluginCommits.Tests.ps1'
             OpenSpecSkill       = '.agents\skills\openspec\tests\OpenSpecSkill.Tests.ps1'
             UnrealIntegration   = '.agents\skills\unreal-engine-develop\tests\UnrealEngineDevelop.Tests.ps1'
+            UnrealCancellationSafety = '.agents\skills\unreal-engine-develop\tests\UnrealCancellationSafety.Tests.ps1'
+            UnrealRunAdmission = '.agents\skills\unreal-engine-develop\tests\UnrealRunAdmission.Tests.ps1'
+            UnrealRemovalProcessInspection = '.agents\skills\unreal-engine-develop\tests\UnrealRemovalProcessInspection.Tests.ps1'
         }
         foreach ($testName in $scriptTests.Keys) {
             $testPath = [System.IO.Path]::GetFullPath((Join-Path $projectRoot $scriptTests[$testName]))

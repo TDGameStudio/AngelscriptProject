@@ -116,19 +116,20 @@ function Remove-WorkspaceReplica {
     }
     if ($local.Count -and -not $DiscardIgnoredFiles) { throw 'Replica contains ignored local data; explicit DiscardIgnoredFiles is required.' }
     if ($PSCmdlet.ShouldProcess($Root, 'remove verified project replica and plugin worktrees; preserve branches')) {
-        if (Get-Command Invoke-Harness -ErrorAction SilentlyContinue) {
-            $processes = Invoke-Harness ue.process.list -Context (Get-HarnessWorkspaceContext -WorkspaceRoot $Root)
-            if ($processes.status -ne 'Succeeded' -or @($processes.data | Where-Object WorkspaceMatch).Count) { throw 'Cannot remove a workspace with active or uninspectable Unreal activity.' }
-        }
-        foreach ($repo in $repositories | Where-Object Mode -eq 'Worktree') {
-            [void](Assert-WorkspacePathChainSafe -Root $Root -Target $repo.Root -Purpose 'plugin worktree removal')
-            [void](Invoke-WorkspaceGit -Repository $repo.SourceRoot -Arguments @('worktree','remove','--force',$repo.Root))
-        }
-        [void](Assert-WorkspacePathChainSafe -Root $PrimaryRoot -Target $Root -Purpose 'replica payload removal')
-        Remove-Item -LiteralPath $Root -Recurse -Force
-        $registration = Join-Path $PrimaryRoot "Saved/Harness/Workspaces/$($data.WorkspaceId).json"
-        [void](Assert-WorkspacePathChainSafe -Root $PrimaryRoot -Target $registration -Purpose 'replica unregister')
-        Remove-Item -LiteralPath $registration
+        $removalLease = Enter-WorkspaceRemovalLease -Root $Root
+        try {
+            $verification = Test-HarnessWorkspace -WorkspaceRoot $Root -RequireClean
+            if (-not $verification.IsValid) { throw "Replica changed before removal: $($verification.Errors -join '; ')" }
+            foreach ($repo in $repositories | Where-Object Mode -eq 'Worktree') {
+                [void](Assert-WorkspacePathChainSafe -Root $Root -Target $repo.Root -Purpose 'plugin worktree removal')
+                [void](Invoke-WorkspaceGit -Repository $repo.SourceRoot -Arguments @('worktree','remove','--force',$repo.Root))
+            }
+            [void](Assert-WorkspacePathChainSafe -Root $PrimaryRoot -Target $Root -Purpose 'replica payload removal')
+            Remove-Item -LiteralPath $Root -Recurse -Force
+            $registration = Join-Path $PrimaryRoot "Saved/Harness/Workspaces/$($data.WorkspaceId).json"
+            [void](Assert-WorkspacePathChainSafe -Root $PrimaryRoot -Target $registration -Purpose 'replica unregister')
+            Remove-Item -LiteralPath $registration
+        } finally { Exit-WorkspaceRemovalLease -Lease $removalLease }
     }
     return [pscustomobject]@{WorktreeRoot=$Root; Removed=(-not (Test-Path $Root)); BranchPreserved=$true; DiscardedIgnoredFiles=@($local)}
 }

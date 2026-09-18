@@ -1,53 +1,42 @@
 ---
 name: brainstorming
-description: "Explore proposals, trade-offs and unresolved design decisions in a continuing local draft. Explain before asking, preserve conversation, and hand off one approved scope when OpenSpec is selected. Respect authorized direct work; existing Changes use update/apply."
+description: "Explore user intent, evidence, alternatives and consequential design choices in a continuing local draft. Open drafts automatically for substantive exploration, explain before asking and after answers, and prepare a creation or Replan handoff only when the user requests convergence. Respect direct authorized work."
 ---
 
-# Brainstorming
+## Open or resume the discussion
 
-- Open or resume one topic under `openspec/drafts/<domain>/<topic>/` through `harness.draft.create` / `harness.draft.status`.
-  - Use [drafts.md](references/drafts.md) for its records and recording setup.
-- Open a draft for a proposal, trade-off or more than one diagram.
-  - A factual answer outside continuing exploration needs none.
-  - Announce `Draft opened: <path> (mode: <mode>)` once.
-- Keep one deliverable by default.
-  - Create `designs/<scope>/` when an outcome can be described; split only independently deliverable outcomes.
-  - Alternatives for one outcome stay together.
-- Topic mode follows current work: `research` investigates, `proposal` develops a candidate, `design` resolves its decisions.
-  - Each scoped design owns its approval separately; researching another subject does not revoke it.
+- Open or resume one topic under `openspec/drafts/<domain>/<topic>/` through `harness.draft.create` / `harness.draft.status`. Draft creation is automatic discussion support, not approval to implement.
+- Read [the draft contract](references/drafts.md) for the minimal README and CONTEXT, optional research/attachments and scoped design metadata.
+- A substantive proposal, trade-off or continuing design exploration belongs in a draft. A factual query, standalone explanation or clear directly authorized edit does not require a draft merely to satisfy a workflow.
+- Announce the draft path once. Preserve the selected workspace and the caller's objective and return position.
+- Keep one outcome together by default. Create `designs/<scope>/design.md` when a bounded outcome can be described; split only independently deliverable outcomes, not competing alternatives for one outcome.
+- Topic mode follows current work: `research` investigates, `proposal` develops a candidate and `design` resolves choices. Modes are not authorization or a compulsory one-way ladder.
 
-## Explore with Grill
+## Explore and make the design understandable
 
-- Call the independent [grill](../grill/SKILL.md) with this draft/design as its record owner and a return position.
-  - It owns impact discovery, visible explanation, frontier questions and answer collection.
-- Update the owning design and the README's five current fields after answers or corrections.
-  - Preserve original sources and superseded decisions in the append-only log, then continue unblocked work.
-- Present meaningful design revisions before seeking missing approval.
-  - Confirm public names using [naming.md](references/naming.md); recommendations, silence and sibling approval are not acceptance.
-- Keep instructions and draft navigation in concise Markdown lists.
-  - New draft prose uses the user's conversation language; original conversation stays verbatim.
-  - Change output is English.
-- Bind the exact session and draft with `harness.draft.record` when its source is supported.
-  - Hooks record delivered messages; inspect coverage on resume and before handoff.
-  - With no working hook, reconcile delivered messages before questions/final and next turn's entry; the current unsent final remains pending.
-  - See [recording checkpoints](references/drafts.md#recording-checkpoints).
+- Call independent [grill](../grill/SKILL.md) with this draft/design, accepted choices and the return position.
+- Use [explaining-work](../explaining-work/SKILL.md) to show the complete relevant architecture, responsibilities, current terms, important code, callers/callees, lifecycle and data before questions.
+- Compare meaningful viable approaches with consequences and a recommendation; do not manufacture weak alternatives. Grill's [round method](../grill/references/rounds.md) owns the question frontier and answer handling.
+- After each answer, show the resulting relevant architecture and terminology again in conversation. Explain changed relationships/behavior and remaining uncertainty; a saved-file update is insufficient.
+- Keep the same draft and discussion active across answers. Let Grill actually issue the next ready question after that explanation; do not wrap each round in a completion reply or require the user to request continuation. A pending question resumes from its answer, including after a host-required text fallback.
+- Update CONTEXT with key decisions, rationale, unresolved points and sources. Update the owning design's current truth at the same time; preserve important superseded decisions without requiring verbatim chat duplication.
+- Confirm public names using [naming](references/naming.md). A naming round always offers more candidates in a draft Markdown file, and a name the user already chose is not re-asked.
+- Draft prose follows the conversation language. Identifiers remain exact; final Change planning and exported current summaries use English.
 
-- A completed round or design is a return point, not automatic session termination.
-  - Continue the caller's already authorized next step; retain required unanswered decisions without inventing approval.
+## Wait for user-driven convergence
 
-## Select the authorized route
+- Do not prepare handoff or offer creation/Replan just because the agent believes the design is ready, the frontier is empty or a round has finished.
+- Continue the user's research and discussion until they ask to converge, create a Change or apply a Replan.
+- After that request, prepare the concrete selected design and [scoped handoff](references/deep-exploration.md), including target, important decisions/names and necessary carryover.
+- Explain the prepared result in the conversation, then collect the explicit handoff Gate for the exact revision. The user can choose creation/application or return to architecture explanation and discussion.
+- A request to converge permits preparation; it is not a fabricated answer to the later Gate. A stale or changed handoff requires the changed result to be shown and its actual choice recorded.
+- Creation and Replan use the same discussion and Gate principle. For an existing Change, preserve valid work and the execution return point while exploring the proposed revision in a linked draft.
+- Once the creation/application succeeds, the caller handles the required follow-up choices for draft disposition and execution timing. One handed-off scope does not automatically archive its topic.
 
-- An approved plan or clear defect repair with no unresolved user-owned choice can proceed directly; state the assumption.
-  - Honor an explicit no-Change instruction without another approval ceremony.
-- For unresolved design work, obtain approval for the actual scope before implementation.
-  - A topic mode or directory is not authorization.
-- When OpenSpec is selected, confirm the selected scope's names and carryover, then write its [handoff](references/deep-exploration.md).
-  - Record explicit `approval_round`, exact scope and Change identity; pass `harness.draft.check` before `openspec-create-change`.
-- One scoped handoff creates one Change.
-  - Creation exports English attachments; Ensure plan builds the Task DAG.
-  - Mark only that scope handed-off after seed verification; other research can continue.
-- An existing Change uses `openspec-update-change`, which calls `grill` with a Change-owned talk and returns to execution; it does not reopen design-mode brainstorming.
-- Park with a resumption condition, or abandon with a reason.
-- Archive only on explicit `harness.draft.archive`; preserve legacy records per the draft contract.
-- Unattended continuation (defined by Harness) never opens brainstorming.
-  - A new user-owned decision stays open in its Change discussion until actual answers arrive.
+## Respect direct work and historical records
+
+- Honor a specific authorized direct edit or no-Change request without inventing a generic approval ceremony. State material assumptions and carry out the authorized route.
+- A draft may remain active, be parked with a resumption condition or be archived on an explicit disposition. Moving it into the archive does not imply that open questions were solved.
+- Read existing log/findings/scoped-README layouts in place. Do not bulk-migrate or rewrite old records to match the new layout.
+- Optional transcript recording remains available through [legacy recording](references/recording.md); it is not required for discussion, questions, handoff or final responses.
+- Unattended execution does not invent user choices. Save the relevant finding and return position, and wait for required actual input through Harness.

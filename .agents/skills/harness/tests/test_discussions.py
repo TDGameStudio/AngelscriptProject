@@ -6,7 +6,7 @@ import tempfile
 import unittest
 
 sys.path.insert(0, str(Path(__file__).parents[1] / 'scripts'))
-from discussions import talk
+from discussions import talk, read_record, render
 import draft_record
 
 
@@ -67,6 +67,71 @@ class Discussions(unittest.TestCase):
         index = (self.change_root / 'attachments/INDEX.md').read_text('utf8')
         self.assertEqual(1, index.count(created['talk_id'] + '.md'))
 
+    def test_supersession_requires_an_existing_same_owner_active_replacement_without_mutation(self):
+        for kind in ('missing', 'absent', 'self', 'wrong-change', 'wrong-scope', 'closed'):
+            with self.subTest(kind=kind):
+                original = self.create()
+                parameters = dict(Status='superseded', Disposition='Replaced by the linked discussion')
+                if kind == 'absent':
+                    parameters['ReplacementTalkId'] = 'talk-does-not-exist'
+                elif kind == 'self':
+                    parameters['ReplacementTalkId'] = original['talk_id']
+                elif kind != 'missing':
+                    replacement = self.create(Questions=[], Scope='followup' if kind == 'wrong-scope' else 'current-change',
+                                              Status='closed' if kind == 'closed' else 'open',
+                                              Disposition='no-change' if kind == 'closed' else '')
+                    if kind == 'wrong-change':
+                        replacement['change'] = 'harness/another-change'
+                        path = self.change_root / 'attachments/talks' / (replacement['talk_id'] + '.md')
+                        path.write_text(render(replacement), 'utf8')
+                    parameters['ReplacementTalkId'] = replacement['talk_id']
+                before = {p: p.read_bytes() for p in (self.change_root / 'attachments').rglob('*') if p.is_file()}
+                with self.assertRaises((ValueError, OSError)):
+                    self.update(original, **parameters)
+                self.assertEqual(before, {p: p.read_bytes() for p in (self.change_root / 'attachments').rglob('*') if p.is_file()})
+
+    def test_supersession_transfers_pending_question_and_provenance_and_prevents_cycle(self):
+        original = self.create()
+        replacement = self.create(Questions=[], SourceRef='message:replacement', ResumeTask='2.1')
+        superseded = self.update(original, Status='superseded', Disposition='Reframed contract', ReplacementTalkId=replacement['talk_id'])
+        status = talk(self.context, 'status', {'Change': self.change})
+        self.assertFalse(status['executionAllowed'])
+        self.assertEqual([replacement['talk_id']], status['blockers'])
+        current = next(x for x in status['records'] if x['talk_id'] == replacement['talk_id'])
+        self.assertEqual(original['questions'], current['questions'])
+        self.assertEqual(original['talk_id'], current['supersession_sources'][0]['talk_id'])
+        self.assertEqual('message:1', current['supersession_sources'][0]['source_ref'])
+        self.assertEqual('1.1', current['supersession_sources'][0]['resume_task'])
+        self.assertEqual(replacement['talk_id'], superseded['replacement_talk_id'])
+        selected = talk(self.context, 'status', {'Change': self.change, 'TalkId': original['talk_id']})
+        self.assertFalse(selected['executionAllowed'])
+        self.assertEqual([replacement['talk_id']], selected['blockers'])
+        with self.assertRaises(ValueError):
+            self.update(current, Status='superseded', Disposition='Cycle', ReplacementTalkId=original['talk_id'])
+        with self.assertRaises(ValueError):
+            self.update(current, Questions=[])
+        resolved = self.update(current, Status='closed', Disposition='rejected', ResolutionSource='message:reject-contract')
+        self.assertEqual('message:reject-contract', resolved['resolution_source'])
+        self.assertTrue(talk(self.context, 'status', {'Change': self.change})['executionAllowed'])
+
+    def test_supersession_query_fails_closed_after_replacement_is_removed(self):
+        original = self.create()
+        replacement = self.create(Questions=[])
+        self.update(original, Status='superseded', Disposition='Reframed', ReplacementTalkId=replacement['talk_id'])
+        (self.change_root / 'attachments/talks' / (replacement['talk_id'] + '.md')).unlink()
+        status = talk(self.context, 'status', {'Change': self.change})
+        self.assertFalse(status['executionAllowed'])
+        self.assertTrue(status['issues'])
+
+    def test_unresolved_rejection_or_no_change_needs_actual_resolution_evidence(self):
+        for disposition in ('rejected', 'no-change'):
+            with self.subTest(disposition=disposition):
+                original = self.create()
+                with self.assertRaisesRegex(ValueError, 'resolution|answer'):
+                    self.update(original, Status='closed', Disposition=disposition)
+                resolved = self.update(original, Status='closed', Disposition=disposition, ResolutionSource='message:resolved')
+                self.assertEqual('closed', resolved['status'])
+
     def test_another_workspace_cannot_update_and_query_is_nonmutating(self):
         created = self.create()
         before = {p: p.read_bytes() for p in self.root.rglob('*') if p.is_file()}
@@ -95,6 +160,13 @@ class Discussions(unittest.TestCase):
         folder.mkdir()
         (folder / 'talk-old.md').write_text('# Old discussion\n', 'utf8')
         self.assertEqual([], talk(self.context, 'status', {'Change': self.change})['blockers'])
+
+    def test_handoff_followup_cannot_close_without_actual_answers_and_arrangements(self):
+        created = self.create(Purpose='handoff-followup', Questions=[
+            dict(id='draft-disposition', question='Keep or archive?', answer=None, source=None),
+            dict(id='execution-disposition', question='Execution arrangement?', answer=None, source=None)])
+        with self.assertRaisesRegex(ValueError, 'handoff|Handoff|answer'):
+            self.update(created, Status='closed', Disposition='no-change')
 
 
 if __name__ == '__main__':

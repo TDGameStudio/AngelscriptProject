@@ -7,12 +7,35 @@ foreach ($suite in @('test_discussions.py','test_replans.py','test_execution.py'
     if ($LASTEXITCODE) { throw "$suite failed" }
 }
 $fixture = Join-Path ([IO.Path]::GetTempPath()) ('harness-workflow-' + [guid]::NewGuid().ToString('N'))
+$unrealModule = Import-Module (Join-Path $projectRoot '.agents/skills/unreal-engine-develop/scripts/UnrealEngineDevelop.psd1') -PassThru
+$processReader = & $unrealModule { (Get-Command Get-HarnessUnrealProcessList).ScriptBlock }
+# Bound the external process inventory to an idle fixture; all Harness adapters,
+# native planning and closure eligibility remain real.
+& $unrealModule { function script:Get-HarnessUnrealProcessList { param($WorkspaceRoot) return ,@() } }
 function W($path, $body) { [void][IO.Directory]::CreateDirectory([IO.Path]::GetDirectoryName($path)); [IO.File]::WriteAllText($path, $body) }
 function Check($value, $message) { if (-not $value) { throw $message }; "PASS $message" }
 function Invoke-WorkflowFixture($command, $parameters=@{}, $arguments=@()) {
     $r = Invoke-Harness -Context $context -Command $command -Parameters $parameters -ArgumentList $arguments
     if ($r.status -ne 'Succeeded') { throw "$command : $($r.error.message)" }
     return $r.data
+}
+function New-ApprovedWorkflowFixture($changeId, $session='fixture-session') {
+    $p=@{ChangeId=$changeId;Title=$changeId;Goal='Exercise workflow';Origin='Direct';Reason='Isolated fixture';SessionId=$session;HandoffText="Create the exact workflow fixture $changeId and keep implementation waiting."}
+    $preview=Invoke-WorkflowFixture harness.change.create ($p+@{PlanOnly=$true})
+    $created=Invoke-WorkflowFixture harness.change.create ($p+@{Gate=@{ConvergenceSource='fixture:ready';DecisionSource='fixture:create';Decision='create';TargetChange=$changeId;HandoffRevision=$preview.HandoffRevision}})
+    Complete-WorkflowArrangement $changeId $created.Followup $session later 'fixture:wait'
+}
+function Complete-WorkflowArrangement($changeId, $talkId, $session, $decision, $source) {
+    $view=Invoke-WorkflowFixture harness.talk.status @{Change=$changeId;TalkId=$talkId}
+    $talk=$view.records[0]
+    $questions=@(@{id='draft-disposition';question='Draft disposition';answer='not-applicable';source='not-applicable:no-draft'},@{id='execution-disposition';question='Execution arrangement';answer=$decision;source=$source})
+    $settled=Invoke-WorkflowFixture harness.talk.update @{Change=$changeId;TalkId=$talkId;SessionId=$session;ExpectedRevision=$talk.revision;Status='settled';Questions=$questions}
+    if ($decision -eq 'now') {
+        $staged=Invoke-WorkflowFixture harness.execution.start @{Change=$changeId;SessionId=$session;Scope='Change';SourceRef=$source}
+        $binding=Get-Content -LiteralPath (Join-Path $fixture "Saved/Harness/Execution/$session.json") -Raw | ConvertFrom-Json
+        Check ($binding.authorizedHandoffId -eq $talk.handoff_id) "staged execution matches the current handoff (actual=$($binding.authorizedHandoffId), expected=$($talk.handoff_id))"
+    }
+    Invoke-WorkflowFixture harness.talk.update @{Change=$changeId;TalkId=$talkId;SessionId=$session;ExpectedRevision=$settled.revision;Status='closed';Disposition='no-change';Arrangements=@{draft=@{status='applied';decision='not-applicable';source='not-applicable:no-draft'};execution=@{status='applied';decision=$decision;source=$source}}} | Out-Null
 }
 function Move-WorkflowArchiveFixture($changeId) {
     $from=[IO.Path]::GetFullPath((Join-Path $fixture "openspec/changes/$changeId"))
@@ -44,7 +67,7 @@ try {
     Invoke-WorkflowFixture openspec.init @{} @('--project-id','fixture','--title','Fixture') | Out-Null
     Invoke-WorkflowFixture openspec.domain @{} @('create','harness','--title','Harness') | Out-Null
     $id='harness/test-feedback-loop'
-    Invoke-WorkflowFixture harness.change.create @{ChangeId=$id;Title='Feedback loop';Goal='Exercise workflow';Origin='Direct';Reason='Isolated fixture'} | Out-Null
+    New-ApprovedWorkflowFixture $id
     $changeRoot=Join-Path $fixture "openspec/changes/$id"
     W (Join-Path $changeRoot 'proposal.md') "# Proposal`n`n## Why`n`nExercise the feedback loop.`n`n## What Changes`n`nPreserve accepted behavior A.`n"
     W (Join-Path $changeRoot 'design.md') "# Design`n`n## Call chains`n`nnone — documentation fixture.`n"
@@ -69,11 +92,29 @@ python -c "assert True"
 '@
     Invoke-WorkflowFixture harness.execution.start @{Change=$id;SessionId='fixture-session';Scope='Change';SourceRef='user:execute'} | Out-Null
     Import-Module (Join-Path $projectRoot '.agents/skills/harness/scripts/Workflow.psm1')
-    Invoke-HarnessWorkflowCore -Context $context -Group execution -Action hook -Parameters @{hook_event_name='UserPromptSubmit';session_id='fixture-session';turn_id='early-feedback';prompt='Consider behavior A'} | Out-Null
+    Invoke-WorkflowFixture harness.execution.input @{SessionId='fixture-session';InputId='early-feedback';SourceRef='user:feedback';Summary='Consider behavior A';Kind='feedback'} | Out-Null
     $beforeTalk=Invoke-WorkflowFixture task.status @{Change=$id}
     Check ($beforeTalk.executionAllowed -eq $false) 'pending input blocks task eligibility before a talk file exists'
     $beforeClosure=Invoke-WorkflowFixture harness.evolution.status @{Change=$id}
     Check ('User input awaits triage' -in $beforeClosure.ClosureBlockers) 'terminal evaluation sees pending input before a talk file exists'
+    $pausedQueue=Invoke-WorkflowFixture harness.queue.pause @{Reason='User pauses before controller recovery'}
+    Invoke-WorkflowFixture harness.queue.release @{Token=$pausedQueue.controller.token} | Out-Null
+    Invoke-WorkflowFixture harness.queue.claim @{SessionId='fixture-session'} | Out-Null
+    $pausedRun=Invoke-WorkflowFixture harness.execution.status @{SessionId='fixture-session'}
+    Check ($pausedRun.state -eq 'paused' -and -not $pausedRun.implementationAllowed) 'source-free public reclaim preserves the user pause'
+    $resume=Invoke-WorkflowFixture harness.execution.checkpoint @{SessionId='fixture-session';ExpectedRevision=$pausedRun.revision;SourceRef='user:resume-after-pause'}
+    Check ($resume.state -eq 'running' -and $resume.pendingInputs.Count -eq 1) 'one explicit resume clears only the pause and preserves feedback'
+    Invoke-WorkflowFixture ue.process.list | Out-Null
+    Invoke-WorkflowFixture harness.queue.takeover @{SessionId='recovery-session';PreviousControllerStopped=$true} | Out-Null
+    $transferParams=@{SessionId='recovery-session';Scope='Queue';SourceRef='user:takeover';PreviousSessionId='fixture-session';PreviousSessionStopped=$true}
+    $transferred=Invoke-WorkflowFixture harness.execution.start $transferParams
+    Check ($transferred.pendingInputs.Count -eq 1 -and $transferred.pendingInputs[0].id -eq 'early-feedback' -and -not $transferred.implementationAllowed) 'public takeover retains the exact untriaged input and execution barrier'
+    $retry=Invoke-WorkflowFixture harness.execution.start $transferParams
+    Check ($retry.revision -eq $transferred.revision) 'public transfer retry does not duplicate or consume obligations'
+    Check (-not (Invoke-WorkflowFixture task.status @{Change=$id}).executionAllowed) 'transferred input remains visible to task eligibility'
+    Check ('User input awaits triage' -in (Invoke-WorkflowFixture harness.evolution.status @{Change=$id}).ClosureBlockers) 'transferred input remains visible to terminal evaluation'
+    Invoke-WorkflowFixture harness.queue.takeover @{SessionId='fixture-session';PreviousControllerStopped=$true} | Out-Null
+    Invoke-WorkflowFixture harness.execution.start @{SessionId='fixture-session';Scope='Queue';SourceRef='user:takeover-back';PreviousSessionId='recovery-session';PreviousSessionStopped=$true} | Out-Null
     $pendingRun=Invoke-WorkflowFixture harness.execution.status @{SessionId='fixture-session'}
     Invoke-WorkflowFixture harness.execution.checkpoint @{SessionId='fixture-session';ExpectedRevision=$pendingRun.revision;AcknowledgeInputs=@('early-feedback')} | Out-Null
     $record=Invoke-WorkflowFixture harness.talk.create @{Change=$id;SessionId='fixture-session';Kind='grill';Theme='behavior';Summary='Choose behavior';SourceRef='message:1';ResumeTask='1.1';Questions=@(@{id='Q1';question='Which behavior?';answer=$null;source=$null})}
@@ -89,11 +130,16 @@ python -c "assert True"
     $hashes=@{}; foreach($name in @('design.md','tasks.md')) { $hashes[$name]=(Get-FileHash (Join-Path $changeRoot $name) -Algorithm SHA256).Hash.ToLowerInvariant() }
     $beforeTasks=Get-Content -LiteralPath (Join-Path $changeRoot 'tasks.md') -Raw
     $afterTasks=$beforeTasks.Replace('"1.1": []', '"1.1": []' + "`n    " + '"1.2": ["1.1"]') + "`n" + ($beforeTasks.Substring($beforeTasks.IndexOf('## [ ]')).Replace('1.1 Implement behavior','1.2 Verify integration').Replace('+ fixture.txt','+ integration.txt'))
-    $applied=Invoke-WorkflowFixture harness.replan.apply @{Change=$id;TalkId=$record.talk_id;SessionId='fixture-session';ExpectedRevision=$settled.revision;ReplanId='replan-20260917-120000-behavior';ResumeTask='1.1';ExpectedHashes=$hashes;Candidates=@{'design.md'="# Design`n`n## Call chains`n`nnone — accepted behavior A.`n";'tasks.md'=$afterTasks}}
+    $replanParameters=@{Change=$id;TalkId=$record.talk_id;SessionId='fixture-session';ExpectedRevision=$settled.revision;ReplanId='replan-20260917-120000-behavior';ResumeTask='1.1';ExpectedHashes=$hashes;Candidates=@{'design.md'="# Design`n`n## Call chains`n`nnone — accepted behavior A.`n";'tasks.md'=$afterTasks};HandoffText='Preserve behavior A and add the dependent integration proof task.'}
+    $replanPreview=Invoke-WorkflowFixture harness.replan.apply ($replanParameters+@{PlanOnly=$true})
+    $applied=Invoke-WorkflowFixture harness.replan.apply ($replanParameters+@{Gate=@{ConvergenceSource='message:ready';DecisionSource='message:apply';Decision='replan';TargetChange=$id;HandoffRevision=$replanPreview.HandoffRevision}})
     Check ($applied.status -eq 'applied') 'real portable CLI validates staged and applied planning artifacts'
     Check ('1.2' -in $applied.task_changes.added -and '1.1 -> 1.2' -in $applied.edge_changes.added) 'applied record captures the actual task and dependency additions'
+    $waiting=Invoke-WorkflowFixture harness.execution.status @{SessionId='fixture-session'}
+    Check (-not $waiting.implementationAllowed) 'applied Replan waits for its actual post-handoff arrangement'
+    Complete-WorkflowArrangement $id $applied.handoff.post_talk_id 'fixture-session' now 'user:continue-replan'
     $resumed=Invoke-WorkflowFixture harness.execution.status @{SessionId='fixture-session'}
-    Check ($resumed.state -eq 'running' -and $resumed.implementationAllowed) 'settled Replan returns execution to the Ready task without another start'
+    Check ($resumed.state -eq 'running' -and $resumed.implementationAllowed) 'confirmed post-Replan execution arrangement returns to the Ready task'
     $source=Join-Path $fixture 'source.jsonl'
     W $source ((@{type='session_meta';payload=@{id='fixture-session';cwd=$fixture;cli_version='0.154.0'}} | ConvertTo-Json -Compress)+"`n"+(@{type='response_item';payload=@{type='message';role='assistant';phase='commentary';content=@(@{type='output_text';text='Original visible explanation'})}} | ConvertTo-Json -Depth 8 -Compress)+"`n")
     $recording=Invoke-WorkflowFixture harness.conversation.record @{Action='bind';SessionId='fixture-session';Change=$id;TalkId=$record.talk_id;Source=$source;StartLine=2}
@@ -101,21 +147,15 @@ python -c "assert True"
     Invoke-WorkflowFixture harness.conversation.record @{Action='unbind';SessionId='fixture-session'} | Out-Null
     $talkPath=Join-Path $changeRoot "attachments/talks/$($record.talk_id).md"
     Check ((Get-Content $talkPath -Raw).Contains('Original visible explanation')) 'conversation original is retained beside current discussion state'
-    $info=[Diagnostics.ProcessStartInfo]::new((Get-Command pwsh).Source)
-    foreach($arg in @('-NoProfile','-File',(Join-Path $fixture '.agents/skills/harness/scripts/Invoke-HarnessCodexHook.ps1'))) { $info.ArgumentList.Add($arg) }
-    $info.WorkingDirectory=$fixture; $info.UseShellExecute=$false; $info.CreateNoWindow=$true
-    $info.RedirectStandardInput=$true; $info.RedirectStandardOutput=$true; $info.RedirectStandardError=$true
-    $process=[Diagnostics.Process]::Start($info)
-    $process.StandardInput.WriteLine((@{hook_event_name='Stop';session_id='fixture-session';cwd=$fixture;permission_mode='default';transcript_path=$source} | ConvertTo-Json -Compress))
-    $process.StandardInput.Close()
-    $stdout=$process.StandardOutput.ReadToEnd(); $stderr=$process.StandardError.ReadToEnd(); $process.WaitForExit()
-    Check ($process.ExitCode -eq 0 -and ($stdout | ConvertFrom-Json).decision -eq 'block') "native command hook continues owned unfinished work: $stderr"
-    $process.Dispose()
+    Check ((Invoke-WorkflowFixture harness.execution.status @{SessionId='fixture-session'}).state -ne 'complete') 'agent-owned continuation remains until the exact archive, without a Codex Stop hook'
     Move-WorkflowArchiveFixture $id
+    $singleQueue=Invoke-WorkflowFixture harness.queue.status
+    Invoke-WorkflowFixture harness.queue.advance @{Token=$singleQueue.controller.token} | Out-Null
     Check ((Invoke-WorkflowFixture harness.execution.status @{SessionId='fixture-session'}).state -eq 'complete') 'standalone completion derives from the exact completed archive'
     $queueIds=@('harness/test-loop-first','harness/test-loop-second')
-    foreach($queueId in $queueIds) { Invoke-WorkflowFixture harness.change.create @{ChangeId=$queueId;Title=$queueId;Goal='Queue continuation';Origin='Direct';Reason='Isolated queue fixture'} | Out-Null }
-    Invoke-WorkflowFixture harness.queue.set @{Changes=$queueIds;ExpectedRevision=0} | Out-Null
+    foreach($queueId in $queueIds) { New-ApprovedWorkflowFixture $queueId 'queue-session' }
+    $emptyQueue=Invoke-WorkflowFixture harness.queue.status
+    Invoke-WorkflowFixture harness.queue.set @{Changes=$queueIds;ExpectedRevision=$emptyQueue.revision} | Out-Null
     $queueRun=Invoke-WorkflowFixture harness.execution.start @{SessionId='queue-session';Scope='Queue';SourceRef='user:drain'}
     Check ($queueRun.state -eq 'running' -and $queueRun.change -eq $queueIds[0]) 'queue execution binds the selected workspace and first member'
     Move-WorkflowArchiveFixture $queueIds[0]
@@ -132,6 +172,7 @@ python -c "assert True"
     Check ((Invoke-WorkflowFixture harness.execution.status @{SessionId='queue-session'}).state -eq 'complete') 'only exhausted authorized queue work completes the execution'
     'Harness workflow integration passed.'
 } finally {
+    & $unrealModule { param($Original) Set-Item Function:script:Get-HarnessUnrealProcessList $Original } $processReader
     $resolved=[IO.Path]::GetFullPath($fixture)
     $prefix=[IO.Path]::GetFullPath([IO.Path]::GetTempPath()).TrimEnd('\','/')+[IO.Path]::DirectorySeparatorChar+'harness-workflow-'
     if (-not $resolved.StartsWith($prefix,[StringComparison]::OrdinalIgnoreCase)) { throw 'Unsafe fixture cleanup' }

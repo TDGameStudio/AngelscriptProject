@@ -1,185 +1,82 @@
 ---
 name: harness
-description: "Read first for any AngelscriptProject task that touches code, tests, Skills, or OpenSpec records: the entry router that selects the workspace, decides brainstorming vs Change vs task work, and routes to the one leaf Skill needed. Also use to resume an unattended request, handle an evidence-gated replan or explicitly requested review, or invoke OpenSpec, workspace, Git, and observation routes."
+description: "Project entry for AngelscriptProject code, tests, Skills and OpenSpec: select the workspace, route the discussion/execution double loop, or invoke a peripheral tool directly. Owns handoff Gates, queue continuation, feedback and visible updates; load one relevant method or tool leaf."
 ---
 
 # Harness
 
-- Harness selects the execution workspace and routes to one leaf Skill.
-  - The primary workspace is both the control center and a full execution workspace; major host, framework and plugin changes may execute there.
-- New `.workspaces/<name>/` projects contain minimal host files, plugin worktrees only for edited plugins, and pinned file snapshots for needed unmodified plugins.
-  - The project root has no parent Git worktree.
-  - Registered identity separates `WorkspaceRoot` from canonical `OpenSpecRoot`; trusted Skills remain in `HarnessRoot`.
-- Each workspace owns its local queue and outputs.
-  - Existing parent Git worktrees remain readable in place and are parked outside the new queue workflow.
-  - There is no daemon or automatic new chat.
+## Enter once and choose the work
 
-- Ordinary chat can execute an entire approved queue.
-  - Codex `/goal` supplies optional unattended continuation, never a repository mode, branch convention, workspace-creation permission or stored workflow state.
-  - Unattended continuation uses approved Ready tasks, records user-owned decisions in Change-owned talks and waits for actual answers, never opens `brainstorming` and never asks the user.
-  - This is the single definition; other Skills defer here.
-  - The current workspace remains the default; create or switch only when explicitly requested.
-- For “start/continue the queue until finished”, use [change-queue](../change-queue/SKILL.md).
-- For “query current tasks/progress/workspaces”, read actual Harness results using [queries](references/queries.md).
-  - Querying does not claim or start work.
-- At session start, resume and explicit workspace switch, resolve Context and state its `WorkspaceId`, `WorkspaceRoot` and `OpenSpecRoot`.
-  - Retain that selected workspace across tool calls; importing shared scripts or querying another workspace does not switch it.
-  - Before edits, resolve implementation paths under WorkspaceRoot and canonical records under OpenSpecRoot; use absolute paths and never fall back to primary plugin source when a replica dependency is missing.
+- Read `AGENTS.md`; resolve the selected Context and state `WorkspaceId`, `WorkspaceRoot` and `OpenSpecRoot` at entry, resume or explicit workspace switch. Implementation belongs to WorkspaceRoot; canonical records belong to OpenSpecRoot; trusted code belongs to HarnessRoot.
+- Keep the current workspace. Creating/switching a workspace requires the user's request. The primary workspace is both control center and full execution workspace. Minimal replicas contain plugin worktrees/snapshots; retained parent worktrees remain readable and parked outside the queue workflow.
+- Read an existing Change's `tasks.md` and `attachments/INDEX.md` first, then only the relevant leaf/reference. Never bulk-load all histories, attachments or command docs.
+- Select one of three routes from intent: discussion, authorized Change execution, or a direct edit/tool/query. A request to directly fix a bounded problem can stay direct. OpenSpec is opt-in; do not fabricate a draft, Change, queue or Gate for a trivial explanation or authorized direct maintenance.
+- Query `harness.status` at entry/resume. Show its update revision and relevant summary once in the conversation, again only if the revision changes. Report `UpdatesIssue` briefly if present; do not invent a version, maintain a seen database, hash the Skill tree or install a watcher.
 
-- Workspace creation, integration, publication, and removal are separate explicit actions.
-  - Never infer permission to run `workspace.new`, `git.integrate`, `git.push`, or `workspace.remove`; push is non-force and cleanup preserves the branch.
-
-## Load progressively
-
-- Start with `AGENTS.md`, this file, the current `tasks.md` when a Change exists, and that Change's `attachments/INDEX.md`.
-  - Then load exactly one applicable leaf Skill or focused reference.
-  - Do not bulk-load command documentation, attachments, history, or scripts.
-
-- Use [routing.md](references/routing.md) only when the route is unclear.
-- Load a protocol only when its event occurs:
-  - [task-dag.md](references/task-dag.md) when planning or selecting Ready work.
-  - [replan.md](references/replan.md) only after evidence invalidates accepted planning truth.
-  - [review.md](references/review.md) only after the user or an external agent explicitly requests a Review, or when triaging an existing Review file.
-  - [closure.md](references/closure.md) only when closing or archiving work.
-
-- OpenSpec is opt-in: create or mutate a Change only when the user or accepted work explicitly selects it.
-
-## Orient and pass the Brainstorm Gate
-
-Before creating a Change, establish the authorized objective, selected workspace, and whether the intended behavior is decision-complete:
-
-- Name a new Change `<domain>/<type>-<scope>-<outcome>` with an allowed type from the OpenSpec [record schema](../openspec/references/record-schema.md).
-  - Keep unrelated outcomes in separate Changes and never rename an immutable archive to repair historical style.
-- A new feature, architecture refactor, or major behavior change without an accepted decision-complete handoff uses `brainstorming` in `design` mode before Change creation.
-- `research` and `proposal` modes open a draft whenever a reply carries a proposal, a trade-off, or more than one diagram, independent of any Change.
-- Every question to the user is a grill round that opens with a situation brief:
-  - pre-Change rounds stay under `openspec/drafts/<domain>/<topic>/`;
-  - existing Change rounds stay in its indexed talks.
-- The independent `grill` Skill owns questioning.
-- Related independent frontier questions may share a round; dependent questions wait.
-- Topic mode follows the current focus, while each designs/<scope>/ owns its design and handoff state.
-- A clear defect repair, mechanical documentation change, or accepted ready-to-execute plan may skip brainstorming only when no user-owned decision remains unconfirmed; state the one assumption that justifies skipping.
-- A decision-complete exploration handoff is not an active Change.
-- If OpenSpec owns the work:
-  - `openspec-create-change` creates the canonical Change from the selected approved `designs/<scope>/` handoff:
-    - exporting `design.md` and `handoff.md` in English into indexed `attachments/drafts/` and materializing the user-confirmed talks and knowledge candidates;
-  - and the `Ensure plan` step of `openspec-apply-change` builds its Ready Task DAG before implementation mutation.
-- A draft may also end `parked` or `abandoned` with no Change.
-- Use `harness.draft.record` to bind/reconcile one exact session transcript with its local draft; trusted Codex hooks share the recorder, while unsupported hosts use source reconciliation.
-  - Use `harness.draft.create`, `harness.draft.status`, and `harness.draft.check` for one exact local topic and selected design; Harness does not inventory or scan all drafts.
-  - `harness.draft.archive` moves only an explicitly completed or abandoned topic into ignored `openspec/archive/drafts/`.
-  - Parked topics stay active; archived drafts are historical inputs and new discussion opens a linked topic.
-- New Change creation uses `harness.change.create` with an approved draft scope or a direct-origin reason.
-  - For draft-backed Changes, finish the English attachment export and pass `harness.change.seed.verify` before Ensure plan; `openspec.instructions` planning requests enforce the same seed gate.
-  - Every new Change gets a root `design.md` with `## Call chains` and passes `harness.change.plan.verify` before `task.status` or `openspec.instructions apply` can expose Ready work.
-  - The exact pre-gate active IDs keep their accepted plan contract.
-- After Change creation, do not reopen `design`-mode brainstorming for that Change's scope.
-  - Use lightweight investigation inside the Ready task to inspect code, reproduce behavior, compare bounded options, or run a focused experiment.
-  - Apply never asks the user: an unlisted new public name is derived from convention and recorded as `Naming assumed` in task Evidence; a user-owned decision that surfaces is planning-invalidating evidence for replan.
-  - Update the Change only when evidence invalidates a requirement, design boundary, verification contract, dependency edge, or required artifact.
+## The two loops
 
 ```text
-unclear feature or architecture -> brainstorming (drafts/) -> approved design + confirmed carryover -> openspec-create-change -> openspec-apply-change (Ensure plan, then Ready nodes)
-                                                            -> parked / abandoned draft (no Change)
-Ready task uncertainty          -> lightweight investigation -> implement or evidence-gated replan
-unlisted public name in a task  -> convention-derived name + `Naming assumed` in Evidence -> reviewed at verify
-user-owned decision in a task   -> planning-invalidating evidence -> update-change replan -> same-session grill when attended, or durable waiting-input -> applied replan -> resume execution
+observation / user or external intent
+  -> explain the evidence and intended outcome
+  -> discussion loop
+     -> automatic local draft                 // capture a substantial unresolved topic
+     -> research -> explaining-work -> grill  // explain first, then ask
+     -> user answer -> current architecture   // redraw the complete relevant view each round
+     -> repeat until the USER says ready      // never propose Change creation proactively
+     -> exact-version Create / Replan Gate
+     -> successful handoff -> arrangement Gate
+  -> execution loop
+     -> authorized queue range -> Ready task -> implement -> verify
+     -> explain result -> user feedback / requested review / observation
+     -> local repair, or linked draft for an invalidated design
+     -> verified closure -> next authorized item
+
+peripheral tools: UE / Git / workspace / OpenSpec / status / observation
+  -> callable at the point of need, without manufacturing a lifecycle
 ```
 
-## Continue the authorized request
+- Explanation is part of the feedback mechanism. Use [explaining-work](../explaining-work/SKILL.md) for architecture, relevant classes, callers/callees, key logic, ownership/lifecycle, data relationships and meaningful flags. Preserve concise ASCII diagrams and faithful code excerpts or explicitly simplified code with embedded explanations.
+- After each Grill answer, explain the updated current scope, architecture, terms, impact and unresolved choices again. Link the answer to the changed design; do not substitute a delta list or "recorded" for an intelligible current view.
+- Keep an active Grill moving without a separate user "continue" request: actually submit the next ready question after that explanation. A pending answer keeps discussion open; a missing form requires a concrete visible question, not a promise or completion reply. Grill's [rounds](../grill/references/rounds.md) and [host interaction](../grill/references/hosts.md) own the exact continuation behavior.
+- User feedback may be a correction, query, pause or new objective. Inspect its meaning before routing. A status question or routine local failure does not force a new design loop. Review starts only when the user or an external agent explicitly requests it.
 
-- Use [discussion operations](references/discussions.md) for independent Grill, Change-owned talks, transactional Replan and session execution bindings.
-- Explicit Change/queue execution starts with `harness.execution.start`.
-  - Query `harness.execution.status` before tasks/closure and after long calls; process pending input before mutation.
-  - Recording and queries never start execution.
-- Necessary unanswered choices pause the whole current Change.
-  - Actual answers return through Grill and Replan to execution without another start request.
-  - Explicit user pause remains separate.
-- A task, Grill, Replan or individual Change completion does not end an unfinished authorized request.
-  - Continue until all authorized work is complete, the user pauses, or a genuine blocker remains; save the exact return position.
+## Discussion and the two handoff Gates
 
-## Execute the work
+- [brainstorming](../brainstorming/SKILL.md) owns automatic topic creation and current design; [grill](../grill/SKILL.md) owns explained questions. New drafts use `README.md`, key-decision `CONTEXT.md`, optional `research/` and indexed `attachments/`, and `designs/<scope>/design.md`. Prepare `handoff.md` only after user-led convergence. The full contract is in [drafts](../brainstorming/references/drafts.md).
+- Do not mirror every reply, diagram or answer into draft files. Keep consequential decisions, reasons, corrections and provenance in CONTEXT; update the design when its substance changes. Old logs/findings remain readable in place; no automatic migration. Transcript recording is an explicit opt-in tool.
+- When naming is being decided, include **“Provide more names”** in the conversation language; expand candidates with usage examples and tradeoffs in `research/naming-<subject>.md`, then explain and ask again. Follow [naming](../brainstorming/references/naming.md).
+- While Grill is active, keep explaining and asking until the user proactively signals readiness. A fully answered frontier is not a signal to suggest creation. Once the user signals readiness, read [the handoff Gate explanation](references/handoff-gate.md): fully explain background, current and proposed architecture, concrete changes, reasons, proof and handoff impact for a reader unfamiliar with the system before a visibly marked exact-version question. A few summary sentences or a file link do not satisfy this Gate.
+- Handoff Gate choices are: **create this Change / apply this Replan**, **continue explaining and discussing**, or **park**. Bind the actual decision and convergence sources to the presented revision. `PlanOnly` previews are read-only and do not approve anything. A material edit or changed target requires a fresh preview and decision; navigation/CONTEXT progress alone does not.
+- After successful Create/Replan, always present the arrangement Gate: **archive or keep the draft**, and **execute/continue now or leave waiting**. Show unresolved sibling scopes before archiving; preserve their states. Without a source draft, disposition is `not-applicable` and ask only the real execution question.
+- Record the arrangement in the handoff's purpose-specific talk. A generic closed discussion, old queue authorization or input acknowledgement cannot bypass it. Missing/corrupt expected records block execution. The concrete public protocol is [discussions](references/discussions.md).
+- Explicit direct edits bypass these handoff operations. An explicitly requested formal Change without a draft still uses the direct-origin preview and exact Gate; never manufacture draft approval. Historical origins retain their accepted contracts.
 
-1. Resolve the selected workspace and, when a Change exists, call `task.status` to choose a node whose derived `ready` field is true.
-2. Read only the task's linked context.
-   - Confirm its bounded feature outcome and executable test cases, then use grouped RED/GREEN from the verification policy.
-   - Implement the smallest complete slice and retain exact task-to-case evidence, including any valid shared proving run.
-3. Mark the task complete only after verification passes.
-   - Never uncheck completed work; add a follow-up node when new work is required.
-4. After verification, Replan autonomously only when evidence invalidates accepted planning truth.
-   - Ordinary implementation uncertainty and local defects stay inside the task.
-5. Otherwise proceed directly to closure or archive.
-   - Harness never starts an Incident or Final Review on its own and completion needs no Review classification.
-6. When the user or an external agent explicitly requests a Review, follow [review.md](references/review.md).
-   - Any Review file that exists must reach a valid closed or superseded state before archive.
-7. Integration, push, and workspace removal remain separate user-directed operations.
+## Execute and return to feedback
 
-- Investigate technical uncertainty and choose the strongest evidence-backed in-scope implementation without interrupting the user.
-  - Stop only when progress requires new authority: a product-goal change, destructive or external action outside scope, unavailable credentials, or irreconcilable user decisions.
+- All Change execution uses [change-queue](../change-queue/SKILL.md). `Scope=Change` is a thin single-item adapter; it cannot overwrite an existing queue, skip its head or start its following member. A queue controller retains the authorized ordered UIDs and request source; changes outside that range need new authority.
+- Bind execution with `harness.execution.start`; inspect status before task/closure mutation and after long calls. Process actual incoming feedback with `harness.execution.input` and acknowledge exact IDs after triage. Pending input blocks implementation. Pause records intent; cancellation of a UE worker is a separate explicit tool action.
+- Apply uses a seeded handoff, `harness.change.seed.verify`, Ensure plan, then `harness.change.plan.verify` and native `task.status` Ready nodes. Each task owns a bounded outcome, interfaces, cases, files and exact proof. Use grouped RED/GREEN for behavior; do not uncheck completed tasks.
+- Fix ordinary implementation failures within the current task. Replan when evidence invalidates a requirement, design boundary, task boundary/edge, verification contract or required artifact, or exposes a user-owned decision. Read [replan](references/replan.md), pause the current Change and open/reuse a linked draft; preserve accepted artifacts until the actual Replan Gate is applied.
+- Unattended continuation executes only already authorized work. Record unresolved user-owned decisions and wait; do not fabricate an answer or convergence. Attended discussion can resume in the same session through both Gates. A new handoff's “wait” choice supersedes earlier execution authority.
+- Finish authorized work through verification, applicable spec synchronization and [closure](references/closure.md). Continue the remaining authorized range; stop on user pause, genuine blocker, required unanswered decision or exhausted scope. No automatic Review or successor Change.
 
-## Explain relationships visually
+## Peripheral tools and workflow improvement
 
-- Use `visual-explain` when a compact diagram materially clarifies multiple relationships, a sequence, or state transitions—for example workspace ownership, Task DAG readiness, Replan propagation, Review lifecycle, or cross-module execution.
-  - Prefer a small text diagram during conversation and a durable artifact only when future work benefits from it.
-  - Do not generate visuals for a single fact, a trivial edit, or information already clearer as one short list.
+- Use [routing](references/routing.md) to choose a leaf and `Get-HarnessCommand` as the executable route inventory. It reports route metadata, not parameter schemas; inspect the owning leaf for arguments. [queries](references/queries.md) selects read-only status without claiming or repairing work.
+- UE uses `ue.*` and the selected workspace; builds/tests/commandlets/suites retain their worker leases, result semantics and explicit cancellation. Git/workspace/OpenSpec tools keep their own bounded authority. Integration, push, workspace creation/removal remain separately user-directed.
+- Automatically collect recurring friction, incorrect routing or weak explanation as `harness.observe` with a source and optional dedup/draft owner. Use [evolution](references/evolution.md) to show a batch, obtain the user's selected scope, and only then change Skills/tools. The current authorized task may include those fixes; unrelated observations do not expand it.
+- Select proof through [verification](references/verification.md). Quick/Performance/Integration/full UE runs are conditional on impact, not daily defaults. Review protocol is [review](references/review.md); DAG details are [task-dag](references/task-dag.md).
 
-## Handle an explicit Review
-
-- An explicitly requested Review may run inline or as an asynchronous subagent.
-  - Asynchronous execution is an optimization, not a lifecycle default.
-  - In either case, assign an immutable snapshot and one unique Review file.
-  - While an asynchronous reviewer runs, continue only disjoint work; a moving workspace never redefines the assigned snapshot.
-
-## PowerShell entry
-
-- PowerShell 7.0 or later (`Core`) is the only supported harness host.
-
-In the current PowerShell 7 session, import once:
+## PowerShell and storage boundaries
 
 ```powershell
 Import-Module ./.agents/skills/harness/scripts/Harness.psd1
 $context = New-HarnessContext -WorkspaceRoot (Get-Location).Path
 Get-HarnessCommand
 Invoke-Harness -Command harness.status -Context $context
-Invoke-Harness -Command workspace.list -Context $context
-Invoke-Harness -Command workspace.status -Context $context
-Invoke-Harness -Command task.status -Context $context -Parameters @{ Change = 'domain/change' }
-Invoke-Harness -Command ue.status -Context $context
 ```
 
-- Once imported, ordinary Harness routes execute directly in that current process; `Invoke-Harness` does not launch another PowerShell host for dispatch.
-  - Intentional child `pwsh` processes are reserved for isolated test hosts, Git hooks or native fixtures, and Harness-managed Unreal workers whose process lifetime is part of the route contract.
-
-- The selected Context is the dispatcher authority.
-  - Do not pass a different repository root or replacement Context through route parameters; matching explicit roots are only idempotent aliases, and `git.integrate` uses `SourceWorkspaceRoot` as its sole authorized different workspace.
-
-- Every invocation returns the same small result envelope.
-  - `task.status` returns OpenSpec TaskPlan JSON in `data`; OpenSpec validates the frontmatter graph while Harness owns workspace selection and scheduling.
-  - Task Card detail below the machine-readable surface remains ordinary Markdown for agents and people.
-
-- Unreal execution uses the same context and lazy-loads `unreal-engine-develop` only on the first `ue.*` route.
-  - Prefer `PlanOnly` before committing resources, `NoWait` when the caller wants an asynchronous `RunId`, `ue.run.status` for one managed run, and `ue.process.list` for a bounded machine view.
-  - Same-workspace operations remain exclusive; eligible Installed Engine builds may share an Engine lane across distinct worktrees.
-  - Load the leaf's [concurrency reference](../unreal-engine-develop/references/concurrency.md) only when selecting `Auto`, `Parallel`, or `Serialize`, choosing `Auto`, `Wait`, or `Fail`, or interpreting unknown progress.
-
-- Codex hooks are optional: `SessionStart` adds workspace orientation; no per-tool or subagent hooks run.
-  - Cursor and other hosts use the same public Harness routes and source reconciliation.
-- Bound recording syncs at `SessionStart`, `UserPromptSubmit` and `Stop`; partial coverage is reported for retry.
-  - See [draft recording](../brainstorming/references/drafts.md#recording-checkpoints).
-- For bound execution, `UserPromptSubmit` saves pending input before recording, `Interrupt` only saves pause, and `Stop` checks authorized continuation.
-  - Plan mode never restarts implementation.
-- New or changed definitions require native `/hooks` trust; configuration alone does not prove automatic activation.
-  - Hooks never replace the agent's authorized execution loop.
-
-- Choose task, completion, and post-archive checks through the [impact-scoped verification policy](references/verification.md).
-  - Focused owner tests are the default; `Quick`, `Performance`, `Integration`, and real Unreal operations remain available only when their documented scope matches the demonstrated impact or an explicit user request.
-
-- The public runner itself starts fresh bounded `pwsh` hosts for individual gates so module state cannot leak between tests; that is an intentional test-isolation boundary.
-
-- Performance runs validate every timed sample.
-  - Raw `Summary.json` and `Samples.csv` remain below ignored `Saved/Harness/Performance/`; durable Change evidence keeps only a privacy-trimmed aggregate and its hashes.
-  - The default TaskStatus measurement uses an isolated temporary graph.
-  - Register accepted aggregates in the current Change and its attachment index before archive; ignored raw data alone is not durable evidence.
-
-- New agent-created scratch goes under `Saved/AgentTemp/<topic>/`.
-  - Harness-managed runtime outputs keep their documented `Saved/Harness/` lanes; existing Saved content stays in place unless a separate task explicitly owns cleanup.
+- PowerShell 7 Core is required. Ordinary dispatch stays in the current process; bounded child `pwsh` is reserved for isolated tests, Git hooks/native fixtures and Harness-managed UE workers. No repository Codex project hooks, daemon or automatic new chat.
+- Context is authoritative. Replacement roots/Context in route arguments are rejected; matching roots are idempotent aliases. `git.integrate` names its separately authorized SourceWorkspaceRoot.
+- All routes retain the common result envelope. TaskPlan is native JSON, not a second Markdown parser. UE execution failure fails the envelope; a successful status query about a failed run remains a successful query.
+- New scratch belongs under `Saved/AgentTemp/<topic>/`; runtime output retains existing `Saved/Harness/` lanes. Keep earlier Saved data. Accepted performance evidence must include a privacy-trimmed durable aggregate and raw hashes before closure; raw ignored files alone are not durable proof.

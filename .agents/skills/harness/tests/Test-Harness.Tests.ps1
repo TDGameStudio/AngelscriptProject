@@ -40,16 +40,21 @@ foreach ($name in @(
         'HarnessHandoff.PS7',
         'HarnessRecording.PS7',
         'HarnessEvolution.PS7',
+        'HarnessMutationGate.PS7',
         'HarnessCutover.PS7',
         'HarnessGateContract.PS7',
         'Protocol.PS7',
         'Workspace.PS7',
+        'WorkspaceRemovalActivity.PS7',
         'GitOperations.PS7',
         'OpenSpecSkill.PS7',
-        'UnrealIntegration.PS7')) {
+        'UnrealIntegration.PS7',
+        'UnrealCancellationSafety.PS7',
+        'UnrealRunAdmission.PS7',
+        'UnrealRemovalProcessInspection.PS7')) {
     Assert-True ($name -in @($quick.Name)) "Quick profile contains $name"
 }
-Assert-Equal 17 @($quick).Count 'Quick profile includes discussion workflow, draft, queue, replica and plugin commit fixtures'
+Assert-Equal 23 @($quick).Count 'Quick profile includes workflow, queue, replica, feedback, mutation and peripheral boundary fixtures'
 Assert-Equal 0 @($quick | Where-Object Name -match 'PS5|WindowsPowerShell').Count 'Quick exposes no legacy host check'
 
 foreach ($name in @('HarnessPerformance.PS7')) {
@@ -63,7 +68,7 @@ foreach ($name in @('Harness.Installation', 'OpenSpec.Doctor', 'OpenSpec.Workflo
 foreach ($name in @('HarnessPerformance.PS7')) {
     Assert-True ($name -in @($integration.Name)) "Integration contains $name"
 }
-Assert-Equal 22 @($integration).Count 'Integration contains seventeen scripts, one performance run, and four route checks'
+Assert-Equal 28 @($integration).Count 'Integration contains twenty-three scripts, one performance run, and four route checks'
 Assert-Equal 1 @($integration | Where-Object Name -eq 'UnrealIntegration.PS7').Count 'Integration contains the fixture-only Unreal route gate exactly once'
 Assert-Equal $quick.Count @($integration | Where-Object Kind -eq 'Script').Count 'Integration keeps the complete Quick script matrix'
 Assert-Equal $performance.Count @($integration | Where-Object Kind -eq 'Performance').Count 'Integration includes the complete Performance matrix'

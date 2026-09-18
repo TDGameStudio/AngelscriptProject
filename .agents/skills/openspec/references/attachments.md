@@ -30,10 +30,10 @@ If INDEX would exceed 120 lines, merge or trim low-value detail and improve summ
 
 | Event | Record | Boundary |
 |---|---|---|
-| Change created from a selected approved brainstorming design by `openspec-create-change` | `drafts/` | English exports of the selected scoped `design.md`, `handoff.md` and `glossary.md`, plus `drafts/findings/<file>` for every finding a carried design, talk or knowledge cites, each indexed once; the same step materializes the user-confirmed talks and knowledge candidates. The draft is local and git-ignored, so a Change never links into `openspec/drafts/`; all local originals remain there. |
+| Change created from a selected approved brainstorming design by `openspec-create-change` | `drafts/` | English exports of selected scoped `design.md` and `handoff.md`, optional terminology exports, and required `drafts/research/` or `drafts/attachments/` evidence closure (legacy findings retain compatibility mapping), each indexed once; the same step materializes the user-confirmed talks and knowledge candidates. The draft is local and git-ignored, so a Change never links into `openspec/drafts/`; all local originals remain there. |
 | Explicit user- or external-agent-requested fixed-snapshot Review | `reviews/` | Reviewer writes only its unique file; coordinator owns registration, triage, and lifecycle state. |
 | Material investigated technical or workflow problem | `implementation/` | One shared root cause and disposition lifecycle, including admitted dogfooding findings; never a final summary or second task list. |
-| Interactive questioning or non-obvious technical decision | `talks/grill-*.md` or `talks/talk-*.md` | One discussion record with current decisions and original conversation; promote settled truth through Replan. |
+| Interactive questioning or non-obvious technical decision | `talks/grill-*.md` or `talks/talk-*.md` | One planning record with current decisions/provenance; candidate design may live in a linked draft. Optional original recording is separate; approved exact truth enters through Replan. |
 | Evidence proves the current plan invalid | `replans/` | Persist only the accepted applied semantic diff. |
 | Reusable learning candidate | `knowledges/` | Change-local evidence until verification establishes whether it should be promoted, superseded, or retired. |
 | Reusable helper | `scripts/` | One purpose with usage and dependencies in the header. |
@@ -57,14 +57,14 @@ If INDEX would exceed 120 lines, merge or trim low-value detail and improve summ
 
 ## Change discussions
 
-- Use [discussion operations](../../harness/references/discussions.md) for `harness-talk-v1`, complete original question rounds, pending state and return position. Prefixes distinguish record form, not lifecycle.
-- Current Change discussions stay in the Change; pre-creation conversation remains in its draft. Do not automatically duplicate a Grill as another Talk. Recognized original source frames retain their language; current summaries remain English.
-- An open or settled current-scope discussion blocks implementation and closure. Only successful `harness.replan.apply` links and closes an applied decision. Synchronize and unbind recording before terminal evaluation/archive.
+- Use [discussion operations](../../harness/references/discussions.md) for `harness-talk-v1`, key decision questions, pending state, handoff arrangements and return position. Prefixes distinguish record form, not lifecycle.
+- Change planning impact and return state stay in the Change; candidate design and key decisions may use a linked local draft before creation or during Replan, with no transcript dual-writing. Do not automatically duplicate a Grill as another Talk. Recognized original source frames retain their language; current summaries remain English.
+- An open or settled current-scope discussion blocks implementation and closure. Only successful `harness.replan.apply` links and closes an applied decision. If recording was explicitly enabled, synchronize and unbind its sink before terminal evaluation/archive. A purpose-specific handoff-followup talk requires actual draft/execution arrangements, not a Replan or generic closure shortcut.
 
 ## Implementation issues and talks
 
 - Use [implementation-issues.md](implementation-issues.md) only after a technical problem crosses its material threshold. `implementation/` is issue-only; final integration evidence, routine TDD cycles, closure preparation, and progress summaries belong in their owning task evidence, `data/`, Review, INDEX, or closure record.
-- Ignored `Saved/Harness/Observations` records are inexpensive evidence, not durable owners. When a dogfooding observation crosses the material threshold, admit it to one indexed `openspec-material-issue-v2` record in an exact active Change before handoff. Once admitted, it must become `resolved`, `rejected`, or `superseded`; free-floating deferral is not a terminal state.
+- Ignored `Saved/Harness/Observations` records are inexpensive evidence, not durable owners. Automatically collect dogfooding evidence, then present a batch and obtain the user-selected repair scope before changing unrelated workflow policy. If it belongs to the authorized active scope and crosses the material threshold, admit it to one indexed `openspec-material-issue-v2` owner. Never create a successor automatically. Once admitted, it must become `resolved`, `rejected`, or `superseded`; free-floating deferral is not a terminal state.
 - Non-obvious major decisions go to `talks/talk-YYYYMMDD-HHmmss-<theme>.md`, then lift the settled truth into proposal/spec/design before replan.
 
 ## Exploration carryover
@@ -73,11 +73,11 @@ Pre-Change brainstorming writes only to its draft under `openspec/drafts/<domain
 
 | Carryover | Destination | Admission boundary |
 |---|---|---|
-| Approved draft `design.md` and `handoff.md` | `drafts/design.md`, `drafts/handoff.md` | English exports indexed once, together with `drafts/glossary.md` and required cited `drafts/findings/<file>` dependencies. Copy English originals or faithfully translate other languages, including diagram explanations, preserving identifiers and source/approval provenance. The selected design README records `target_change`; all originals remain local. Change links resolve inside the Change; local draft/round provenance is plain text, never a dependency on an `openspec/drafts/` path. |
+| Approved draft `design.md` and `handoff.md` | `drafts/design.md`, `drafts/handoff.md` | English exports indexed once, together with actually needed optional terminology, `drafts/research/` and `drafts/attachments/` dependencies. Copy English originals or faithfully translate other languages, including diagram explanations, preserving identifiers and source/approval provenance. The selected design metadata records `target_change`; all originals remain local. Change links resolve inside the Change; local draft/round provenance is plain text, never a dependency on an `openspec/drafts/` path. |
 | Settled requirement, scope, architecture, or executable boundary | proposal/spec/design/tasks | Canonical current truth; do not leave it only in an attachment. |
 | Non-obvious decision, dropped alternative, flip condition, or decision-critical visualization | `talks/talk-YYYYMMDD-HHmmss-<theme>.md` | Preserve only when the rationale prevents likely re-decision. |
 | Evidence-backed insight or visualization reusable across tasks or later work | `knowledges/<theme>.md` | Change-local candidate; promotion still requires evidence, verification, and an explicit disposition. |
-| Temporary question-round state, transcript prose, or one-off visual | discard from the Change | No durable decision or reuse value inside the Change; the draft `log.md` already keeps the conversation. |
+| Temporary question-round state, transcript prose, or one-off visual | discard from the Change | No durable decision or reuse value inside the Change; only key decisions need local CONTEXT; full original recording is optional. |
 
 A carryover talk uses concise plain headings such as Context, Evidence, Options, Settled Decision, Consequences and Flip Condition, Visual, and Sources. A change-local knowledge candidate uses Reusable Insight, Evidence, Boundaries, Application, and Sources. Embed the smallest useful Markdown table or text diagram in the owning file; a separate visual file is allowed only when it is itself indexed exactly once.
 

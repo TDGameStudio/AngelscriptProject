@@ -509,6 +509,8 @@ $routingPath = Join-Path $referenceRoot 'routing.md'
 $verificationPath = Join-Path $referenceRoot 'verification.md'
 $hookScriptPath = Join-Path $projectRoot '.agents\skills\harness\scripts\Invoke-HarnessCodexHook.ps1'
 $hookConfigPath = Join-Path $projectRoot '.codex\hooks.json'
+$hookTestPath = Join-Path $projectRoot '.agents\skills\harness\tests\test_codex_hook.py'
+$harnessSpecPath = Join-Path $projectRoot 'openspec\specs\harness\core\spec.md'
 
 Assert-True (Test-Path -LiteralPath $changeRoot -PathType Container) 'The archived Hardness dogfood record is required for protocol audit'
 Assert-True (Test-Path -LiteralPath $verificationPath -PathType Leaf) 'The canonical impact-scoped verification policy is required'
@@ -526,23 +528,25 @@ foreach ($legacyPattern in @('native Goal mode', 'Choose the workspace mode', 'N
     Assert-True ($harnessSkill -notmatch $legacyPattern) "Harness entry still exposes legacy repository mode text: $legacyPattern"
 }
 foreach ($token in @(
-    'primary workspace is both the control center and a full execution workspace',
     'WorkspaceRoot',
     'OpenSpecRoot',
-    'Codex `/goal`',
-    'optional unattended continuation',
-    'do not reopen `design`-mode brainstorming',
-    'Brainstorm Gate',
-    '`brainstorming`',
-    'openspec/drafts/<domain>/<topic>/',
-    'Apply never asks the user',
-    'never opens `brainstorming`',
-    'lightweight investigation',
-    'multiple relationships, a sequence, or state transitions'
+    '../brainstorming/SKILL.md',
+    '../grill/SKILL.md',
+    '../explaining-work/SKILL.md',
+    '../change-queue/SKILL.md',
+    'references/discussions.md',
+    'references/evolution.md',
+    'harness.execution.start',
+    'harness.execution.input',
+    'harness.change.seed.verify',
+    'harness.change.plan.verify'
 )) {
-    Assert-True ($harnessSkill.Contains($token)) "Harness entry is missing the unified workflow contract: $token"
+    Assert-True ($harnessSkill.Contains($token)) "Harness entry is missing the current owner or executable entry: $token"
 }
-Assert-True ($harnessSkill.Contains('[impact-scoped verification policy](references/verification.md)')) 'Harness entry routes verification decisions to the canonical focused reference'
+# Gate, queue and feedback behavior is proved by the route fixtures, not a
+# requirement to duplicate their policy paragraphs in the short entry router.
+Assert-True (-not $harnessSkill.Contains('Codex hooks are optional')) 'Harness entry must not describe Codex project hooks as optional adapters'
+Assert-Contains $harnessSkill '\[[^\]]+\]\(references/verification\.md\)' 'Harness entry routes verification decisions to the canonical focused reference'
 Assert-True (-not $harnessSkill.Contains('Run the core gates through one public test entry:')) 'Harness entry does not present every aggregate profile as a routine gate'
 foreach ($token in @(
     'smallest reliable scope',
@@ -565,8 +569,8 @@ foreach ($token in @(
 Assert-Contains $verificationProtocol '(?i)local failure.*(?:diagnose|repair).*current task' 'Local failures remain in the current task'
 Assert-Contains $verificationProtocol '(?i)Replan.*requirement.*design.*Task DAG.*verification contract.*required artifact' 'Replan remains evidence-gated by invalid planning truth'
 Assert-Contains $verificationProtocol '(?i)(?:full|complete).*Unreal.*(?:product code|release gate|explicit user request)' 'Full Unreal verification remains conditional'
-foreach ($token in @('`workspace.list`', '`harness.status`', '`harness.observe`', '`harness.evolution.status`', '`openspec.maintenance.status`')) {
-    Assert-True ($routingProtocol.Contains($token)) "Route map is missing: $token"
+foreach ($token in @('Get-HarnessCommand', 'queries.md', 'evolution.md', 'workspace-lifecycle/SKILL.md', 'unreal-engine-develop/SKILL.md', 'openspec/SKILL.md')) {
+    Assert-True ($routingProtocol.Contains($token)) "Route map is missing its inventory or route owner: $token"
 }
 Assert-Contains $taskProtocol 'Outcome, Interfaces, named Cases and Notes stay inside the owning card' 'Task Card detail stays inside the owning heading-node card'
 Assert-Contains $taskProtocol 'Harness does not parse those labels' 'Harness adds no Task Card parser contract beyond Files and Verification'
@@ -579,57 +583,18 @@ Assert-Contains $reviewProtocol '(?i)asynchronous' 'An explicitly requested Revi
 Assert-Contains $reviewProtocol '(?i)immutable snapshot' 'Every explicitly requested Review uses an immutable snapshot'
 Assert-Contains $closureProtocol 'workspace or worktree' 'Closure is independent from workspace removal'
 
-Assert-True (Test-Path -LiteralPath $hookScriptPath -PathType Leaf) 'The bounded Codex hook adapter is required'
-Assert-True (Test-Path -LiteralPath $hookConfigPath -PathType Leaf) 'Project Codex hook configuration is required'
+Assert-True (-not (Test-Path -LiteralPath $hookScriptPath)) 'Codex hook adapter must not ship'
+Assert-True (-not (Test-Path -LiteralPath $hookConfigPath)) 'Project must not register .codex/hooks.json'
+Assert-True (-not (Test-Path -LiteralPath $hookTestPath)) 'Codex hook unit tests must not remain'
+$harnessSpec = Get-Content -LiteralPath $harnessSpecPath -Raw
+Assert-True ($harnessSpec.Contains('does not register Codex project hooks')) 'Live spec must say the repository does not register Codex project hooks'
+Assert-True (-not $harnessSpec.Contains('Optional low-cost Codex hooks')) 'Live spec must not keep the optional Codex hook requirement'
 $null = & git -C $projectRoot check-ignore --no-index --quiet -- '.codex/hooks.json' 2>$null
 $hookIgnoreExitCode = $LASTEXITCODE
-Assert-Equal 1 $hookIgnoreExitCode '.codex/hooks.json remains trackable'
+Assert-Equal 0 $hookIgnoreExitCode '.codex/ including hooks.json remains ignored'
 $null = & git -C $projectRoot check-ignore --no-index --quiet -- '.codex/local.json' 2>$null
 $localCodexIgnoreExitCode = $LASTEXITCODE
 Assert-Equal 0 $localCodexIgnoreExitCode 'Unrelated project-local .codex files remain ignored'
-$hookScript = Get-Content -LiteralPath $hookScriptPath -Raw
-foreach ($token in @('#requires -Version 7.0', '#requires -PSEdition Core', '[Console]::In.ReadToEnd()', 'rev-parse', 'hookSpecificOutput', 'additionalContext')) {
-    Assert-True ($hookScript.Contains($token)) "Codex hook adapter is missing: $token"
-}
-foreach ($forbiddenHookToken in @('harness.observe', 'workspace.bootstrap', 'workspace.config.set', 'git.commit', 'git.push', 'Stop-Harness')) {
-    Assert-True (-not $hookScript.Contains($forbiddenHookToken)) "Codex hook adapter cannot perform unrelated workflow mutations: $forbiddenHookToken"
-}
-
-$hookConfig = Get-Content -LiteralPath $hookConfigPath -Raw | ConvertFrom-Json -ErrorAction Stop
-$hookEventNames = @($hookConfig.hooks.PSObject.Properties.Name)
-Assert-True ('SessionStart' -in $hookEventNames) 'SessionStart hook is required'
-Assert-True ('SubagentStart' -notin $hookEventNames -and 'PostToolUse' -notin $hookEventNames) 'Optional hooks do not run per tool or subagent'
-Assert-True ('Stop' -in $hookEventNames) 'Stop records the delivered final for a bound session'
-Assert-True ('UserPromptSubmit' -in $hookEventNames -and 'Interrupt' -in $hookEventNames) 'User input and pause checkpoints are configured'
-$sessionRegistration = @($hookConfig.hooks.SessionStart)[0]
-Assert-Equal 'startup|resume|compact' ([string]$sessionRegistration.matcher) 'SessionStart includes compaction recovery'
-$hookCommands = @($hookConfig.hooks.PSObject.Properties | ForEach-Object { $_.Value | ForEach-Object { $_.hooks } })
-Assert-True ($hookCommands.Count -eq 4) 'Exactly one command is registered for each low-frequency hook event'
-foreach ($hookCommand in $hookCommands) {
-    Assert-Equal 'command' ([string]$hookCommand.type) 'Codex hook uses the command adapter'
-    Assert-True ([int]$hookCommand.timeout -ge 1 -and [int]$hookCommand.timeout -le 10) 'Codex hook has a bounded execution timeout'
-    if ('additionalContextLimit' -in $hookCommand.PSObject.Properties.Name) {
-        Assert-True ([int]$hookCommand.additionalContextLimit -gt 0 -and [int]$hookCommand.additionalContextLimit -le 1200) 'Codex hook context limit stays positive and bounded'
-    }
-    Assert-Contains ([string]$hookCommand.commandWindows) 'pwsh(?:\.exe)?[ \t]+-NoProfile' 'Codex hook explicitly uses PowerShell 7 without a profile'
-}
-
-$hookPayload = [ordered]@{
-    cwd = (Join-Path $projectRoot '.agents\skills\harness')
-    hook_event_name = 'SessionStart'
-    source = 'startup'
-} | ConvertTo-Json -Compress
-$hookTimer = [System.Diagnostics.Stopwatch]::StartNew()
-$hookOutput = @($hookPayload | & (Get-Command pwsh.exe -ErrorAction Stop).Source -NoProfile -File $hookScriptPath 2>&1)
-$hookExitCode = $LASTEXITCODE
-$hookTimer.Stop()
-Assert-Equal 0 $hookExitCode "Optional Codex hook fails open: $($hookOutput -join [Environment]::NewLine)"
-$hookResponse = ($hookOutput -join [Environment]::NewLine) | ConvertFrom-Json -ErrorAction Stop
-Assert-Equal 'SessionStart' ([string]$hookResponse.hookSpecificOutput.hookEventName) 'Codex hook echoes the supported event name'
-$additionalContext = [string]$hookResponse.hookSpecificOutput.additionalContext
-Assert-True (-not [string]::IsNullOrWhiteSpace($additionalContext)) 'Codex hook returns concise optional context'
-Assert-True ($additionalContext.Length -le [int]$hookCommands[0].additionalContextLimit) 'Codex hook output respects additionalContextLimit'
-Assert-True ($hookTimer.ElapsedMilliseconds -lt 5000) "Codex hook remains lightweight (actual $($hookTimer.ElapsedMilliseconds) ms)"
 
 Assert-Contains $taskProtocol 'only current Task DAG' 'tasks.md remains the only current DAG'
 foreach ($token in @(

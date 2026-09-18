@@ -76,11 +76,12 @@ Harness SHALL expose one PowerShell 7 performance-test profile that measures fre
 
 ### Requirement: Archive-stable closure gates
 
-Reusable gates cited as closure evidence MUST use hermetic fixtures or stable repository inputs and MUST NOT require the subject record to remain under `openspec/changes/`. A default gate that needs a schedulable Task DAG MUST create a hermetic active fixture. An explicit `-TaskChange` MUST resolve the selected active record or fail without falling back to an archive. A historical protocol audit MAY bind an exact immutable archive path, but archived tasks MUST NOT become `task.status` scheduling input. After a deterministic archive move, the coordinator MUST run strict archived validation plus the smallest applicable non-destructive lifecycle gate that can expose active-path coupling. A newly exposed defect MUST use a follow-up change and MUST NOT rewrite the completed archive.
+Reusable gates cited as closure evidence MUST use hermetic fixtures or stable repository inputs and MUST NOT require the subject record to remain under `openspec/changes/`. A default gate that needs a schedulable Task DAG MUST create a hermetic active fixture. An explicit `-TaskChange` MUST resolve the selected active record or fail without falling back to an archive. A historical protocol audit MAY bind an exact immutable archive path, but archived tasks MUST NOT become `task.status` scheduling input. After a deterministic archive move, the coordinator MUST run strict archived validation plus the smallest applicable non-destructive lifecycle gate that can expose active-path coupling. A newly exposed defect MUST preserve the completed archive and record source evidence in the feedback inbox or a linked draft. New repair scope and formal successor handoff require user selection and the applicable Gate; an already authorized bounded direct repair MAY continue within its existing scope without a successor Change or repeated approval.
 
 #### Scenario: Detect active-path coupling after archive
 - **WHEN** an applicable gate fails only after its subject change moves to the archive
-- **THEN** the archive remains immutable while a follow-up change records the failure, repair, review, and replacement evidence
+- **THEN** the archive remains immutable while the feedback inbox or linked draft records the failure and source evidence
+- **AND** a formal successor is created only after user-led convergence and its exact handoff Gate; an existing authorized direct repair continues within scope
 
 #### Scenario: Retain accepted evidence before archive
 - **WHEN** a performance run is accepted as closure evidence
@@ -160,96 +161,132 @@ Reusable gates cited as closure evidence MUST use hermetic fixtures or stable re
 
 ### Requirement: Two-tier exploration
 
-Harness MUST route pre-creation design ownership to Brainstorming and existing Change planning updates to Update/Replan. The independent Grill Skill MUST discover affected decisions, explain the available frontier, collect actual answers and return to its caller. Every substantive requirement, design or plan change MUST inspect affected scope, behavior, interfaces, dependencies, failures and acceptance; an explicit direction alone MUST NOT imply all decisions are settled. Still-valid decisions MAY carry forward with evidence. Ordinary implementation defects remain task-local.
+Harness MUST own one discussion/execution double loop with independently callable peripheral tools. Brainstorming owns current candidate design; Update owns reconsideration of existing accepted Change truth. Explaining-work and independent Grill MUST inspect affected scope, behavior, interfaces, dependencies, failure paths and acceptance, explain the relevant current architecture and terms, collect actual answers and continue ready question rounds without a separate user restart request. Returning a convergence, pause or waiting state to the caller MUST preserve the exact continuation point; an ordinary answered round does not complete discussion. Explicit bounded direct work MAY bypass the formal lifecycle. Ordinary implementation defects remain task-local.
 
-#### Scenario: Discover decisions before changing an accepted plan
+#### Scenario: Explain after every answer
 
-- **WHEN** feedback changes an accepted behavior or boundary
+- **WHEN** the user answers a Grill question
+- **THEN** the agent re-presents the complete relevant current architecture, roles, terminology, behavior and changed boundary before the next frontier questions
 
-- **THEN** the agent expands affected decisions, explains related unblocked questions, and recomputes the frontier after each answer
+    Use faithful simplified annotated code and relevant ASCII relationships. Preserve
+    real names and important branches; label omissions or unverified inferences.
+    A delta list, acknowledgement or reference to a previous diagram is insufficient.
 
-    An answer can reveal another decision. Required answers need actual provenance;
-    silence, recommended defaults and elapsed time do not settle them.
+#### Scenario: Continue the next question without a restart request
+
+- **GIVEN** an active Grill and a consequential next question whose prerequisites are settled
+- **WHEN** the user answers the current question without pausing or requesting convergence
+- **THEN** the agent re-explains the updated relevant architecture and actually submits the next question through the permitted host mechanism in the same turn
+- **AND** a summary, a promise to ask later, or a request for the user to say continue cannot substitute for the question
+
+#### Scenario: Recover a missing question form
+
+- **WHEN** a question tool fails or the user reports that the expected next question is not visible
+- **THEN** the agent sends the concrete unresolved question through the host-permitted visible fallback and retains the discussion in an awaiting-answer state
+- **AND** the next actual answer resumes explanation and questioning without an additional restart message; a host-required end of the current reply is not discussion completion
+
+#### Scenario: No substantive next question is available
+
+- **WHEN** the current frontier is empty and useful in-scope investigation is exhausted without user-led convergence
+- **THEN** the agent presents its current understanding and explicitly waits for feedback or convergence while leaving the topic open
+- **AND** it does not fabricate another question, repeat a settled choice or propose creation merely to keep the interaction active
+
+#### Scenario: User initiates convergence
+
+- **WHEN** the agent believes every current question is answered but the user has not signaled readiness
+- **THEN** it continues explaining and asking relevant questions without suggesting Create or Replan
+- **WHEN** the user proactively says the design is ready
+- **THEN** it prepares the exact handoff and asks the version-bound Gate; convergence alone does not create or apply anything
 
 #### Scenario: Pause the current Change for an answer
 
 - **WHEN** a necessary user-owned choice remains unanswered
+- **THEN** implementation pauses while read-only investigation may continue in a linked draft and Change-owned planning talk
+- **AND** an attended session asks through Grill; unattended continuation records the question and waits without inventing answers
 
-- **THEN** all implementation in the current Change pauses while read-only investigation may continue
+#### Scenario: Return through both Gates
 
-- **AND** an attended session asks through Grill immediately; unattended continuation preserves the question without opening Brainstorming or inventing an answer
-
-#### Scenario: Finish Grill without ending execution
-
-- **WHEN** affected decisions and required authority are complete
-
-- **THEN** Grill returns to Brainstorming or Replan, and successful Replan returns to the authorized execution request without another start instruction
+- **WHEN** the user approves the concrete Create or Replan and application succeeds
+- **THEN** the agent asks draft disposition and execution arrangement, applies actual choices, and only then returns to authorized execution
 
 ### Requirement: Change-owned discussion and applied planning
 
-Change discussions MUST remain under indexed attachments/talks. The grill- prefix identifies interactive rounds and talk- identifies technical analysis; prefixes MUST NOT represent state or force duplicate records. Structured current state MUST distinguish open, settled, closed and superseded discussion while preserving original conversation and earlier decisions. Existing schema-less talks MUST remain readable without implicit migration. Only successfully applied planning updates MAY create immutable applied Replans.
+Change-owned planning talks MUST remain indexed under attachments/talks with concise impact, provenance, questions and return state. Candidate design discussion MAY use a linked local draft without copying full conversation into both owners. The grill- prefix denotes interactive origin and talk- technical analysis, not lifecycle state. Open, settled, closed and superseded states preserve prior decisions. Explicit optional transcript frames preserve original wording; historical schema-less talks remain readable without migration. Only successfully applied planning updates create immutable applied Replans.
 
-#### Scenario: Preserve original rounds beside current conclusions
+Superseding a planning talk MUST name an indexed active planning replacement in the same Change, scope and workspace. Pending questions and their source/revision/return-task provenance MUST transfer before the source stops blocking. Missing or terminal replacements, cycles, conflicting identities and loss of inherited decisions MUST fail closed; exact source-talk queries MUST follow its replacement. Closing unresolved questions as rejected or no-change MUST retain an actual resolution source, not only a disposition label.
 
-- **WHEN** a user corrects a decision or recording retries the same source event
+#### Scenario: Preserve a decision through discussion replacement
 
-- **THEN** current conclusions update while original delivered explanations, questions and replies retain source boundaries and occur once per source occurrence
+- **WHEN** an unresolved planning talk is replaced by another planning talk
+- **THEN** its pending questions and provenance remain visible and block execution through the replacement
+- **AND** a nonexistent replacement or arbitrary superseded disposition leaves the original blocker intact
 
-    Recognized original conversation frames retain their source language. Current
-    summaries and final Change planning artifacts remain English. Draft-stage
-    conversation remains local to its draft and is not a Change dependency.
+#### Scenario: Correct current conclusions
+
+- **WHEN** the user corrects a decision
+- **THEN** the candidate design and key-decision context preserve the correction and reason; the Change talk records planning impact without requiring a transcript mirror
+- **AND** if recording was explicitly enabled, original source occurrences retain their language and retry identity
 
 #### Scenario: Apply a design-only Replan
 
-- **WHEN** a settled discussion changes design while retaining the existing Task DAG
-
-- **THEN** Harness validates the candidate, checks baseline hashes, applies the planning changes and creates one applied Replan before resuming execution
+- **WHEN** a settled discussion changes design while retaining its DAG and the user approves the exact preview
+- **THEN** Harness validates candidates and baselines, journals the changes, and records one applied Replan with its handoff receipt and purpose-specific followup in the same transaction
+- **AND** execution remains blocked until the actual post-handoff arrangement is recorded and applied
 
 #### Scenario: Recover an interrupted planning update
 
-- **WHEN** validation fails, a baseline changes, or application is interrupted
-
-- **THEN** failed validation leaves live artifacts unchanged, stale baselines are rejected, and an interrupted journal prevents execution and closure until explicit application recovery succeeds
-
-- **AND** recovery preserves unrelated edits, existing task IDs and completed work
+- **WHEN** validation fails, baselines change or application is interrupted
+- **THEN** failed validation leaves live artifacts unchanged, stale baselines are rejected and the journal blocks execution/closure until explicit recovery
+- **AND** recovery preserves unrelated edits, permanent task IDs and completed work; status never repairs
 
 ### Requirement: Explicit execution continuation
 
-Harness MUST bind explicitly started Change or queue execution to its selected workspace and session. Recording and read-only queries MUST NOT start execution. Status MUST expose pending input, waiting decisions, explicit pause, genuine blockers, current work and derived completion without replacing native TaskPlan readiness. A task, Grill, Replan or individual Change completion MUST return to the authorized loop. Exhausted authorized work with no pending feedback MAY finish the response while retaining recovery context.
+Harness MUST bind all explicitly authorized Change execution to one selected-workspace queue core and session. Scope=Change MUST be a bounded single-item adapter. The controller MUST retain ordered authorized UIDs and actual source; an existing queue MUST NOT be replaced or silently reordered to satisfy a non-head request. Recording and queries never start execution. Derived status MUST expose pending input, handoff decisions, pause, blockers, current work and completion without replacing native TaskPlan readiness.
 
-#### Scenario: Accept feedback during execution
+Controller release, claim and takeover MUST preserve a queue pause. Resume MUST consume a fresh actual resolving source through execution start/checkpoint; ownership authority alone MUST NOT resume work. Session takeover MUST retain the original request and exact authorized UID range, handoff authority, pending and handled input identities, deduplication history, pause/blockers and return state. Interrupted transfer MUST remain blocked until deterministic recovery publishes both bindings; status MUST NOT perform recovery.
 
-- **WHEN** input arrives during an active execution request
+#### Scenario: Retain feedback and pause across ownership transfer
 
-- **THEN** Harness retains its identity for triage before subsequent implementation or closure
+- **WHEN** a paused request with pending feedback is released/reclaimed or transferred to a stopped-session successor
+- **THEN** the pause and pending feedback still prevent implementation and terminal closure
+- **AND** takeover cannot widen its authorized range, replay an old resume source, or count feedback as handled
 
-- **AND** unrelated ideas become follow-up topics without silently changing scope or queue membership
+#### Scenario: Accept feedback through a public route
 
-#### Scenario: Check premature Stop
+- **WHEN** harness.execution.input receives SessionId, InputId, actual SourceRef, Summary and Kind feedback or pause
+- **THEN** pending input blocks implementation; identical retries are idempotent and conflicting reuse of an ID is rejected
+- **AND** acknowledgement records triage without approving a design or resuming a pause; unrelated ideas do not change queue membership
 
-- **WHEN** a trusted Codex Stop hook observes a bound running request with authorized work remaining
+#### Scenario: Exhaust only the authorized range
 
-- **THEN** it requests continuation at the recorded position
+- **WHEN** the final authorized item has a completed archive and queue advance runs
+- **THEN** the controller releases without marking the next pending item started
+- **AND** edits cannot alter the remaining authorized ordered prefix; newly appended tail work needs new authority
 
-- **BUT** plan mode, necessary unanswered questions, explicit user pause, user interruption, genuine blockers and completed work do not trigger automatic restart
+#### Scenario: Respect a new handoff wait decision
 
-    A generated continuation is not fresh user feedback. Repeated continuation
-    without observable progress reports a recovery blocker rather than completion.
-    Hook configuration alone does not prove actual host activation.
+- **WHEN** an existing execution request is interrupted by a new applied handoff whose arrangement is later
+- **THEN** the earlier execution source cannot revive implementation; an actual later resume source is required
+- **AND** a whole-queue start can authorize already settled handoffs in its chosen range without inventing identical per-item decision sources
 
-#### Scenario: Archive after discussion recording is complete
+#### Scenario: Pause and explicitly release scope
 
-- **WHEN** a Change reaches terminal evaluation and archive
+- **WHEN** the user pauses execution
+- **THEN** implementation stops at the boundary but a running UE worker is not implicitly cancelled
+- **WHEN** the user explicitly releases the request with a source and reason
+- **THEN** only its own controller is released, its history remains, and the request is not marked completed
 
-- **THEN** its current-scope decisions and Replan recovery are resolved and its source recording is synchronized and unbound
+#### Scenario: Archive after optional recording
 
-- **AND** archived originals receive no later hook writes
+- **WHEN** a Change reaches terminal evaluation/archive
+- **THEN** current-scope decisions, post-handoff arrangements and Replan recovery are resolved
+- **AND** any explicitly enabled recording sink is synchronized/unbound; archived originals remain immutable and no project hook is required
 
 ### Requirement: Exploration carryover
 
-The final pre-Change brainstorming round MUST present every carryover candidate with its draft source, target (talk or knowledge), and reason, and the user MUST confirm the list before it enters the decision-complete handoff. `openspec-create-change` MUST be the only Skill that creates the target Change from a designed draft; in the same step it MUST copy the approved draft `design.md`, `handoff.md` and `glossary.md` into indexed `attachments/drafts/`, MUST copy every draft finding that the design or a confirmed talk or knowledge cites into indexed `attachments/drafts/findings/`, and MUST materialize exactly the confirmed candidates — non-obvious decisions and their useful visuals into indexed talks, reusable evidence-backed insights or visuals into indexed change-local knowledge — with provenance naming the draft round or the copied finding. Because drafts are local and git-ignored, no Change file MAY reference an `openspec/drafts/` path. Afterwards canonical truth MUST enter proposal/spec/design/tasks through the `Ensure plan` step of `openspec-apply-change`, which MUST write every missing required artifact from the seeded handoff in one pass, MUST NOT recreate the seeded carryover, MUST NOT reopen design-mode brainstorming, and MUST stop and report — never invent — when the handoff lacks a user-owned decision or a settled public name.
+After user-led convergence, the concrete handoff presentation MUST present every carryover candidate with its draft source, target (talk or knowledge), and reason, and the user MUST confirm the list before it enters the decision-complete handoff. `openspec-create-change` MUST be the only Skill that creates the target Change from a designed draft; in the same step it MUST copy the approved draft `design.md`, `handoff.md` and any actually needed optional glossary into indexed `attachments/drafts/`, MUST copy every draft finding that the design or a confirmed talk or knowledge cites into indexed `attachments/drafts/research/` (legacy findings retain their compatibility mapping), and MUST materialize exactly the confirmed candidates — non-obvious decisions and their useful visuals into indexed talks, reusable evidence-backed insights or visuals into indexed change-local knowledge — with provenance naming the draft round or the copied finding. Because drafts are local and git-ignored, no Change file MAY reference an `openspec/drafts/` path. Afterwards canonical truth MUST enter proposal/spec/design/tasks through the `Ensure plan` step of `openspec-apply-change`, which MUST write every missing required artifact from the seeded handoff in one pass, MUST NOT recreate the seeded carryover, MUST route newly invalidated decisions through Update to a linked draft, and MUST stop and report — never invent — when the handoff lacks a user-owned decision or a settled public name.
 
-When an extended user-led exploration establishes multiple interacting cross-capability constraints, meaningful corrections, rejected interpretations, or non-obvious rationale that canonical artifacts would flatten and future agents would otherwise re-decide, planning MUST preserve one selective indexed intent talk. The talk MUST retain provenance, capture date, source limits, architecture-changing corrections, exclusions, and canonical mappings. It MUST NOT impersonate an earlier record when reconstructed later. Clear defects, mechanical documentation changes, one-step requests, routine task-local choices, and decisions fully represented by canonical artifacts MUST NOT create a required talk or a not-required placeholder. Transient navigation state, task state, and progress evidence MUST NOT be copied into the Change; the pre-Change round log stays in the draft. Discussions after Change creation remain in that Change's indexed talks.
+When an extended user-led exploration establishes multiple interacting cross-capability constraints, meaningful corrections, rejected interpretations, or non-obvious rationale that canonical artifacts would flatten and future agents would otherwise re-decide, planning MUST preserve one selective indexed intent talk. The talk MUST retain provenance, capture date, source limits, architecture-changing corrections, exclusions, and canonical mappings. It MUST NOT impersonate an earlier record when reconstructed later. Clear defects, mechanical documentation changes, one-step requests, routine task-local choices, and decisions fully represented by canonical artifacts MUST NOT create a required talk or a not-required placeholder. Transient navigation state, task state, and progress evidence MUST NOT be copied into the Change; the pre-Change round log stays in the draft. After creation, substantive candidate design can use a linked draft; the Change's indexed talks retain planning impact and provenance without full dual-writing.
 
 #### Scenario: Carry accepted exploration into a new Change
 
@@ -257,12 +294,12 @@ When an extended user-led exploration establishes multiple interacting cross-cap
 
 - **WHEN** an accepted handoff contains a non-obvious decision and a reusable insight after the target Change is created
 
-- **THEN** `openspec-create-change` copies the approved draft `design.md`, `handoff.md` and `glossary.md` and the cited findings into `attachments/drafts/`, indexes each once, materializes the confirmed decision and its visualization as one talk and the confirmed insight as change-local knowledge, and `openspec-apply-change` step `Ensure plan` then copies settled current truth into the canonical planning artifacts
+- **THEN** `openspec-create-change` copies the approved draft `design.md`, `handoff.md` and any actually needed optional glossary and the cited findings into `attachments/drafts/`, indexes each once, materializes the confirmed decision and its visualization as one talk and the confirmed insight as change-local knowledge, and `openspec-apply-change` step `Ensure plan` then copies settled current truth into the canonical planning artifacts
 
-    The selected design README records `status: handed-off` and `target_change` in the
+    The selected design metadata records `status: handed-off` and `target_change` in the
     same step so the source discussion and the Change point at each other.
     Each talk and knowledge cites the copied finding by its Change-relative
-    path in English; the original wording stays in the draft `log.md`.
+    path in English; the original key decisions stay in draft CONTEXT; optional legacy transcript stays local.
 
 - **AND** the original draft files remain local; the Change uses self-contained copies and still works when the draft directory is unavailable
 
@@ -306,68 +343,59 @@ When an extended user-led exploration establishes multiple interacting cross-cap
 
 ### Requirement: Persistent brainstorming drafts
 
-- Every brainstorming session MUST keep a continuing topic under `openspec/drafts/<domain>/<topic>/`; a proposal, trade-off or more than one diagram opens a draft.
-- The topic README MUST record current `mode` (`research`, `proposal`, `design`), `status` (`exploring`, `parked`, `abandoned`), opening date and the five current fields (activity, focus, settled decision, next question and last explained round). Resumption, correction and handoff MUST refresh current decisions without rewriting history.
-- An independently deliverable outcome MUST own `designs/<scope>/`; its README owns approval and handoff state independently of topic focus. New local prose MUST follow the user's conversation language unless explicitly overridden; exported Change material MUST be English.
-- The append-only log MUST preserve actual visible user and assistant messages, diagrams and question submissions/results, with original wording and source order. An unsent final MUST NOT be recorded as delivered.
-- Drafts MUST remain local after export, contain no task/Ready state and stay outside portable OpenSpec validation. Explicit authorized direct work MAY proceed without a Change. Archive requires explicit topic closure; legacy records remain readable.
+New substantial brainstorming topics MUST use ignored openspec/drafts/<domain>/<topic>/ with README.md for identity/status/navigation and CONTEXT.md for key decisions, reasons, corrections and actual sources. Optional research/ holds useful investigation and naming candidates; optional attachments/INDEX.md explains attachment purpose/source. Each designs/<scope>/design.md owns scope metadata, current architecture and terminology. Handoff.md is prepared only after user-led convergence. New drafts MUST NOT require a scope README, separate glossary, full transcript or duplicate chat output. Old flat/scoped drafts, findings and logs remain readable and unchanged.
 
-#### Scenario: Open a draft on the first round
+#### Scenario: Open a discussion automatically
 
-- **WHEN** `brainstorming` asks its first grilling round
+- **WHEN** a substantial unresolved topic requires continuing design discussion
+- **THEN** Harness creates the minimal README/CONTEXT structure without asking a creation Gate
+- **AND** full explanations remain in chat; only consequential decisions and material design changes require draft writes
 
-- **THEN** `openspec/drafts/<domain>/<topic>/README.md` exists with `status: exploring` and `log.md` contains the round and, once answered, the user's reply
+#### Scenario: Use research and binary attachments
 
-#### Scenario: Archive a preserved flat handoff
+- **WHEN** an investigation or source diagram benefits future decisions
+- **THEN** the draft may add research material or an indexed attachment without creating a Change or mirroring every message
 
-- **GIVEN** a legacy flat draft records a dated completed handoff to one exact existing Change and retains its original log, design and handoff files
-- **WHEN** the user requests completed draft archive
-- **THEN** Harness moves the topic to the local draft archive without requiring conversion to scoped design directories or rewriting its conversation and handoff
-- **BUT** a missing target, an unresolved scoped design or a parked topic does not qualify for completed archive
+#### Scenario: Archive unresolved work honestly
 
-#### Scenario: Abandon a draft
+- **GIVEN** the user has seen unresolved scopes and explicitly chooses archive
+- **WHEN** harness.draft.archive receives the actual source/reason
+- **THEN** it safely moves the directory under ignored openspec/archive/drafts without rewriting unresolved scopes as complete or abandoned
+- **BUT** path escape, collision or an active recorder prevents the move
 
-- **WHEN** the user drops the idea before a Change is created
+#### Scenario: Preserve legacy archive behavior
 
-- **THEN** the draft README records `status: abandoned` and nothing is copied into any Change
+- **GIVEN** a legacy flat draft has a dated completed handoff to its exact existing Change
+- **WHEN** its legacy completed-closure archive is requested
+- **THEN** original log/design/handoff stay intact with no scoped-layout migration
 
-#### Scenario: Research request with diagrams
+#### Scenario: Park or abandon
 
-- **WHEN** the user asks how a subsystem works and the reply carries more than one diagram or a comparison
+- **WHEN** the user parks discussion
+- **THEN** the topic stays active with a revival condition; resumption updates key decisions in the same topic
+- **WHEN** the user abandons it
+- **THEN** no Change or carryover is created merely to close the discussion
 
-- **THEN** a `mode: research` draft is opened and announced once, the diagrams and conclusions are written to `findings/<topic>.md`, and no design approval is requested
+#### Scenario: Keep drafts outside execution truth
 
-#### Scenario: Proposal request
-
-- **WHEN** the user asks for a proposal
-
-- **THEN** a `mode: proposal` topic writes its selected `designs/<scope>/design.md` first as a marked proposal draft and subsequent grill questions each name the section they would change
-
-- **AND** creating a Change requires approval of the selected design and its naming/carryover decisions; the topic may already be researching another focus
-
-#### Scenario: Park a draft without a Change
-
-- **WHEN** the exploration is worth keeping but the user decides not to create a Change now
-
-- **THEN** the draft README records `status: parked` with one line on what would revive it, the findings and glossary stay discoverable under `openspec/drafts/`, and no Change or attachment is created
-
-- **AND** reviving it reopens `brainstorming` on the same directory with `status: exploring`, appending to `log.md` rather than starting over
-
-#### Scenario: Validate records with drafts present
-
-- **WHEN** strict OpenSpec validation or Harness `task.status` runs while `openspec/drafts/` contains files
-
-- **THEN** the drafts produce no diagnostics and no Ready work, and the active Change list is unchanged
+- **WHEN** native OpenSpec validation/task.status runs
+- **THEN** drafts yield no task state, Ready work or active Change entries
 
 ### Requirement: Naming confirmation before implementation
 
-New public names — types, modules, files, and key functions — MUST be confirmed by the user before code is written. `brainstorming` MUST grill each new public name after inspecting neighbouring conventions and record the choice in the draft `glossary.md` and the design's vocabulary section. Task authoring MUST list every new public name the task introduces in its **Interfaces** section with its source. Apply MUST NOT ask the user for a name: when implementation requires a new public name that the task does not list, Apply MUST choose the convention-derived name and record `Naming assumed: <name>` in the task's Evidence, and verification MUST surface every assumed name for user review before the task closes.
+New public names — types, modules, files, and key functions — MUST be confirmed by the user before code is written. `brainstorming` MUST grill each new public name after inspecting neighbouring conventions and record the key choice and source in CONTEXT and the design's vocabulary section; new drafts need no separate glossary. Task authoring MUST list every new public name the task introduces in its **Interfaces** section with its source. Apply MUST NOT ask the user for a name: when implementation requires a new public name that the task does not list, Apply MUST choose the convention-derived name and record `Naming assumed: <name>` in the task's Evidence, and verification MUST surface every assumed name for user review before the task closes.
 
 #### Scenario: Grill a name during planning
 
 - **WHEN** the design introduces a new public type
 
-- **THEN** the round presents the recommended name, alternatives, and the neighbouring convention evidence, and the settled name is written to `glossary.md` and later to the task's Interfaces
+- **THEN** the round presents the recommended name, alternatives, and the neighbouring convention evidence plus an explicit Provide more names option, and the settled name is written to design terminology/CONTEXT and later to the task's Interfaces
+
+#### Scenario: Request more names
+
+- **WHEN** the user chooses Provide more names in a naming round
+- **THEN** the agent writes semantically distinct candidates, actual usage examples, conventions and rejection reasons to research/naming-<subject>.md in the current draft
+- **AND** it explains the options and asks again without silently selecting one
 
 #### Scenario: Continue past an unplanned name in Apply
 
@@ -488,7 +516,7 @@ Planning MUST map affected files, artifacts and exclusive resources, divide work
 
 - **THEN** its `Ensure plan` step writes proposal, any durable-behavior specs delta, design when a non-obvious decision exists, and `tasks.md`, runs the plan-acceptance preflight from the task authoring reference, records `planning-validation.md`, validates strictly, and only then selects Ready nodes
 
-    Names come from the copied `glossary.md`; a new non-obvious decision
+    Names come from copied design terminology or an optional legacy glossary; a new non-obvious decision
     becomes one indexed talk in the same edit; the draft `log.md` is never
     pasted.
 
@@ -696,54 +724,48 @@ All maintained OpenSpec source documentation, Skills, command references, projec
 
 ### Requirement: Harness dogfooding feedback
 
-Harness SHALL expose cheap visible feedback during self-hosted evolution. `harness.status` MUST report installation and selected-workspace identity without a detailed repository scan. `harness.observe` MUST append a versioned, timestamped raw observation or lifecycle span under ignored `Saved/Harness/` data without changing tracked workflow truth; raw observations remain non-blocking until explicitly admitted. A material dogfooding discovery MUST NOT remain only in conversation, a final handoff, or ignored data. It MUST enter the existing v2 material implementation-issue lifecycle in one exact suitable active Change before affected implementation continues or final handoff completes. If no suitable active owner exists after the source Change archived, a successor Change and issue MUST be created without modifying the archive.
+Harness SHALL expose cheap visible feedback without expanding authorized scope automatically. harness.status MUST return installation/workspace identity plus a small updates.json revision/published_at/summary/affected_skills notice. Missing or corrupt notice MUST appear as a nonfatal issue. The agent shows the notice once per conversation revision at entry/resume; no watcher, seen database or directory hashing is required.
 
-Whether evidence crosses the material threshold remains a bounded agent/user judgment. Once admitted, every v2 issue MUST appear exactly once in the owning attachment index and remain open until it is resolved with evidence, rejected with evidence, or superseded by an exact existing v2 issue. Open or structurally invalid v2 issues MUST block completed, abandoned, and superseded archive closure. A material issue SHALL trigger Replan only when its evidence invalidates accepted planning truth and MUST NOT start Review automatically.
+#### Scenario: Collect and group observations
 
-`harness.evolution.status` MUST summarize ignored observation availability, v2 material-issue counts and terminal states for an exact active Change, open issue paths, structural errors, and the canonical versioned workflow evaluation without replaying raw observation history. Active closure validation MAY scan bounded issue and Review section structure but MUST NOT retain or return raw bodies. Every Harness or OpenSpec self-hosting Change MUST create one indexed compact `attachments/data/workflow-evaluation.md` before closure, with parseable schema/result frontmatter, exact Change identity, final capture time, elapsed lifecycle stages, friction, corrective actions, superseded owners, and raw-data provenance. Historical unversioned evaluations remain immutable compatibility evidence.
+- **WHEN** evidence reveals recurring workflow friction or a concrete explanation/tool defect
+- **THEN** harness.observe appends bounded versioned raw JSON with actual SourceRef and optional DedupKey/OwnerDraftId under ignored Saved/Harness/Observations
+- **AND** the human-readable INBOX is derived from raw occurrences and triage dispositions; mutations may regenerate it while queries never write
+- **BUT** ordinary compilation failures, expected RED and cancellation are not inherently workflow defects
 
-#### Scenario: Record a local raw observation
-- **WHEN** an agent detects a timing boundary, transient friction, or candidate invariant that has not been classified as material
-- **THEN** `harness.observe` appends an independent ignored record and returns its run ID and exact local path without creating tracked work or blocking closure
+#### Scenario: Confirm a batch before improvement
 
-#### Scenario: Admit a material dogfooding issue
-- **WHEN** user, agent, implementation, verification, or Review evidence exposes a repeatable safety, correctness, lifecycle, evidence, or high-friction Harness gap
-- **THEN** the problem enters one suitable active Change as an indexed open v2 material issue with exact source evidence and owner tasks
+- **WHEN** an improvement batch is presented
+- **THEN** the user selects, defers or dismisses bounded scopes; harness.evolution.triage retains exact observation IDs, DecisionSource and Scope
+- **AND** a resolved result requires a prior selected scope plus Result and Evidence while retaining original authority; new recurrence remains pending
 
-#### Scenario: Preserve an immutable archive after a late issue
-- **WHEN** a post-move gate, exact commit, or final delivery step exposes a material issue after the source Change was archived
-- **THEN** the completed archive remains unchanged and one suitable active Change owns the issue before final handoff, with a successor created only when no suitable owner exists
+#### Scenario: Preserve an immutable archive
 
-#### Scenario: Route an issue without automatic Review
-- **WHEN** an admitted issue does not invalidate planning truth
-- **THEN** it is repaired in its owning task, rejected with evidence, or superseded by an exact v2 issue without starting Review or Replan automatically
+- **WHEN** a new workflow problem is discovered after archive
+- **THEN** it enters the inbox or linked draft without changing the archive or automatically creating a successor Change
+- **AND** any formal repair uses user-led convergence and both handoff Gates; already authorized direct maintenance can proceed in its accepted scope
 
-#### Scenario: Inspect evolution state cheaply
-- **WHEN** a caller invokes `harness.evolution.status` for one exact active Change
-- **THEN** the result reports raw observation metadata, v2 issue counts/states/open paths, structural errors, and the canonical workflow-evaluation result using frontmatter plus bounded active evidence-structure validation
+#### Scenario: Retain terminal evidence boundaries
 
-#### Scenario: Close a self-hosting Change
-- **GIVEN** one exact Harness or OpenSpec Change and its requested archive closure kind have been selected
-- **WHEN** a Harness or OpenSpec Change is ready for any archive closure kind
-- **THEN** every admitted v2 issue is structurally valid and terminal, one indexed final versioned workflow evaluation is tracked, and raw Saved observations remain ignored
-- **AND** the terminal check evaluates that exact Change rather than inferring closure readiness from an unscoped scan
-- **BUT** an ignored raw observation remains non-blocking unless it has been explicitly admitted as a material issue
-
-    > Inputs: The exact Change identity, indexed v2 issue frontmatter, the canonical workflow-evaluation frontmatter, and the requested closure kind.
-    >
-    > Observables: Evolution status reports issue counts and terminal states, open paths, structural errors, the final evaluation result, and whether the exact Change is closure-ready.
-    >
-    > Boundaries: Status does not retain or return issue, Review, evaluation, or raw-observation bodies; open or malformed evidence and a missing, invalid, stale, or failed final evaluation block closure.
-    >
-    > Verification: Focused Harness evolution and protocol fixtures cover TaskPlan completion, active/archive policy, issue/Review schemas and lifecycles, successor ownership, evaluation digest/capture freshness, and terminal disposition.
+- **WHEN** feedback is explicitly admitted as a material issue of an authorized active Change
+- **THEN** its existing v2 issue lifecycle and exact terminal evaluation apply
+- **BUT** merely collecting an observation neither blocks closure nor starts Review/Replan
 
 ### Requirement: Fail-closed active evolution closure
 
-Harness SHALL evaluate terminal closure only for one exact active Change and one explicit `completed`, `abandoned`, or `superseded` closure kind. It MUST consume the portable OpenSpec TaskPlan rather than parse Task DAG YAML. A completed closure MUST have a valid non-empty TaskPlan whose every node is complete; incomplete closure kinds MAY retain incomplete nodes for explicit disposition by the portable closure manifest. Ordinary status MAY inspect immutable archives, but terminal policy MUST reject an archived target and leave historical audit to strict archived validation.
+Harness SHALL evaluate terminal closure only for one exact active Change and one explicit `completed`, `abandoned`, or `superseded` closure kind. It MUST consume the portable OpenSpec TaskPlan rather than parse Task DAG YAML. A completed closure MUST have a valid non-empty TaskPlan whose every node is complete; incomplete closure kinds MAY retain incomplete nodes for explicit disposition by the portable closure manifest. An early abandoned or superseded Change with no tasks.md MAY close without inventing a TaskPlan, while a present invalid or empty plan MUST block closure. Ordinary status MAY inspect immutable archives, but terminal policy MUST reject an archived target and leave historical audit to strict archived validation.
+
+The public archive mutation MUST enforce the terminal gate using the exact closure file kind and current active inputs immediately before the move. The kind MUST be an explicit root discriminator in plain/quoted YAML or JSON; the checked closure bytes MUST be the bytes consumed by the native archive operation. A previous successful query or alternate casing of a route MUST NOT bypass a mutation gate.
 
 Active material issues and Reviews MUST be discovered recursively and validated against the exact active TaskPlan, attachment index, lifecycle schema, evidence body, timestamps, and terminal disposition. Active schema-less issues or Reviews MUST NOT receive historical compatibility. A superseded issue MUST reference one exact active, indexed, non-superseded v2 owner with a reciprocal source reference. Review absence SHALL remain valid, while any existing Review MUST be closed or superseded with no open or deferred Critical/Required finding.
 
 The canonical workflow evaluation MUST name the requested closure kind, include a lowercase SHA-256 of every ordinary active Change input except itself, and be captured no earlier than the latest terminal issue or Review event. Harness SHALL report the current input digest during ordinary exact status so the evaluation can be written last. Any later input mutation MUST make the evaluation stale and block terminal closure.
+
+#### Scenario: Reject an archive without current matching evaluation
+
+- **WHEN** a public archive request has missing, stale, failed or wrong-kind terminal evaluation
+- **THEN** it fails before changing the active manifest or moving the directory, even if native closure validation alone would pass
+- **AND** a valid current evaluation permits the exact requested closure without another human confirmation
 
 #### Scenario: Reject incomplete completed closure
 - **WHEN** terminal evaluation requests `completed` for an active Change whose portable TaskPlan is missing, invalid, empty, or contains an incomplete node
@@ -932,27 +954,13 @@ Successful work MUST reach verified and closure-ready state while preserving its
 - **WHEN** the user explicitly requests local integration
 - **THEN** the coordinator checks the exact reviewed source HEAD, preserves unrelated target changes, integrates affected submodules before the parent, and leaves remote state and source workspace unchanged
 
-### Requirement: Optional low-cost Codex hooks
+### Requirement: No Codex project hooks
 
-The repository MAY provide optional, bounded, PowerShell 7-only Codex hooks at `SessionStart`, `UserPromptSubmit`, `Interrupt` and `Stop`. Hooks MUST resolve and validate the selected workspace, fail open with concise diagnostics, and remain optional for Cursor and other clients. They MUST NOT register per-tool or subagent hooks, scan all drafts, run detailed Git/submodule scans, or start an execution scope. Unbound sessions MUST NOT require Python workers; inactive recording bindings MUST also be skipped. Workspace orientation MUST reuse the identity already resolved by the hook.
+The repository does not register Codex project hooks. Conversation recording and execution continuation MUST remain available through public Harness routes (`harness.draft.record`, `harness.conversation.record`, `harness.execution.start` / `checkpoint` / `status` / `input`) on Cursor, Grok, Codex, and other hosts. Unbound sessions MUST NOT require a hook adapter or Python worker. The agent's public Harness workflow MUST remain responsible for continuation, feedback handling and source reconciliation.
 
-For explicitly bound sessions, `SessionStart`, `UserPromptSubmit` and `Stop` MAY reconcile delivered conversation originals through the shared recorder with its source identity, history integrity and coverage checks. `UserPromptSubmit` MUST save pending execution input before recording. `Interrupt` MUST only preserve an existing execution pause, leaving recording to the next boundary. `Stop` MAY request continuation only within an explicitly authorized running scope after recording reconciliation has been attempted. The agent's public Harness workflow MUST remain responsible for continuation, feedback handling and source reconciliation when hooks are unavailable.
-
-#### Scenario: Start a trusted Codex session
-- **WHEN** Codex trusts the project hook configuration and emits `SessionStart`
-- **THEN** the hook resolves the event workspace from its working directory and injects a bounded identity summary without creating a recording or execution binding
-
-#### Scenario: Keep tool calls free of hook overhead
-- **WHEN** a tool completes or a subagent starts
-- **THEN** no project hook is registered for that event and conversation recording waits for the next configured boundary
-
-#### Scenario: Preserve interrupted feedback and originals
-- **WHEN** a bound execution is interrupted while delivered messages remain unrecorded
-- **THEN** the hook saves the pause without waiting for recording and the next recording boundary reconciles those originals without automatically resuming the paused execution
-
-#### Scenario: Run in another client
-- **WHEN** Cursor, Grok, or a Codex session without trusted project hooks uses Harness
-- **THEN** all cross-client workflow routes remain functional without the hooks
+#### Scenario: Use Harness without project hooks
+- **WHEN** any host uses Harness
+- **THEN** all cross-client workflow routes remain functional without `.codex/hooks.json` or a Codex hook adapter
 
 ### Requirement: Visible OpenSpec maintenance state
 
@@ -1032,8 +1040,8 @@ New project OpenSpec Changes SHALL use a canonical `<domain>/<type>-<scope>-<out
 ### Requirement: Bound draft conversation recording
 
 - `harness.draft.record` MUST bind one exact workspace, session, source, draft and starting message range; support sync, read-only status and unbind; and close an old range before switching drafts.
-- Trusted Codex tool, stop, interrupt and resume/compact hooks MUST share the same append-only recorder. Unbound sessions MUST remain inert, with no newest-draft selection or cross-workspace recording.
-- Source occurrences MUST retain their own identity even when text repeats. Retry MUST be idempotent, append/checkpoint writes serialized, and progress advanced only after durable append. Unsupported, changed, partial or missing source MUST expose a coverage gap; unavailable hooks/hosts use explicit source reconciliation.
+- Recording MUST be explicit opt-in through public routes; the repository registers no Codex project hooks. New-schema bind creates optional attachments/transcript.md and INDEX, never overwrites CONTEXT; legacy log sinks stay compatible. Unbound sessions remain inert with no newest-draft guessing or cross-workspace recording.
+- Source occurrences MUST retain their own identity even when text repeats. Retry MUST be idempotent, append/checkpoint writes serialized, and progress advanced only after durable append. Unsupported, changed, partial or missing source MUST expose a coverage gap; every host uses explicit source reconciliation.
 
 #### Scenario: Retry after interrupted recording
 
@@ -1049,22 +1057,72 @@ New project OpenSpec Changes SHALL use a canonical `<domain>/<type>-<scope>-<out
 
 ### Requirement: Exact scoped handoff and expected exports
 
-- A new draft-backed Change MUST have an explicit scoped `approval_round` naming an existing log round, exact selected design/Scope identity and exact target Change ID. Topic focus MUST NOT substitute for scoped identity.
-- Confirmed `Exploration Carryover` MUST use a Source / Target / Reason table covering required copies, necessary findings and accepted talks/knowledge. Creation MUST freeze expected exports and approval identity in a schema 2 origin marker.
-- Seed verification MUST reject a missing promised file, duplicate index entry or broken local link before Ensure plan. Existing schema 1 origins MUST retain their earlier verification contract without bulk migration.
+New Create and Replan operations MUST preview one exact target, material design/handoff and candidate/baseline revision without writes. Mutation MUST consume a Gate with actual ConvergenceSource, DecisionSource, matching create/replan decision, TargetChange and presented HandoffRevision. Create Title and Goal MUST participate in that full revision; a draft-only DraftRevision MUST NOT stand in for the Create HandoffRevision. Material changes invalidate approval; navigation/CONTEXT progress alone does not. New schema 3 origins and applied Replans MUST persist the consumed receipt and expected indexed followup identity. Historical schemas 1/2 retain accepted verification contracts without reapproval or migration.
+
+Before asking the handoff Gate, the agent MUST follow the dedicated `harness/references/handoff-gate.md` explanation contract and visibly present the full relevant background, current and proposed architecture, terms and roles, causal/call paths, concrete changes, alternatives and consequences, uncertainty, proof and carryover. The account MUST be understandable without prior system knowledge and MUST distinguish implemented behavior from accepted plans and proposals. Relevant code, data, lifecycle and controls MUST be explained when they affect the decision. A short summary, diff, record link or passing revision check MUST NOT replace this account. The actual question MUST follow the complete presentation and visibly identify the exact operation, target, revision and immediate effect, separately from later archive/execution arrangements. Explanation quality is an agent responsibility, not a fabricated runtime approval field.
+
+#### Scenario: Reject an altered creation request
+
+- **WHEN** Title or Goal changes after the accepted Create preview while the draft remains unchanged
+- **THEN** the old Gate cannot create the altered request; preview returns a different HandoffRevision
+- **AND** route-name casing cannot expose an unguarded raw creation path
+
+#### Scenario: Explain the full design before creating a Change
+
+- **GIVEN** the user has requested convergence on a scoped design and its read-only preview exists
+- **WHEN** the agent prepares the creation Gate
+- **THEN** it explains why the change is needed, how the current system works and how the proposed system changes the same concrete path, including relevant roles, terms, diagrams, logic, tradeoffs, proof and boundaries
+- **AND** only after that complete visible account does it ask the exact-version creation/discussion/park choice, without treating a file link or short overview as sufficient presentation
+- **BUT** this choice does not approve draft archival or implementation startup
+
+#### Scenario: Explain a Replan without conflating plan and completed work
+
+- **GIVEN** evidence invalidates an existing Change's accepted plan and the user requests convergence on revised candidates
+- **WHEN** the agent presents the Replan Gate
+- **THEN** it explains the background and trigger, accepted architecture, actual implemented work, complete proposed architecture, affected tasks/artifacts/edges, preserved work, invalidated proof and execution return position
+- **AND** the visibly marked question binds the presented candidate/baseline revision while execution remains subject to the post-handoff arrangement
+
+#### Scenario: Keep Gate presentation distinct from transcript recording
+
+- **WHEN** the complete Gate account is long or spans several coherent messages
+- **THEN** the agent finishes that account before submitting the question, reuses the existing design/handoff or candidate records for decision truth, and does not require a separate continue request to deliver the remaining explanation
+- **AND** no compulsory per-round GATE file, duplicated transcript or claim of machine-verified comprehension is introduced
 
 #### Scenario: Hand off one scope while researching another
 
-- **GIVEN** design A has an explicit approved handoff and the topic currently focuses on B
-- **WHEN** the user requests A's confirmed Change
-- **THEN** the gate checks A's identity, approval round and carryover without requiring focus to move from B
+- **GIVEN** scope A has the user's convergence and exact Gate while the topic focuses on B
+- **WHEN** A's Change is created
+- **THEN** only A's selected design/handoff and confirmed export closure are frozen; topic focus and sibling work remain independent
 
-#### Scenario: Detect omitted promised material
+#### Scenario: Export useful self-contained evidence
 
-- **GIVEN** creation froze a confirmed talk target in its origin marker
-- **WHEN** all present attachments are indexed but that talk was never exported
-- **THEN** seed verification names the missing promised target and refuses planning
+- **WHEN** the selected handoff includes design/handoff plus required research or binary attachments
+- **THEN** English explanations and preserved binary bytes are exported with nested relative identity and rewritten local links, indexed once
+- **AND** full CONTEXT/history and unrelated siblings are excluded; separate glossary is optional for new drafts
+- **BUT** missing promised exports, duplicate index entries, path escape or broken local closure prevent Ensure plan
+- **AND** new creation receipts/origins retain per-file SHA-256 expectations for non-Markdown exports; seed verification rejects altered destination bytes even after the source draft evolves or archives
+- **BUT** translated Markdown retains its semantic/link contract, and historical origins without an export-digest schema retain their accepted verification contract
 
+#### Scenario: Recover consumed creation
+
+- **WHEN** creation is retried after its source draft evolves or archives
+- **THEN** its persisted receipt identifies the already-created handoff and recovers only the exact missing expected followup without overwriting answered decisions
+- **AND** a private consumed intent plus a native manifest UID/hash checkpoint can recover a missing origin marker using the same handoff identity
+- **BUT** an unmarked directory without proven ownership, a changed manifest or a different retry request reports a recovery issue without claiming the directory
+
+#### Scenario: Enforce post-handoff arrangements
+
+- **WHEN** Create/Replan succeeds
+- **THEN** a purpose handoff-followup talk asks archive/retain and now/queue/later, with actual sources and applied arrangement evidence
+- **AND** no-draft uses not-applicable without presenting a fake archive choice
+- **BUT** generic close, missing/corrupt/unindexed followup, deferred/superseded shortcut or replaying the post talk as Replan cannot authorize execution
+
+#### Scenario: Keep direct work lightweight
+
+- **WHEN** the user explicitly requests a bounded direct edit
+- **THEN** no formal Change or Gate is manufactured
+- **WHEN** the user requests a formal Change without a draft
+- **THEN** concrete direct HandoffText/reason receives the same exact-version preview and Gate
 
 ### Requirement: Minimal project and plugin source identity
 
@@ -1087,6 +1145,24 @@ Harness SHALL generate only necessary host engineering files, targets and config
 - **WHEN** the generated project executes at a mapped drive root under UE 5.8
 - **THEN** project-local UBT configuration disables the invalid optional parent Git working-set probe while preserving normal target compilation
 
+### Requirement: Peripheral mutation preserves preview and workspace quiescence
+
+An authorized workspace removal MUST automatically exclude managed runs in queued, waiting or running states, live workers even with terminal metadata, held execution leases and native activity that cannot safely be correlated. Run admission and removal MUST share an interlock from publication/startup through the final removal check, and removal MUST retain the workspace execution lease through deletion. Unknown or unavailable activity inspection MUST fail closed with an actionable diagnostic. Removal MUST NOT infer cancellation authority.
+
+Run cancellation MUST apply ShouldProcess to the complete transition, including worker termination, orphan mapping cleanup and metadata writes. WhatIf or declined confirmation MUST leave all three untouched, including an unset or dead worker PID.
+
+#### Scenario: Reject removal while a worker is waiting
+
+- **WHEN** a managed worker is queued or waiting for a workspace, execution drive or engine lease
+- **THEN** both replica and retained worktree removal fail before deletion, even when native UE process discovery has no match
+- **AND** concurrent new run admission cannot pass the final removal boundary
+
+#### Scenario: Preview orphan cancellation without mutations
+
+- **WHEN** cancellation is requested with WhatIf or confirmation is declined and the worker is absent
+- **THEN** no mapping cleanup, worker kill or Cancelled metadata write occurs
+- **AND** an authorized actual cancellation still performs its full transition
+
 ### Requirement: Ordered local Change queues
 
 Each primary or replica workspace SHALL own an explicit ordered Change queue under ignored local Saved data. The queue SHALL order Changes while the existing Task DAG determines Ready work inside each Change. A Change SHALL bind to one workspace on enqueue through an indexed execution attachment, without extending the native Change manifest schema. Ordinary chat SHALL be sufficient to execute the entire approved queue. No daemon, automatic chat creation or cross-workspace transfer SHALL be implied.
@@ -1098,7 +1174,7 @@ Each primary or replica workspace SHALL own an explicit ordered Change queue und
 
 #### Scenario: Preserve Task DAG progress during feedback
 - **WHEN** feedback invalidates accepted planning truth
-- **THEN** the executing workspace replans the exact affected Change, preserves valid completed work and continues from derived Ready tasks; ordinary failures remain task-local and do not skip the blocked Change
+- **THEN** the executing workspace explores a linked candidate draft, applies the exact user-approved Replan and its post-handoff execution arrangement, preserves valid completed work and continues from derived Ready tasks; ordinary failures remain task-local and do not skip the blocked Change
 
 #### Scenario: Remove queue membership
 - **WHEN** a pending member is explicitly removed
@@ -1144,7 +1220,7 @@ Replica Change, TaskPlan, draft, closure and native OpenSpec operations SHALL us
 - **THEN** the second stale write is rejected and the first merge remains intact until a new merge uses the current content digest
 
 #### Scenario: Record a replica conversation
-- **WHEN** a trusted hook reconciles an explicitly bound replica session
+- **WHEN** an explicit public recording route reconciles an opt-in replica session
 - **THEN** the local session binding retains the execution workspace while the shared recorder appends visible messages to the canonical draft, without copying OpenSpec into the replica
 
 ### Requirement: Read-only Harness status queries

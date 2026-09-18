@@ -10,7 +10,7 @@ For work explicitly governed by OpenSpec, a decision-complete handoff is plannin
 4. Resolve `task.status` and select a stable Ready node from the canonical Task DAG.
 5. Mutate only the scope owned by that node.
 
-The primary checkout and linked worktrees follow the same checkpoint. Codex `/goal` may continue authorized work unattended, but it neither selects a repository mode nor changes workspace, Git, integration, push, or removal authority. `design`-mode brainstorming belongs only before creation of the target Change; `research` and `proposal` drafts stay independent of any Change. After creation, revise invalid truth through update and an evidence-gated Harness replan.
+The primary checkout and linked worktrees follow the same checkpoint. Codex `/goal` may continue authorized work unattended, but it neither selects a repository mode nor changes workspace, Git, integration, push, or removal authority. Candidate design belongs to a local draft both before creation and during a substantive existing-Change Replan. After creation, keep accepted truth unchanged while Update links the candidate draft to its planning talk; revise only through user-led convergence, the exact Replan Gate and its post-handoff execution arrangement.
 
 ## Recovery when the checkpoint was missed
 
