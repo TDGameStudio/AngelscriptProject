@@ -19,25 +19,27 @@ try {
         function Get-UnrealProcessRecordById { param($ProcessId) if ($ProcessId -eq 123) { [pscustomobject]@{CommandLine="pwsh Invoke-UnrealRunWorker.ps1 $runId"} } }
         function Stop-UnrealProcessTree { param($ProcessId) $effects.Add("kill:$ProcessId") }
         function Exit-UnrealExecutionDriveMappingAfterWorker { param($Mapping, $RunId) $effects.Add('mapping cleanup') }
+        foreach ($initialState in @('Running', 'WaitingExternalBuild')) {
         foreach ($worker in @($null, 2147483647, 123)) {
             foreach ($preview in $(if ($Decline) {@($false)} else {@($true, $false)})) {
                 $runId = [guid]::NewGuid().ToString('N')
                 $paths = Get-UnrealRunPaths $Root $runId
-                Write-UnrealJsonFileAtomic $paths.MetadataPath ([pscustomobject]@{state='Running';workerPid=$worker})
+                Write-UnrealJsonFileAtomic $paths.MetadataPath ([pscustomobject]@{state=$initialState;workerPid=$worker})
                 Write-UnrealJsonFileAtomic $paths.RequestPath ([pscustomobject]@{execution=@{}})
                 $before = [IO.File]::ReadAllText($paths.MetadataPath)
                 $effects = [Collections.Generic.List[string]]::new()
-                $name = "worker=$worker preview=$preview declined=$Decline preserves cancellation contract"
+                $name = "state=$initialState worker=$worker preview=$preview declined=$Decline preserves cancellation contract"
                 try {
                     $result = Stop-HarnessUnrealRun -WorkspaceRoot $Root -RunId $runId -WhatIf:$preview -Confirm:$Decline
                     if ($preview -or $Decline) {
-                        if ($effects.Count -or [IO.File]::ReadAllText($paths.MetadataPath) -cne $before -or $result.RecordedState -ne 'Running') { throw 'preview changed mappings, metadata, or process state' }
+                        if ($effects.Count -or [IO.File]::ReadAllText($paths.MetadataPath) -cne $before -or $result.RecordedState -ne $initialState) { throw 'preview changed mappings, metadata, or process state' }
                     } else {
                         if ($result.RecordedState -ne 'Cancelled' -or $effects[-1] -ne 'mapping cleanup' -or $effects.Count -ne $(if ($worker -eq 123) {2} else {1})) { throw 'authorized cancellation did not finish expected cleanup' }
                     }
                     Write-Output "PASS $name"
                 } catch { $Failures.Add("$name : $_"); Write-Output "FAIL $name : $_" }
             }
+        }
         }
     } $scratch $failures ([bool]$DeclineConfirmation)
     if (-not $DeclineConfirmation) {
@@ -49,7 +51,7 @@ try {
         foreach ($argument in @('-NoLogo','-NoProfile','-File',$PSCommandPath,'-DeclineConfirmation')) { [void]$start.ArgumentList.Add($argument) }
         $child=[Diagnostics.Process]::Start($start)
         try {
-            foreach ($answer in 1..3) { $child.StandardInput.WriteLine('n') }
+            foreach ($answer in 1..6) { $child.StandardInput.WriteLine('n') }
             $child.StandardInput.Close()
             $output=$child.StandardOutput.ReadToEnd(); $errors=$child.StandardError.ReadToEnd(); $child.WaitForExit()
             Write-Output $output

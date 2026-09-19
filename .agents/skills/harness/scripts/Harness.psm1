@@ -1117,8 +1117,38 @@ function Get-HarnessAttachmentIndexCount {
     )
 
     if ([string]::IsNullOrWhiteSpace($IndexText)) { return 0 }
-    $escapedPath = [regex]::Escape($AttachmentRelativePath.Replace('\', '/'))
-    return [regex]::Matches($IndexText, "(?m)^[ \t]*-[ \t]+``$escapedPath``(?:[ \t]|$)").Count
+    $expectedPath = $AttachmentRelativePath.Replace('\', '/')
+    $count = 0
+    foreach ($rawLine in @($IndexText -split '\r?\n')) {
+        $line = $rawLine.Replace('\', '/')
+        $tableEntry = [regex]::Match($line, '^[ \t]*\|[ \t]*`(?<path>[^`\r\n]+)`[ \t]*\|')
+        $bulletEntry = [regex]::Match($line, '^[ \t]*[-*][ \t]+(?:`(?<inline>[^`\r\n]+)`|\[[^\]\r\n]*\]\((?<link>[^)\r\n]+)\)|(?<bare>[^ \t\r\n]+))(?:[ \t]+.*)?$')
+        if (-not $tableEntry.Success -and -not $bulletEntry.Success) { continue }
+        $indexedPath = if ($tableEntry.Success) { $tableEntry.Groups['path'].Value }
+            elseif ($bulletEntry.Groups['inline'].Success) { $bulletEntry.Groups['inline'].Value }
+            elseif ($bulletEntry.Groups['link'].Success) { $bulletEntry.Groups['link'].Value }
+            else { $bulletEntry.Groups['bare'].Value }
+        if ($indexedPath -ceq $expectedPath) { $count++ }
+    }
+    return $count
+}
+
+function Get-HarnessAttachmentIndexProblems {
+    param([Parameter(Mandatory = $true)][string]$ChangeRoot)
+
+    $attachmentRoot = Join-Path $ChangeRoot 'attachments'
+    if (-not (Test-Path -LiteralPath $attachmentRoot -PathType Container)) { return }
+    $indexPath = Join-Path $attachmentRoot 'INDEX.md'
+    if (-not (Test-Path -LiteralPath $indexPath -PathType Leaf)) { return 'attachments/INDEX.md is required for the attachment directory' }
+    $indexLines = [IO.File]::ReadAllLines($indexPath)
+    if ($indexLines.Count -gt 120) { "attachments/INDEX.md exceeds 120 lines (actual $($indexLines.Count))" }
+    $indexText = $indexLines -join "`n"
+    foreach ($file in @(Get-ChildItem -LiteralPath $attachmentRoot -Recurse -File -Force -ErrorAction Stop)) {
+        if ($file.FullName -eq $indexPath) { continue }
+        $relative = $file.FullName.Substring($attachmentRoot.Length).TrimStart('\', '/').Replace('\', '/')
+        $count = Get-HarnessAttachmentIndexCount -IndexText $indexText -AttachmentRelativePath $relative
+        if ($count -ne 1) { "attachments/${relative}: must appear in attachments/INDEX.md exactly once (actual $count)" }
+    }
 }
 
 function Get-HarnessIssueBodyProblems {
@@ -1374,6 +1404,13 @@ function Get-HarnessEvolutionStatus {
     $indexText = if (Test-Path -LiteralPath $indexPath -PathType Leaf) { (Get-Content -LiteralPath $indexPath -Raw).Replace('\', '/') } else { '' }
     $structuralErrors = New-Object System.Collections.Generic.List[string]
     $closureBlockers = New-Object System.Collections.Generic.List[string]
+    if ($RequireTerminal) {
+        # Check the exact active Change at its existing terminal boundary. Do not
+        # turn ordinary/global status into a scan of every attachment directory.
+        foreach ($problem in @(Get-HarnessAttachmentIndexProblems -ChangeRoot $changeRoot)) {
+            $structuralErrors.Add([string]$problem) | Out-Null
+        }
+    }
     $openIssuePaths = New-Object System.Collections.Generic.List[string]
     $issueRecords = New-Object System.Collections.Generic.List[object]
     $counts = [ordered]@{ Open = 0; Resolved = 0; Rejected = 0; Superseded = 0 }

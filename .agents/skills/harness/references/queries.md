@@ -1,7 +1,7 @@
 # Read-only queries
 
 - Resolve the selected Context, invoke the matching route, and explain its returned facts. Never answer live status from conversational memory alone.
-- “Current tasks / what remains”: `harness.queue.status`; if no queue is configured, say so, then use `openspec.status` to list active Changes or `task.status` for an exact Change. Direct work outside a Change has no fabricated Task DAG.
+- “Current tasks / what remains”: `harness.queue.status`; if no queue is configured, say so, then use `openspec.change` with `-ArgumentList @('list', '--json')` to list active Changes or `task.status` for an exact Change. Direct work outside a Change has no fabricated Task DAG.
 - “This Change's tasks / why blocked”: `task.status -Parameters @{Change='domain/change'}`. Report complete, remaining, Ready tasks and returned dependency/issues; missing plans are `plan-needed`, never 0 tasks completed.
 - “All workspace queues”: `workspace.list`, then from primary call `harness.queue.status` with each explicit `TargetWorkspaceRoot`. Report legacy parent worktrees as parked; do not attach queues or create chats. Independent read calls may be batched.
 - “Workspace / Git state”: `workspace.status`; opt into `Detailed=$true` for dirty files, snapshots and plugin baselines, or use `git.status` for exact repository heads and staged paths.
@@ -15,6 +15,7 @@
 ```powershell
 $context = New-HarnessContext -WorkspaceRoot $PWD
 Invoke-Harness harness.queue.status -Context $context
+Invoke-Harness openspec.change -Context $context -ArgumentList @('list', '--json')
 Invoke-Harness task.status -Context $context -Parameters @{Change='domain/change'}
 Invoke-Harness workspace.list -Context $context
 Get-HarnessCommand

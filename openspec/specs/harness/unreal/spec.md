@@ -12,9 +12,12 @@ Harness SHALL expose Unreal discovery and execution through one `unreal-engine-d
 
 #### Scenario: Load one Unreal route
 - **WHEN** a caller invokes one `ue.*` command through Harness
-  > Inputs: The selected workspace context and the named public route bound the authority of the call.
+
+    > Inputs: The selected workspace context and the named public route bound the authority of the call.
+
 - **THEN** only the Unreal leaf is loaded, the common Harness result envelope is returned, and unrelated workflow authority is not acquired
-  > Observables: The envelope identifies the invoked route, status, exit code, data, and artifacts without loading unrelated lifecycle policy.
+
+    > Observables: The envelope identifies the invoked route, status, exit code, data, and artifacts without loading unrelated lifecycle policy.
 
 #### Scenario: Use a retired root script name
 - **WHEN** a caller searches the maintained Unreal Skill for an operational dependency on a root `Tools` PowerShell entry
@@ -26,11 +29,16 @@ Harness SHALL expose Unreal discovery and execution through one `unreal-engine-d
 
 #### Scenario: Report a synchronous Unreal operation failure
 - **WHEN** `ue.build`, `ue.ubt.invoke`, `ue.test`, `ue.commandlet`, or `ue.suite.run` synchronously returns `Failed`, `TimedOut`, `Cancelled`, or `Orphaned`
-  > Inputs: A completed synchronous operation supplies its terminal state, operation exit code, retained data, and artifacts.
+
+    > Inputs: A completed synchronous operation supplies its terminal state, operation exit code, retained data, and artifacts.
+
 - **THEN** the common envelope reports `Failed`, preserves the operation's non-zero exit code when present, and retains the returned data and artifacts
-  > Observables: Callers can see both transport-level failure and the operation evidence needed for diagnosis.
+
+    > Observables: Callers can see both transport-level failure and the operation evidence needed for diagnosis.
+
 - **BUT** a non-terminal `NoWait` dispatch, a successful `ue.run.status` observation, or a successful `ue.run.cancel` command is not reclassified from the state described by its data
-  > Boundaries: Command success and the observed or queued run state remain distinct contracts.
+
+    > Boundaries: Command success and the observed or queued run state remain distinct contracts.
 
 ### Requirement: Exact workspace execution identity
 
@@ -66,79 +74,95 @@ Build, test, commandlet, generic UBT, and suite requests SHALL accept an explici
 
 #### Scenario: Propose an execution path without mutation
 - **GIVEN** an exact registered and configured Windows workspace has no active execution-drive assignment
+
+    > Context: A proposed drive is a deterministic execution view for inspection; it is not a reservation or ownership claim.
+
 - **WHEN** a caller invokes an Unreal route with PlanOnly and the workspace has no assignment
+
+    > Inputs: The exact selected `WorkspaceRoot`, typed Unreal route arguments, and `PlanOnly = true`.
+
 - **THEN** the plan reports a `Proposed` drive and mapped child arguments while the drive, registry, and run directory remain absent
+
+    > Observables: `AssignmentState = Proposed`, physical and execution paths, normalized argument order, absence of the run directory and DOS mapping, and unchanged environment and registry state.
+
 - **AND** the normalized plan exposes both physical and proposed execution paths, owned arguments, engine identity, and the selected concurrency decision
+
+    > Verification: The `Discovery` and `Build` fixtures in `.agents/skills/unreal-engine-develop/tests/UnrealEngineDevelop.Tests.ps1` verify the proposed drive, mapped arguments, absent mapping/run directory/current registry, unchanged legacy bytes, and unchanged parent environment.
+
 - **BUT** planning creates no mapping, assignment, run evidence, external process, or parent-process environment mutation
 
-> Context: A proposed drive is a deterministic execution view for inspection; it is not a reservation or ownership claim.
->
-> Inputs: The exact selected `WorkspaceRoot`, typed Unreal route arguments, and `PlanOnly = true`.
->
-> Observables: `AssignmentState = Proposed`, physical and execution paths, normalized argument order, absence of the run directory and DOS mapping, and unchanged environment and registry state.
->
-> Boundaries: If a lone legacy registry exists, planning leaves it byte-for-byte in place; migration remains a first-real-operation concern.
->
-> Verification: The `Discovery` and `Build` fixtures in `.agents/skills/unreal-engine-develop/tests/UnrealEngineDevelop.Tests.ps1` verify the proposed drive, mapped arguments, absent mapping/run directory/current registry, unchanged legacy bytes, and unchanged parent environment.
+    > Boundaries: If a lone legacy registry exists, planning leaves it byte-for-byte in place; migration remains a first-real-operation concern.
 
 ### Requirement: Per-run lifecycle and evidence
 
-Real operations SHALL use stable Request and Run schema names in a unique physical directory under `Saved/Harness/Unreal/Runs/<run-id>` with `Request.json`, `RunMetadata.json`, and `Command.log`, plus operation-specific reports. Build, generic UBT, test, and commandlet requests SHALL accept an optional semantic display label, derive the existing route-specific default when it is omitted or blank, and expose the effective label in plans, status, and recognized process observations. Labels MUST be bounded and free of control characters. Records MUST distinguish physical identity/paths from execution identity/paths. The label MUST NOT participate in RunId generation, filesystem paths, process correlation, locks, executor arguments, or ownership decisions. State transitions SHALL use `Queued`, `WaitingWorkspace`, `WaitingExecutionDrive`, optional `WaitingEngine`, `Running`, and one terminal state from `Succeeded`, `Failed`, `TimedOut`, or `Cancelled`; status MAY report `Orphaned` when a non-terminal recorded process no longer exists. The worker SHALL acquire workspace, drive, and optional engine leases in that order, create and validate the mapping only after those leases, and release mapping and leases in reverse order. Cancellation and timeout MUST remove only an exact Harness-owned mapping. A synchronous call SHALL wait for its worker, while NoWait SHALL return the run identity for later status or explicit cancellation.
+Real operations SHALL use stable Request and Run schema names in a unique physical directory under `Saved/Harness/Unreal/Runs/<run-id>` with `Request.json`, `RunMetadata.json`, and `Command.log`, plus operation-specific reports. Build, generic UBT, test, and commandlet requests SHALL accept an optional semantic display label, derive the existing route-specific default when it is omitted or blank, and expose the effective label in plans, status, and recognized process observations. Labels MUST be bounded and free of control characters. Records MUST distinguish physical identity/paths from execution identity/paths. The label MUST NOT participate in RunId generation, filesystem paths, process correlation, locks, executor arguments, or ownership decisions. State transitions SHALL use `Queued`, `WaitingWorkspace`, `WaitingExecutionDrive`, optional `WaitingEngine`, `WaitingExternalBuild`, `Running`, and one terminal state from `Succeeded`, `Failed`, `TimedOut`, or `Cancelled`; status MAY report `Orphaned` when a non-terminal recorded process no longer exists. The worker SHALL acquire workspace, drive, and optional engine leases in that order, create and validate the mapping only after those leases, and release mapping and leases in reverse order. Cancellation and timeout MUST remove only an exact Harness-owned mapping. A synchronous call SHALL wait for its worker, while NoWait SHALL return the run identity for later status or explicit cancellation.
 
 #### Scenario: Time out a process
 - **WHEN** a native child exceeds the request's total timeout
-  > Inputs: The total timeout covers queueing, lease waits, and native execution rather than restarting for each phase.
-- **THEN** the worker stops the child tree, records `TimedOut`, preserves bounded evidence, releases every lease, and returns a non-zero result
-  > Details:
 
-  1. The contained native process tree is no longer live before the run is reported terminal.
-  2. `RunMetadata.json` and bounded command evidence identify the timeout and final `TimedOut` state.
-  3. Only an ownership-verified execution mapping is removed, and all acquired leases become available again.
+    > Inputs: The total timeout covers queueing, lease waits, and native execution rather than restarting for each phase.
+
+- **THEN** the worker stops the child tree, records `TimedOut`, preserves bounded evidence, releases every lease, and returns a non-zero result
+
+    > Details:
+
+    1. The contained native process tree is no longer live before the run is reported terminal.
+    2. `RunMetadata.json` and bounded command evidence identify the timeout and final `TimedOut` state.
+    3. Only an ownership-verified execution mapping is removed, and all acquired leases become available again.
 
 #### Scenario: Cancel an asynchronous run
 - **GIVEN** a `NoWait` run has reached `Running` and its contained metadata records matching live worker and native-process identities
 - **WHEN** the user explicitly cancels a contained run whose recorded worker identity still matches
+
+    > Inputs: The exact selected workspace, the returned `RunId`, and an explicit `ue.run.cancel` action.
+
 - **THEN** descendants and the worker are stopped, state becomes `Cancelled`, and no unrelated process is targeted
+
+    > Observables: Pre-cancel `Running` status, terminal `Cancelled` metadata, worker/native PID absence, released leases, and mapping cleanup subject to ownership.
+
 - **AND** the terminal result is non-zero and releases the run's exact workspace, drive, and applicable engine ownership
+
+    > Verification: The `RunLifecycle` fixture in `.agents/skills/unreal-engine-develop/tests/UnrealEngineDevelop.Tests.ps1` launches a bounded asynchronous native process, cancels it, verifies both PIDs exit and the workspace lease is reacquirable, and rejects an unrelated live PID.
+
 - **BUT** a live PID that does not match the contained run identity is refused rather than terminated
 
-> Inputs: The exact selected workspace, the returned `RunId`, and an explicit `ue.run.cancel` action.
->
-> Observables: Pre-cancel `Running` status, terminal `Cancelled` metadata, worker/native PID absence, released leases, and mapping cleanup subject to ownership.
->
-> Boundaries: Cancellation targets one contained Harness run; it is not a machine-wide process-kill or an inferred cleanup of orphaned foreign processes.
->
-> Verification: The `RunLifecycle` fixture in `.agents/skills/unreal-engine-develop/tests/UnrealEngineDevelop.Tests.ps1` launches a bounded asynchronous native process, cancels it, verifies both PIDs exit and the workspace lease is reacquirable, and rejects an unrelated live PID.
+    > Boundaries: Cancellation targets one contained Harness run; it is not a machine-wide process-kill or an inferred cleanup of orphaned foreign processes.
 
 #### Scenario: Preserve a foreign matching mapping
 - **GIVEN** a third party created a DOS mapping to the exact physical workspace and the Harness assignment registry contains no ownership claim for it
 - **WHEN** the selected drive already maps to the exact physical workspace but the assignment registry does not mark it Harness-owned
+
+    > Inputs: The selected execution drive, its raw DOS target, and the exact physical workspace identity.
+
 - **THEN** the worker validates and reuses it as `Foreign` and leaves it present after the run
+
+    > Observables: Successful execution, `Foreign` mapping state in terminal metadata, and the same mapping still present after worker completion.
+
 - **AND** terminal metadata records `MappingState = Foreign` so reuse never becomes an implicit ownership transfer
+
+    > Verification: The foreign-mapping fixture in `.agents/skills/unreal-engine-develop/tests/UnrealEngineDevelop.Tests.ps1` creates a matching external mapping, runs through it, verifies explicit foreign state, and proves terminal cleanup leaves it present.
+
 - **BUT** Harness cleanup does not remove or rewrite the matching foreign mapping
 
-> Inputs: The selected execution drive, its raw DOS target, and the exact physical workspace identity.
->
-> Observables: Successful execution, `Foreign` mapping state in terminal metadata, and the same mapping still present after worker completion.
->
-> Boundaries: Exact physical-target equality is required; a drive pointing elsewhere is not reusable and must be preserved while another free drive is selected.
->
-> Verification: The foreign-mapping fixture in `.agents/skills/unreal-engine-develop/tests/UnrealEngineDevelop.Tests.ps1` creates a matching external mapping, runs through it, verifies explicit foreign state, and proves terminal cleanup leaves it present.
+    > Boundaries: Exact physical-target equality is required; a drive pointing elsewhere is not reusable and must be preserved while another free drive is selected.
 
 #### Scenario: Recover an abandoned owned mapping
 - **GIVEN** the registry marks an exact workspace mapping as Harness-owned but the recorded owner run and process are no longer live
 - **WHEN** a prior owner is no longer live and its exact Harness-owned mapping remains
-- **THEN** a later real assignment identifies it as stale, removes or adopts it under the registry/drive leases, and never removes a different target
-- **AND** `PlanOnly` can report `StaleOwned` without mutation, while the later real run completes and leaves no abandoned owned mapping behind
-- **BUT** a mismatched or foreign target is preserved instead of being treated as stale Harness ownership
 
-> Inputs: The assignment key, owned drive and raw target, dead owner identity, and exact selected workspace.
->
-> Observables: Non-mutating `StaleOwned` planning state, successful real execution, updated ownership evidence, and an absent owned mapping after terminal cleanup.
->
-> Boundaries: Recovery occurs only while holding the normal registry and drive leases and only after liveness and exact-target checks.
->
-> Verification: The stale-owned fixture in `.agents/skills/unreal-engine-develop/tests/UnrealEngineDevelop.Tests.ps1` injects a dead owner record, observes `StaleOwned` during planning, executes a recovery run, and proves the exact owned mapping is removed afterward.
+    > Inputs: The assignment key, owned drive and raw target, dead owner identity, and exact selected workspace.
+
+- **THEN** a later real assignment identifies it as stale, removes or adopts it under the registry/drive leases, and never removes a different target
+
+    > Boundaries: Recovery occurs only while holding the normal registry and drive leases and only after liveness and exact-target checks.
+
+- **AND** `PlanOnly` can report `StaleOwned` without mutation, while the later real run completes and leaves no abandoned owned mapping behind
+
+    > Observables: Non-mutating `StaleOwned` planning state, successful real execution, updated ownership evidence, and an absent owned mapping after terminal cleanup.
+
+    > Verification: The stale-owned fixture in `.agents/skills/unreal-engine-develop/tests/UnrealEngineDevelop.Tests.ps1` injects a dead owner record, observes `StaleOwned` during planning, executes a recovery run, and proves the exact owned mapping is removed afterward.
+
+- **BUT** a mismatched or foreign target is preserved instead of being treated as stale Harness ownership
 
 #### Scenario: Complete a real Smoke run through the execution view
 - **WHEN** the configured `AngelscriptSmoke` group is launched through `ue.test` on Windows
@@ -147,27 +171,40 @@ Real operations SHALL use stable Request and Run schema names in a unique physic
 #### Scenario: Label one Unreal operation
 
 - **WHEN** a caller supplies a valid `Label` to `ue.build`, `ue.ubt.invoke`, `ue.test`, or `ue.commandlet`
-  > Inputs: A display label containing at most 128 UTF-16 code units, no control characters, and any route-specific execution inputs.
+
+    > Inputs: A display label containing at most 128 UTF-16 code units, no control characters, and any route-specific execution inputs.
+
 - **THEN** the effective trimmed label is returned by PlanOnly, stored in the run request, and returned by `ue.run.status`
-  > Observables: `Label` has one identical value in the plan, `Request.json`, new run metadata, and the status projection.
+
+    > Observables: `Label` has one identical value in the plan, `Request.json`, new run metadata, and the status projection.
+
 - **AND** a recognized managed build returned by `ue.process.list` reports the same label
-  > Verification: The focused RunLabels fixture exercises all four public routes and a contained recognized-build process view.
+
+    > Verification: The focused RunLabels fixture exercises all four public routes and a contained recognized-build process view.
+
 - **BUT** changing the label does not change the generated RunId, run directory, lease identity, native argument array, or process-correlation evidence
-  > Boundaries: Labels are repeatable display metadata rather than identity or authority.
+
+    > Boundaries: Labels are repeatable display metadata rather than identity or authority.
 
 #### Scenario: Derive a default run label
 
 - **WHEN** a caller omits `Label` or supplies only whitespace to a single-operation Unreal route
-  > Inputs: The normalized build target, UBT capability, test prefix or group, or commandlet name that already identifies the operation.
+
+    > Inputs: The normalized build target, UBT capability, test prefix or group, or commandlet name that already identifies the operation.
+
 - **THEN** the route derives its existing stable label from the build target, UBT capability, test selection, or commandlet name and exposes it through the same observation surfaces
-  > Observables: Callers receive a non-empty effective label without having to provide new input, preserving current route behavior.
+
+    > Observables: Callers receive a non-empty effective label without having to provide new input, preserving current route behavior.
 
 #### Scenario: Reject an unsafe run label
 
 - **WHEN** a caller supplies a label longer than the supported bound or containing a control character
-  > Inputs: A label longer than 128 UTF-16 code units or containing characters such as a newline, carriage return, tab, or NUL.
+
+    > Inputs: A label longer than 128 UTF-16 code units or containing characters such as a newline, carriage return, tab, or NUL.
+
 - **THEN** planning fails before a run directory, mapping, lease, or native process is created
-  > Observables: The diagnostic identifies the label boundary and the workspace run root remains unchanged.
+
+    > Observables: The diagnostic identifies the label boundary and the workspace run root remains unchanged.
 
 ### Requirement: Active build discovery and progress
 
@@ -179,34 +216,61 @@ Real operations SHALL use stable Request and Run schema names in a unique physic
 
 #### Scenario: Inspect a mapped worktree build
 - **GIVEN** contained `Request.json` and `RunMetadata.json` identify the physical workspace and matching native PID for the run ID embedded in the owned UBT log path
-  > Context: Correlation begins from physical Harness evidence even when the child process uses a transient mapped execution view.
+
+    > Context: Correlation begins from physical Harness evidence even when the child process uses a transient mapped execution view.
+
 - **WHEN** an active UBT command line contains a mapped `-Project` and the exact contained `-Log` path
-  > Inputs: Machine process identity and command line, mapped project argument, contained run-local log path, and the physical contained run records.
+
+    > Inputs: Machine process identity and command line, mapped project argument, contained run-local log path, and the physical contained run records.
+
 - **THEN** process discovery returns the physical WorkspaceRoot and ProjectFile together with ExecutionPath and uses only that physical run's bounded progress evidence
-  > Observables: `RecognizedBuild`, physical and execution identities, target/configuration/concurrency fields, and `ProgressKnown` with its bounded source.
+
+    > Observables: `RecognizedBuild`, physical and execution identities, target/configuration/concurrency fields, and `ProgressKnown` with its bounded source.
+
 - **AND** recognized output reports trusted target, configuration, build concurrency, current action counts, and the contained evidence path
-  > Verification: The `ConcurrencyProgress` fixture correlates an exact contained log and mapped project to matching metadata and proves progress comes only from physical run evidence.
+
+    > Verification: The `ConcurrencyProgress` fixture correlates an exact contained log and mapped project to matching metadata and proves progress comes only from physical run evidence.
+
 - **BUT** a malformed or external log path, mismatched native PID, or mismatched request argument cannot make the process recognized or supply trusted progress
-  > Boundaries: Uncorrelated processes may expose basic machine facts, but their progress remains unknown rather than inferred from untrusted logs.
+
+    > Boundaries: Uncorrelated processes may expose basic machine facts, but their progress remains unknown rather than inferred from untrusted logs.
 
 ### Requirement: Managed multi-worktree concurrency
 
 One operation SHALL hold one workspace lease for its whole lifetime. Auto and Wait SHALL wait within the total deadline, while Fail SHALL reject an occupied workspace. The leaf MUST NOT provide same-workspace execution slots. Ordinary installed-engine project builds SHALL support a Harness-owned controlled parallel lane across distinct workspaces using `-NoMutex -NoEngineChanges`, isolated temp/log paths, and a shared engine lane. Build mode `Auto` SHALL select that lane for eligible installed-project builds; `Parallel` SHALL request it explicitly; `Serialize` SHALL request the exclusive lane. Source/unknown-engine builds, QueryTargets, and generic UBT SHALL use the exclusive engine lane keyed by canonical EngineRoot and `-WaitMutex`. Raw mutex/engine-guard arguments MUST remain reserved to the policy layer without classifying `-NoMutex` as inherently unsafe. Non-UBT tests and commandlets MAY overlap only across distinct workspaces, and distinct EngineRoots MAY execute independently. The selected mode, policy, guards, and reasons MUST be recorded. A detected shared-engine UHT timestamp conflict MUST fail the build even when the native exit code is zero.
 
+For Build, QueryTargets and generic UBT, the worker SHALL inspect a bounded process inventory after acquiring the workspace lease and again after drive/engine acquisition before native launch. A recognized absolute external UBT project matching the selected physical project, including an actual Windows execution-drive or filesystem alias, SHALL cause Auto/Wait to expose `WaitingExternalBuild` within the original deadline, or Fail to return without native launch. Incomplete process inspection MUST fail explicitly. Basic external project and target identity MUST NOT grant managed-run identity or trusted progress. Admission MUST NOT kill the external process or block a distinct workspace by substring. This observed-activity check is not atomic coordination with an external launcher: a build starting after the final scan, or an unrecognized project argument, remains outside its guarantee.
+
+#### Scenario: An external IDE build already uses the physical project
+
+- **GIVEN** an external UBT process exposes the selected absolute project through a physical path or an actual Windows file alias
+- **WHEN** a managed UBT operation reaches admission or finishes waiting for its execution lanes
+- **THEN** Fail returns a failed run without native launch, while Auto/Wait report `WaitingExternalBuild` with the observed PID/project and proceed only after the contender disappears or the original total timeout expires
+
+    > Verification: `UnrealEngineDevelop.Tests.ps1 -Tag ExternalAdmission` exercises the real worker, leases, metadata and filesystem alias identity with controlled machine process snapshots and a substituted native launch boundary. Existing RunLifecycle and cancellation-safety fixtures cover owned-worker cancellation; no real UE build is required for the admission proof.
+
+- **AND** timeout and explicit cancellation preserve the external process; its uncorrelated progress remains unknown
+- **BUT** a UBT process in a distinct nested workspace, or a plain open Editor, does not count as this same-project contender
+
+    > Boundaries: Two bounded snapshots narrow the launch race but do not prevent an IDE from launching after the final snapshot. Harness does not silently serialize all workspaces or claim a shared lock with arbitrary external processes.
+
 #### Scenario: Build two installed-engine worktrees
 - **GIVEN** two exact, distinct registered workspaces each request an eligible ordinary typed project build against the same canonical installed EngineRoot
 - **WHEN** two distinct registered worktrees issue ordinary project-target builds against one installed engine without output overrides
-- **THEN** each keeps its own workspace lease, both may occupy the shared engine lane concurrently, and Harness supplies `-NoMutex -NoEngineChanges` plus isolated logs and temp paths
-- **AND** planning records `ParallelInstalledProjectBuild`, the shared engine lane, owned UBT guards, and run-local execution paths
-- **BUT** the same workspace remains exclusive, while source/unknown-engine builds and generic UBT work remain on the exclusive engine lane
 
-> Inputs: Two distinct physical `WorkspaceRoot` identities, one installed `EngineRoot`, typed build requests, and no caller-owned output or mutex overrides.
->
-> Observables: Per-request workspace identity, `BuildConcurrency = Parallel`, `EngineLane = Shared`, exact UBT arguments, and isolated temporary/log paths.
->
-> Boundaries: Current automated acceptance is fixture-level evidence for policy selection, shared-lane overlap, argument ownership, and path isolation. It does **not** claim that two real UBT/Unreal builds were executed concurrently end to end.
->
-> Verification: The `ConcurrencyProgress` fixtures in `.agents/skills/unreal-engine-develop/tests/UnrealEngineDevelop.Tests.ps1` verify the parallel plan and owned arguments, allow two shared lane holders to overlap while an exclusive holder waits, and validate run-local temp/log routing without launching two real UBT builds.
+    > Inputs: Two distinct physical `WorkspaceRoot` identities, one installed `EngineRoot`, typed build requests, and no caller-owned output or mutex overrides.
+
+- **THEN** each keeps its own workspace lease, both may occupy the shared engine lane concurrently, and Harness supplies `-NoMutex -NoEngineChanges` plus isolated logs and temp paths
+
+    > Observables: Per-request workspace identity, `BuildConcurrency = Parallel`, `EngineLane = Shared`, exact UBT arguments, and isolated temporary/log paths.
+
+    > Boundaries: Current automated acceptance is fixture-level evidence for policy selection, shared-lane overlap, argument ownership, and path isolation. It does **not** claim that two real UBT/Unreal builds were executed concurrently end to end.
+
+- **AND** planning records `ParallelInstalledProjectBuild`, the shared engine lane, owned UBT guards, and run-local execution paths
+
+    > Verification: The `ConcurrencyProgress` fixtures in `.agents/skills/unreal-engine-develop/tests/UnrealEngineDevelop.Tests.ps1` verify the parallel plan and owned arguments, allow two shared lane holders to overlap while an exclusive holder waits, and validate run-local temp/log routing without launching two real UBT builds.
+
+- **BUT** the same workspace remains exclusive, while source/unknown-engine builds and generic UBT work remain on the exclusive engine lane
 
 #### Scenario: Use a source engine
 - **WHEN** a request targets a source or unknown engine layout
@@ -230,22 +294,30 @@ One operation SHALL hold one workspace lease for its whole lifetime. Auto and Wa
 
 #### Scenario: Launch a top-level Harness build
 - **WHEN** Harness plans or launches a typed `ue.build` or vetted generic UBT `build`
-  > Inputs: Normalized target identity, workspace-local mapped paths, and configured executor policy form the native plan.
+
+    > Inputs: Normalized target identity, workspace-local mapped paths, and configured executor policy form the native plan.
+
 - **THEN** the UBT argument array contains one contained run-local `-Log` path and no `-Session`
-  > Observables: The native arguments expose exactly one owned log destination and no recursive-session marker.
+
+    > Observables: The native arguments expose exactly one owned log destination and no recursive-session marker.
+
 - **AND** configured UBA/XGE selection remains available without a forced executor or caller action-threshold workaround
-  > Boundaries: Harness preserves supported executor configuration and does not invent capacity policy.
+
+    > Boundaries: Harness preserves supported executor configuration and does not invent capacity policy.
 
 #### Scenario: Reject a caller executor override
 - **WHEN** a caller supplies raw `-NoUBA` or `-NoXGE` through extra UBT arguments
-  > Inputs: Raw extra arguments attempt to override executor policy outside the maintained typed surface.
+
+    > Inputs: Raw extra arguments attempt to override executor policy outside the maintained typed surface.
+
+    Examples of rejected raw overrides:
+
+    - `-NoUBA`
+    - `-NoXGE`
+
 - **THEN** the planner rejects the policy ownership conflict and directs the caller to the maintained typed route behavior
-  > Observables: No native UBT process is launched from the rejected plan.
 
-  Examples of rejected raw overrides:
-
-  - `-NoUBA`
-  - `-NoXGE`
+    > Observables: No native UBT process is launched from the rejected plan.
 
 ### Requirement: Unreal Automation and commandlet operations
 
@@ -279,20 +351,24 @@ The current registry filename SHALL remain the stable unsuffixed `DriveAssignmen
 
 #### Scenario: Refuse a registry conflict
 - **GIVEN** both unsuffixed legacy Hardness and current Harness drive-assignment registries exist before a real registry-dependent operation
+
+    > Context: Conflicting registries require an explicit human reconciliation decision; neither file has implicit precedence.
+
 - **WHEN** both legacy and current registries exist with conflicting state
+
+    > Inputs: The exact legacy and current registry paths and their pre-operation payload bytes.
+
 - **THEN** the real operation fails with both paths and does not overwrite or merge either file
+
+    > Observables: A failure naming both paths, unchanged byte hashes for both files, and no resulting assignment or drive mutation.
+
 - **AND** both registry byte sequences remain identical to their pre-operation values
+
+    > Verification: The `Discovery` fixture in `.agents/skills/unreal-engine-develop/tests/UnrealEngineDevelop.Tests.ps1` creates both registries, observes a fail-closed migration attempt, and compares both files byte-for-byte after failure.
+
 - **BUT** no migration, schema rewrite, assignment, or mapping proceeds after the conflict is detected
 
-> Context: Conflicting registries require an explicit human reconciliation decision; neither file has implicit precedence.
->
-> Inputs: The exact legacy and current registry paths and their pre-operation payload bytes.
->
-> Observables: A failure naming both paths, unchanged byte hashes for both files, and no resulting assignment or drive mutation.
->
-> Boundaries: Conflict handling belongs to the first real registry-dependent operation; `PlanOnly` remains side-effect free and does not perform migration.
->
-> Verification: The `Discovery` fixture in `.agents/skills/unreal-engine-develop/tests/UnrealEngineDevelop.Tests.ps1` creates both registries, observes a fail-closed migration attempt, and compares both files byte-for-byte after failure.
+    > Boundaries: Conflict handling belongs to the first real registry-dependent operation; `PlanOnly` remains side-effect free and does not perform migration.
 
 #### Scenario: Keep the registry name stable
 - **WHEN** registry payload or implementation schema revisions advance

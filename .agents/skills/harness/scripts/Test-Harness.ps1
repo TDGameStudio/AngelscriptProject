@@ -94,6 +94,7 @@ function Get-HarnessGateChecks {
             PluginCommits       = '.agents\skills\git-operations\tests\PluginCommits.Tests.ps1'
             OpenSpecSkill       = '.agents\skills\openspec\tests\OpenSpecSkill.Tests.ps1'
             UnrealIntegration   = '.agents\skills\unreal-engine-develop\tests\UnrealEngineDevelop.Tests.ps1'
+            UnrealExternalAdmission = '.agents\skills\unreal-engine-develop\tests\UnrealEngineDevelop.Tests.ps1'
             UnrealCancellationSafety = '.agents\skills\unreal-engine-develop\tests\UnrealCancellationSafety.Tests.ps1'
             UnrealRunAdmission = '.agents\skills\unreal-engine-develop\tests\UnrealRunAdmission.Tests.ps1'
             UnrealRemovalProcessInspection = '.agents\skills\unreal-engine-develop\tests\UnrealRemovalProcessInspection.Tests.ps1'
@@ -104,6 +105,9 @@ function Get-HarnessGateChecks {
                 $arguments = @($hostInfo.Arguments) + @('-File', $testPath)
                 if ($testName -eq 'UnrealIntegration') {
                     $arguments += @('-Tag', 'Integration')
+                }
+                elseif ($testName -eq 'UnrealExternalAdmission') {
+                    $arguments += @('-Tag', 'ExternalAdmission')
                 }
                 $checks.Add((New-HarnessGateCheck -Name "$testName.$($hostInfo.Suffix)" -Kind 'Script' -Path $testPath -Executable $hostInfo.Executable -Arguments $arguments -WorkingDirectory $projectRoot)) | Out-Null
             }

@@ -77,7 +77,7 @@ Invoke-Harness -Command ue.run.cancel -Context $context -Parameters @{ RunId = $
 
 - `PlanOnly` and `NoWait` are mutually exclusive.
 - Synchronous invocation waits for the terminal result.
-- Asynchronous states include `Queued`, `WaitingWorkspace`, `WaitingEngine`, `Running`, `Succeeded`, `Failed`, `TimedOut`, `Cancelled`, and effective `Orphaned` detection.
+- Asynchronous states include `Queued`, `WaitingWorkspace`, `WaitingEngine`, `WaitingExternalBuild`, `Running`, `Succeeded`, `Failed`, `TimedOut`, `Cancelled`, and effective `Orphaned` detection. `WaitingExternalBuild` means a same-workspace external UBT process is delaying admission; it does not claim a trusted build percentage.
 
 - Read [concurrency.md](references/concurrency.md) before overriding either concurrency axis or interpreting process progress.
 
@@ -117,7 +117,7 @@ Invoke-Harness -Command ue.test -Context $context -Parameters @{
   - The maximum accepted timeout is one hour.
 - Harness owns workspace identity, engine selection, leases, UBT concurrency flags, private logs, temporary directories, report paths, and run metadata.
   - Reserved raw arguments that would override those fields are rejected.
-- Same-workspace execution is always exclusive.
+- Harness-managed execution in the same workspace is always exclusive. UBT admission also checks observed external same-project builds; this is not an atomic lock shared with an IDE that starts after the check.
   - Eligible ordinary Installed Engine project builds may run concurrently across distinct worktrees; source/unknown engines and conservative UBT operations serialize.
 - A zero UE process exit is not sufficient when an enforced Automation report is missing, malformed, empty, incomplete, or failing.
 - A detected shared-engine UHT `Timestamp` contention is promoted to failure with serialize-or-isolate guidance, even if the native process returned zero.

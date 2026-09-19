@@ -778,25 +778,27 @@ fixture
             $runCount = if ($phase -eq 'Warmup') { $WarmupRuns } else { $MeasurementRuns }
             for ($iteration = 1; $iteration -le $runCount; $iteration++) {
                 $timer = [System.Diagnostics.Stopwatch]::StartNew()
-                $observationResult = Invoke-Harness -Command 'harness.observe' -Context $statusContext -Parameters @{
+                # TaskChange may select a user's live workspace; synthetic writes always use the isolated fixture.
+                $observationResult = Invoke-Harness -Command 'harness.observe' -Context $evolutionContext -Parameters @{
                     Category      = 'performance-probe'
                     Summary       = 'Measure the bounded Harness observation write path.'
-                    Change        = $effectiveTaskChange
+                    Change        = $evolutionChange
                     Stage         = 'performance'
                     CorrelationId = "performance-$($phase.ToLowerInvariant())-$iteration"
                 }
                 $timer.Stop()
                 Assert-PerformanceCondition ($observationResult.status -eq 'Succeeded' -and $observationResult.exitCode -eq 0) 'harness.observe failed'
                 $rawArtifacts = @($observationResult.artifacts | Where-Object { [IO.Path]::GetExtension([string]$_) -eq '.json' })
-                $inboxPath = Join-Path $statusContext.WorkspaceRoot 'Saved/Harness/Observations/INBOX.md'
+                $inboxPath = Join-Path $evolutionContext.WorkspaceRoot 'Saved/Harness/Observations/INBOX.md'
                 Assert-PerformanceCondition ($rawArtifacts.Count -eq 1) 'harness.observe did not return exactly one raw JSON artifact'
                 Assert-PerformanceCondition (@($observationResult.artifacts).Count -eq 2 -and @($observationResult.artifacts | Where-Object { $_ -eq $inboxPath }).Count -eq 1) 'harness.observe did not return its current feedback inbox alongside the raw JSON'
                 $observationPath = [string]$rawArtifacts[0]
+                Assert-PerformanceCondition ([IO.Path]::GetFullPath($observationPath).StartsWith($evolutionFixtureRoot + [IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase)) 'harness.observe escaped the isolated performance fixture'
                 Assert-PerformanceCondition (Test-Path -LiteralPath $observationPath -PathType Leaf) 'harness.observe artifact does not exist'
                 Assert-PerformanceCondition (Test-Path -LiteralPath $inboxPath -PathType Leaf) 'harness.observe feedback inbox does not exist'
                 $observation = Get-Content -LiteralPath $observationPath -Raw | ConvertFrom-Json -ErrorAction Stop
                 Assert-PerformanceCondition ($observation.schemaVersion -eq 'harness-observation-v1') 'harness.observe wrote the wrong schema'
-                Assert-PerformanceCondition ($observation.workspaceRoot -eq $statusContext.WorkspaceRoot) 'harness.observe recorded a different workspace root'
+                Assert-PerformanceCondition ($observation.workspaceRoot -eq $evolutionContext.WorkspaceRoot) 'harness.observe recorded a different workspace root'
                 Assert-PerformanceCondition ($observation.category -eq 'performance-probe') 'harness.observe recorded the wrong category'
                 Assert-PerformanceCondition ([IO.File]::ReadAllText($inboxPath).Contains($observation.runId)) 'harness.observe feedback inbox omits the new observation'
                 $value = [double]$timer.Elapsed.TotalMilliseconds

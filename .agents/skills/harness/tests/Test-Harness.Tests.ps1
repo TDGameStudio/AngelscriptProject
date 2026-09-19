@@ -50,12 +50,14 @@ foreach ($name in @(
         'GitOperations.PS7',
         'OpenSpecSkill.PS7',
         'UnrealIntegration.PS7',
+        'UnrealExternalAdmission.PS7',
         'UnrealCancellationSafety.PS7',
         'UnrealRunAdmission.PS7',
         'UnrealRemovalProcessInspection.PS7')) {
     Assert-True ($name -in @($quick.Name)) "Quick profile contains $name"
 }
-Assert-Equal 24 @($quick).Count 'Quick profile includes workflow, queue, replica, feedback, mutation and peripheral boundary fixtures'
+Assert-Equal 25 @($quick).Count 'Quick profile includes workflow, queue, replica, feedback, mutation and peripheral boundary fixtures'
+Assert-Equal '-Tag|ExternalAdmission' ((@($quick | Where-Object Name -eq 'UnrealExternalAdmission.PS7')[0].Arguments | Select-Object -Last 2) -join '|') 'the external UBT check executes its focused admission cases'
 Assert-Equal 0 @($quick | Where-Object Name -match 'PS5|WindowsPowerShell').Count 'Quick exposes no legacy host check'
 
 foreach ($name in @('HarnessPerformance.PS7')) {
@@ -69,7 +71,7 @@ foreach ($name in @('Harness.Installation', 'OpenSpec.Doctor', 'OpenSpec.Workflo
 foreach ($name in @('HarnessPerformance.PS7')) {
     Assert-True ($name -in @($integration.Name)) "Integration contains $name"
 }
-Assert-Equal 29 @($integration).Count 'Integration contains twenty-four scripts, one performance run, and four route checks'
+Assert-Equal 30 @($integration).Count 'Integration contains twenty-five scripts, one performance run, and four route checks'
 Assert-Equal 1 @($integration | Where-Object Name -eq 'UnrealIntegration.PS7').Count 'Integration contains the fixture-only Unreal route gate exactly once'
 Assert-Equal $quick.Count @($integration | Where-Object Kind -eq 'Script').Count 'Integration keeps the complete Quick script matrix'
 Assert-Equal $performance.Count @($integration | Where-Object Kind -eq 'Performance').Count 'Integration includes the complete Performance matrix'
@@ -160,6 +162,79 @@ try {
         if (-not [string]::IsNullOrWhiteSpace([string]$privateValue)) {
             Assert-True ($summaryText -notmatch [regex]::Escape([string]$privateValue)) 'the performance summary omits machine and user identity'
         }
+    }
+
+    # An explicit TaskChange selects a real workspace for reads, never for synthetic observations.
+    $explicitRoot = Join-Path $contractRoot 'explicit-project'
+    [void](New-Item -ItemType Directory -Path $explicitRoot)
+    & git -C $explicitRoot init -b main | Out-Null
+    Assert-Equal 0 $LASTEXITCODE 'the explicit-project fixture initializes Git'
+    [IO.File]::WriteAllText((Join-Path $explicitRoot '.gitignore'), "Saved/`nAgentConfig.ini`n")
+    [IO.File]::WriteAllText((Join-Path $explicitRoot 'Fixture.uproject'), "{}`n")
+    & git -C $explicitRoot add .gitignore Fixture.uproject
+    Assert-Equal 0 $LASTEXITCODE 'the explicit-project fixture stages its baseline'
+    & git -C $explicitRoot -c user.name='Harness Fixture' -c user.email=fixture@example.invalid commit -m fixture | Out-Null
+    Assert-Equal 0 $LASTEXITCODE 'the explicit-project fixture commits its baseline'
+    $explicitBin = Join-Path $explicitRoot '.agents/skills/openspec/bin'
+    [void](New-Item -ItemType Directory -Path $explicitBin -Force)
+    $explicitExe = Join-Path $explicitBin 'openspec.exe'
+    Copy-Item -LiteralPath (Join-Path $projectRoot '.agents/skills/openspec/bin/openspec.exe') -Destination $explicitExe
+    & $explicitExe init $explicitRoot --project-id performance-isolation --title 'Performance Isolation' --workflow spec-driven --language en | Out-Null
+    Assert-Equal 0 $LASTEXITCODE 'the explicit-project fixture initializes OpenSpec'
+    Push-Location -LiteralPath $explicitRoot
+    try {
+        & $explicitExe domain create fixture --title Fixture --description Fixture --json | Out-Null
+        Assert-Equal 0 $LASTEXITCODE 'the explicit-project fixture creates its domain'
+        & $explicitExe change create fixture/custom --title 'Explicit task' --goal 'Measure a selected active task' --json | Out-Null
+        Assert-Equal 0 $LASTEXITCODE 'the explicit-project fixture creates its active Change'
+    }
+    finally { Pop-Location }
+    $explicitChangeRoot = Join-Path $explicitRoot 'openspec/changes/fixture/custom'
+    [IO.File]::WriteAllText((Join-Path $explicitChangeRoot 'tasks.md'), @'
+---
+task_graph:
+  version: 1
+  depends_on:
+    "1.1": []
+---
+
+## Tasks
+
+## [ ] 1.1 Explicit task fixture
+
+**Files**
+
+```diff
+ fixture
+```
+
+**Verification**
+
+```sh
+fixture
+```
+'@)
+    $explicitDataRoot = Join-Path $explicitChangeRoot 'attachments/data'
+    [void](New-Item -ItemType Directory -Path $explicitDataRoot -Force)
+    [IO.File]::WriteAllText((Join-Path $explicitDataRoot 'harness-origin.json'), '{"schema":1,"changeId":"fixture/custom","origin":"Direct","reason":"Isolated performance contract fixture"}')
+    [IO.File]::WriteAllText((Join-Path $explicitChangeRoot 'design.md'), "## Call chains`n`nnone — isolated task parser input.`n")
+    $explicitObservations = Join-Path $explicitRoot 'Saved/Harness/Observations'
+    [void](New-Item -ItemType Directory -Path $explicitObservations -Force)
+    [IO.File]::WriteAllText((Join-Path $explicitObservations 'user-feedback.json'), '{"schemaVersion":"harness-observation-v1","runId":"user-feedback","observedAtUtc":"2026-09-01T00:00:00Z","category":"explanation","summary":"Preserve this real user feedback."}')
+    [IO.File]::WriteAllText((Join-Path $explicitObservations 'INBOX.md'), "# Existing user feedback`n")
+    $feedbackHashes = @{}
+    foreach ($file in @(Get-ChildItem -LiteralPath $explicitObservations -File -Recurse)) {
+        $feedbackHashes[$file.FullName] = (Get-FileHash -LiteralPath $file.FullName -Algorithm SHA256).Hash
+    }
+    & $performanceLeaf -ProjectRoot $explicitRoot -OutputRoot $contractRoot -RunId 'explicit-change' -TaskChange 'fixture/custom' -WarmupRuns 1 -MeasurementRuns 1 -BatchSize 100 | Out-Null
+    $explicitSummary = Get-Content -LiteralPath (Join-Path $contractRoot 'explicit-change/Summary.json') -Raw | ConvertFrom-Json
+    $explicitSamples = @(Import-Csv -LiteralPath (Join-Path $contractRoot 'explicit-change/Samples.csv'))
+    Assert-Equal 'Passed' $explicitSummary.OverallStatus 'the explicit Change performance sample succeeds'
+    Assert-Equal 'fixture/custom' $explicitSummary.Parameters.TaskChange 'the explicit Change remains the task.status measurement target'
+    Assert-Equal 2 @($explicitSamples | Where-Object { $_.Scenario -eq 'ObservationWrite' -and $_.Correct -eq 'True' }).Count 'warmup and measured observation writes really execute'
+    Assert-Equal 2 @(Get-ChildItem -LiteralPath $explicitObservations -File -Recurse).Count 'explicit TaskChange must not add performance probes to the selected workspace feedback store'
+    foreach ($path in $feedbackHashes.Keys) {
+        Assert-Equal $feedbackHashes[$path] (Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash 'explicit TaskChange preserves existing raw feedback and its inbox byte-for-byte'
     }
 
     $summaryHash = (Get-FileHash -LiteralPath $summaryPath -Algorithm SHA256).Hash
@@ -262,7 +337,10 @@ try {
 }
 finally {
     if (Test-Path -LiteralPath $contractRoot) {
-        Remove-Item -LiteralPath $contractRoot -Recurse -Force
+        $resolvedContractRoot = [IO.Path]::GetFullPath($contractRoot)
+        $temporaryRoot = [IO.Path]::GetFullPath([IO.Path]::GetTempPath()).TrimEnd('\', '/') + [IO.Path]::DirectorySeparatorChar
+        Assert-True ($resolvedContractRoot.StartsWith($temporaryRoot, [StringComparison]::OrdinalIgnoreCase) -and [IO.Path]::GetFileName($resolvedContractRoot).StartsWith('harness-performance-contract-', [StringComparison]::Ordinal)) 'contract cleanup remains inside its owned temporary directory'
+        Remove-Item -LiteralPath $resolvedContractRoot -Recurse -Force
     }
 }
 

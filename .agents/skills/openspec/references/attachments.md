@@ -24,6 +24,9 @@ Read this reference only when a current task creates, resolves, or archives an a
 
 Index every attachment file exactly once. Update INDEX in the same edit as creation, material status change, supersession, or resolution. It does not duplicate task state. Do not add parallel session-state files such as `*-next.md` or `*-leftover.md`, and do not use Markdown checkboxes outside `tasks.md` to track execution.
 
+- Use an exact path relative to `attachments/`: inline-code, bare-path or Markdown-link bullets, or an inline-code path in the first table column. Mentioning a path in prose is not an index entry. Every file except INDEX itself needs an entry, including ordinary data, knowledge and closure files stored here; empty directories do not.
+- The exact active terminal check and public archive mutation enforce complete membership and the existing line limit before the move. Repair an omitted or duplicate entry before recording the final evaluation, since INDEX is part of its input digest.
+
 If INDEX would exceed 120 lines, merge or trim low-value detail and improve summaries; never raise the limit or create a second index.
 
 ## Event routing

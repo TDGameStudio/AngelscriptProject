@@ -439,8 +439,9 @@ function ConvertTo-UnrealProcessView {
 
     $projectValue = Get-UnrealCommandLineOptionValue -CommandLine $CommandLine -Name 'Project'
     if ([string]::IsNullOrWhiteSpace($projectValue)) { return $result }
-    $logValue = Get-UnrealCommandLineOptionValue -CommandLine $CommandLine -Name 'Log'
-    if ([string]::IsNullOrWhiteSpace($logValue)) { return $result }
+    # Basic external identity does not require access to an untrusted log. Only
+    # the later managed-run correlation may authorize progress and RunId.
+    if (-not [IO.Path]::IsPathFullyQualified($projectValue)) { return $result }
     try {
         $executionProject = ConvertTo-UnrealCanonicalPath -Path $projectValue
         if (-not $executionProject.EndsWith('.uproject', [System.StringComparison]::OrdinalIgnoreCase)) { return $result }
@@ -454,6 +455,19 @@ function ConvertTo-UnrealProcessView {
             $workspace = ConvertTo-UnrealCanonicalPath -Path ([string] $resolvedExecution.WorkspaceRoot)
         }
         $executionWorkspace = ConvertTo-UnrealCanonicalPath -Path (Split-Path -Parent $executionProject) -AllowMissing
+        $result.ProjectFile = $project
+        $result.WorkspaceRoot = $workspace
+        $result.ExecutionProjectFile = $executionProject
+        $result.ExecutionPath = $executionWorkspace
+        $targetMatch = [regex]::Match($CommandLine, '(?i)UnrealBuildTool(?:\.dll|\.exe)"?\s+(?<target>[A-Za-z][A-Za-z0-9_]*)\s+(?<platform>[A-Za-z][A-Za-z0-9_]*)\s+(?<configuration>Debug|DebugGame|Development|Shipping|Test)(?:\s|$)')
+        if ($targetMatch.Success) {
+            $result.Target = $targetMatch.Groups['target'].Value
+            $result.Platform = $targetMatch.Groups['platform'].Value
+            $result.Configuration = $targetMatch.Groups['configuration'].Value
+        }
+        $result.Architecture = Get-UnrealCommandLineOptionValue -CommandLine $CommandLine -Name 'architecture'
+        $logValue = Get-UnrealCommandLineOptionValue -CommandLine $CommandLine -Name 'Log'
+        if ([string]::IsNullOrWhiteSpace($logValue)) { return $result }
         $executionLog = ConvertTo-UnrealCanonicalPath -Path $logValue -AllowMissing
         $executionRunsRoot = ConvertTo-UnrealCanonicalPath -Path (Join-Path $executionWorkspace 'Saved/Harness/Unreal/Runs') -AllowMissing
         $relativeLog = [System.IO.Path]::GetRelativePath($executionRunsRoot, $executionLog)
@@ -528,6 +542,18 @@ function ConvertTo-UnrealProcessView {
     return $result
 }
 
+function Test-UnrealProjectFileIdentity {
+    param([Parameter(Mandatory = $true)][string] $Left, [Parameter(Mandatory = $true)][string] $Right)
+    if (Test-UnrealPathEqual -Left $Left -Right $Right) { return $true }
+    if ([System.OperatingSystem]::IsWindows()) {
+        # Covers a live execution drive, junction or other alias without treating
+        # a nested/similarly named workspace as the selected workspace.
+        Initialize-UnrealDosDeviceInterop
+        return [Harness.Unreal.Interop.DosDeviceNative]::FileIdentity($Left) -eq [Harness.Unreal.Interop.DosDeviceNative]::FileIdentity($Right)
+    }
+    return $false
+}
+
 function Get-HarnessUnrealProcessList {
     [CmdletBinding()]
     param(
@@ -576,8 +602,13 @@ function Get-HarnessUnrealProcessList {
         $workspaceMatch = if ([string]::IsNullOrWhiteSpace($workspace)) {
             $false
         }
-        elseif ($view.RecognizedBuild) {
-            Test-UnrealPathEqual -Left $view.WorkspaceRoot -Right $workspace
+        elseif (-not [string]::IsNullOrWhiteSpace([string]$view.ProjectFile)) {
+            try { Test-UnrealProjectFileIdentity -Left $view.ProjectFile -Right $projectFile }
+            catch { if ($RequireComplete) { throw }; $false }
+        }
+        elseif ($view.Kind -in @('Ubt', 'UbtBuild')) {
+            # An unparsed UBT project is unknown, not a substring identity match.
+            $false
         }
         else {
             $view.CommandLine.Contains($workspace, [System.StringComparison]::OrdinalIgnoreCase) -or

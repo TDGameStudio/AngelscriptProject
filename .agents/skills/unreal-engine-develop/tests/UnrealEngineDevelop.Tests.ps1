@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-    [ValidateSet('All', 'Foundation', 'Discovery', 'RunLifecycle', 'RunLabels', 'Build', 'ConcurrencyProgress', 'Automation', 'Suites', 'Integration')]
+    [ValidateSet('All', 'Foundation', 'Discovery', 'RunLifecycle', 'RunLabels', 'Build', 'ExternalAdmission', 'ConcurrencyProgress', 'Automation', 'Suites', 'Integration')]
     [string] $Tag = 'All'
 )
 
@@ -865,6 +865,121 @@ try {
         Assert-Equal 'Succeeded' $nativeResult.State 'a fake native build request reaches Succeeded'
         Assert-Equal 'Build' $nativeResult.Operation 'fake native execution retains the Build operation'
         Assert-Match (Get-Content -LiteralPath $nativeResult.LogPath -Raw) 'fixture-build-success' 'fake native build output reaches run evidence'
+    }
+    if (Test-Selected 'ExternalAdmission') {
+        $module = Get-Module UnrealEngineDevelop -ErrorAction Stop
+        $failures = [Collections.Generic.List[string]]::new()
+        $otherRoot = Join-Path $scenarioFixture.WorkspaceRoot 'different-workspace'
+        [void][IO.Directory]::CreateDirectory($otherRoot)
+        $otherProject = Join-Path $otherRoot 'Fixture.uproject'
+        [IO.File]::WriteAllText($otherProject, '{}')
+        $aliasRoot = Join-Path $scenarioScratch 'workspace-alias'
+        [void](New-Item -ItemType Junction -Path $aliasRoot -Target $scenarioFixture.WorkspaceRoot)
+        $aliasProject = Join-Path $aliasRoot 'Fixture.uproject'
+        $externalDrive = & $module {
+            param($Root)
+            Initialize-UnrealDosDeviceInterop
+            $drive = @('P:', 'Q:', 'R:', 'S:', 'T:') | Where-Object { [string]::IsNullOrEmpty((Get-UnrealDosDeviceTarget -DriveLetter $_)) } | Select-Object -First 1
+            if (-not $drive) { throw 'No free drive for isolated external execution-alias fixture.' }
+            $target = '\??\' + $Root
+            [Harness.Unreal.Interop.DosDeviceNative]::Create($drive, $target)
+            [pscustomobject]@{ Drive=$drive; Target=$target; Project=$drive+'\Fixture.uproject' }
+        } $scenarioFixture.WorkspaceRoot
+        try {
+            & $module {
+                param($Fixture, $OtherProject, $AliasProject, $MappedProject, $Failures)
+                function Get-Process {
+                    param($Id, $ErrorAction)
+                    if ($null -ne $Id) { return Microsoft.PowerShell.Management\Get-Process -Id $Id -ErrorAction $ErrorAction }
+                    if ($fixtureScan -eq 'Unreadable') { return [pscustomobject]@{ Id=4242; ProcessName='dotnet'; Path='C:\Fixture\dotnet.exe'; StartTime=[DateTime]::UtcNow } }
+                    $fixtureState.Scans++
+                    if ($fixtureState.Scans -gt 1 -and (Test-Path -LiteralPath $request.paths.MetadataPath)) {
+                        $snapshot = Get-UnrealRunStatusRecord -WorkspaceRoot $Fixture.WorkspaceRoot -RunId $request.runId
+                        if ($snapshot.State -eq 'WaitingExternalBuild' -and $snapshot.Message -match '4242') { $fixtureState.WaitObserved = $true }
+                    }
+                    if ($fixtureScan -eq 'GoneAfterWait' -and $fixtureState.Scans -gt 1) { return }
+                    if ($fixtureScan -eq 'AppearsAfterEngine' -and -not $fixtureState.EngineAcquired) { return }
+                    return [pscustomobject]@{ Id=4242; ProcessName=$fixtureProcessName; Path='C:\Fixture\dotnet.exe'; StartTime=[DateTime]::UtcNow }
+                }
+                function Get-CimInstance {
+                    param($ClassName, $Filter, $ErrorAction)
+                    [pscustomobject]@{ ProcessId=4242; CommandLine=$(if ($fixtureScan -eq 'Unreadable') { '' } else { $fixtureCommandLine }) }
+                }
+                $cases = @(
+                    @{ Name='Fail refuses an already running same-workspace IDE UBT'; Project=$Fixture.ProjectFile; Policy='Fail'; Scan='Present'; State='Failed'; Launch=$false },
+                    @{ Name='Wait times out without launching or killing external UBT'; Project=$Fixture.ProjectFile; Policy='Wait'; Scan='Present'; State='TimedOut'; Launch=$false; Timeout=450 },
+                    @{ Name='Auto waits until the external build exits'; Project=$Fixture.ProjectFile; Policy='Auto'; Scan='GoneAfterWait'; State='Succeeded'; Launch=$true; MinScans=2 },
+                    @{ Name='a distinct nested workspace stays eligible for parallel execution'; Project=$OtherProject; Policy='Fail'; Scan='Present'; State='Succeeded'; Launch=$true },
+                    @{ Name='an actual filesystem alias cannot bypass exact project admission'; Project=$AliasProject; Policy='Fail'; Scan='Present'; State='Failed'; Launch=$false },
+                    @{ Name='an external execution drive cannot bypass physical project admission'; Project=$MappedProject; Policy='Fail'; Scan='Present'; State='Failed'; Launch=$false },
+                    @{ Name='a contender arriving during engine wait is rechecked before launch'; Project=$Fixture.ProjectFile; Policy='Fail'; Scan='AppearsAfterEngine'; State='Failed'; Launch=$false },
+                    @{ Name='a failed command-line scan cannot claim safe admission'; Project=$Fixture.ProjectFile; Policy='Fail'; Scan='Unreadable'; State='Failed'; Launch=$false },
+                    @{ Name='an open editor alone does not block a build'; Project=$Fixture.ProjectFile; Policy='Fail'; Scan='Present'; State='Succeeded'; Launch=$true; ProcessName='UnrealEditor' }
+                )
+                foreach ($case in $cases) {
+                    $fixtureState = @{ Scans=0; Launched=$false; EngineAcquired=$false; Killed=$false; WaitObserved=$false }
+                    $fixtureScan = $case.Scan
+                    $fixtureProcessName = if ($case.ContainsKey('ProcessName')) { $case.ProcessName } else { 'dotnet' }
+                    $fixtureCommandLine = if ($fixtureProcessName -eq 'UnrealEditor') { 'UnrealEditor.exe "' + $case.Project + '"' } else { 'dotnet C:\Fixture\UnrealBuildTool.dll FixtureEditor Win64 Development -Project="' + $case.Project + '" -WaitMutex -FromMsBuild -architecture=x64' }
+                    $plan = Invoke-HarnessUnrealBuild -WorkspaceRoot $Fixture.WorkspaceRoot -ConcurrencyPolicy $case.Policy -TimeoutMs 10000 -PlanOnly
+                    $request = Set-UnrealRunExecutionAssignment -Request $plan.Request
+                    $request.timeoutMs = if ($case.ContainsKey('Timeout')) { $case.Timeout } else { 10000 }
+                    $request.createdAtUtc = [DateTimeOffset]::UtcNow.ToString('o')
+                    [void][IO.Directory]::CreateDirectory($request.paths.TempPath)
+                    Write-UnrealJsonFileAtomic -Path $request.paths.RequestPath -Value $request
+                    Write-UnrealJsonFileAtomic -Path $request.paths.MetadataPath -Value (New-UnrealRunMetadata -Request $request)
+                    # The external machine snapshot and native executable are boundaries;
+                    # worker admission, path identity, leases, state and evidence stay real.
+                    $enterEngine = ${function:Enter-UnrealEngineLane}
+                    function Enter-UnrealEngineLane {
+                        param($EngineRoot, $Mode, $Policy, $TimeoutMs)
+                        $lease = & $enterEngine @PSBoundParameters
+                        $fixtureState.EngineAcquired = $true
+                        return $lease
+                    }
+                    function Invoke-UnrealNativeProcess {
+                        param($Request, $MetadataPath)
+                        $fixtureState.Launched = $true
+                        [pscustomobject]@{ ExitCode=0; TimedOut=$false; DurationMs=1 }
+                    }
+                    function Stop-UnrealProcessTree { param($ProcessId) $fixtureState.Killed=$true; throw 'An external process must never be killed by admission.' }
+                    try {
+                        $result = Invoke-UnrealRequestWorker -RequestPath $request.paths.RequestPath
+                        if ($result.state -ne $case.State -or $fixtureState.Launched -ne $case.Launch -or $fixtureState.Killed) { throw "state=$($result.state), launched=$($fixtureState.Launched), killed=$($fixtureState.Killed), message=$($result.message)" }
+                        if ($case.ContainsKey('MinScans') -and ($fixtureState.Scans -lt $case.MinScans -or -not $fixtureState.WaitObserved)) { throw 'The native child launched without exposing the wait and observing the external build depart.' }
+                        if ($case.State -ne 'Succeeded' -and $result.message -notmatch 'external|inspect|quiescence') { throw "No actionable admission reason: $($result.message)" }
+                        Write-Output "PASS $($case.Name)"
+                    }
+                    catch { $Failures.Add("$($case.Name): $_"); Write-Output "FAIL $($case.Name): $_" }
+                    finally { Set-Item Function:Enter-UnrealEngineLane $enterEngine }
+                }
+                try {
+                    $view = ConvertTo-UnrealProcessView -ProcessId 4242 -Name dotnet -CommandLine ('dotnet C:\Fixture\UnrealBuildTool.dll FixtureEditor Win64 Development -Project="' + $Fixture.ProjectFile + '" -WaitMutex -architecture=x64')
+                    if ($view.ProjectFile -ne $Fixture.ProjectFile -or $view.Target -ne 'FixtureEditor' -or $view.RecognizedBuild -or $view.Progress.ProgressKnown) { throw 'External basic identity is absent or is being promoted to trusted managed progress.' }
+                    $fixtureScan='Present'; $fixtureProcessName='dotnet'; $fixtureCommandLine='dotnet C:\Fixture\UnrealBuildTool.dll FixtureEditor Win64 Development -Project="'+$OtherProject+'"'
+                    $views = @(Get-HarnessUnrealProcessList -WorkspaceRoot $Fixture.WorkspaceRoot)
+                    if ($views.Count -ne 1 -or $views[0].WorkspaceMatch) { throw 'A nested different workspace was matched by substring.' }
+                    Write-Output 'PASS external basic identity remains useful without claiming trusted progress or substring workspace identity'
+                }
+                catch { $Failures.Add("external process identity: $_"); Write-Output "FAIL external process identity: $_" }
+                try {
+                    $plan = Invoke-HarnessUnrealBuild -WorkspaceRoot $Fixture.WorkspaceRoot -PlanOnly
+                    $metadata = New-UnrealRunMetadata -Request $plan.Request
+                    $metadata.state = 'WaitingExternalBuild'
+                    $metadata.workerPid = 2147483647
+                    Write-UnrealJsonFileAtomic -Path $plan.Paths.MetadataPath -Value $metadata
+                    $orphan = Get-UnrealRunStatusRecord -WorkspaceRoot $Fixture.WorkspaceRoot -RunId $plan.RunId
+                    if ($orphan.State -ne 'Orphaned' -or $orphan.RecordedState -ne 'WaitingExternalBuild') { throw 'A dead worker left external waiting indistinguishable from a live wait.' }
+                    Write-Output 'PASS a dead worker in external wait is reported as Orphaned without rewriting its recorded state'
+                }
+                catch { $Failures.Add("external wait liveness: $_"); Write-Output "FAIL external wait liveness: $_" }
+            } $scenarioFixture $otherProject $aliasProject $externalDrive.Project $failures
+        }
+        finally {
+            [Harness.Unreal.Interop.DosDeviceNative]::RemoveExact($externalDrive.Drive, $externalDrive.Target)
+            [IO.Directory]::Delete($aliasRoot) # Delete only this fixture junction, never its target.
+        }
+        if ($failures.Count -gt 0) { throw ($failures -join "`n") }
     }
     if (Test-Selected 'ConcurrencyProgress') {
         $module = Get-Module UnrealEngineDevelop -ErrorAction Stop

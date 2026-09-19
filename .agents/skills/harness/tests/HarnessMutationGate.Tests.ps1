@@ -55,6 +55,11 @@ fixture proof
     Write-Fixture $closure "kind: '$Kind' # Explicit closure kind`nreason: Bounded fixture`ntask_dispositions: {}`n"
     return @{Id=$id;Folder=$folder;Closure=$closure}
 }
+function Refresh-CaseEvaluation($Case) {
+    $state = Invoke-Harness harness.evolution.status -Context $context -Parameters @{Change=$Case.Id}
+    if ($state.status -ne 'Succeeded') { throw $state.error.message }
+    Write-Fixture (Join-Path $Case.Folder 'attachments/data/workflow-evaluation.md') "---`nrecord: harness-workflow-evaluation-v1`nresult: passed`nchange: $($Case.Id)`nclosure_kind: completed`ninput_sha256: $($state.data.CurrentInputSha256)`ncaptured_at: $([DateTimeOffset]::UtcNow.ToString('o'))`n---`n`n# Evidence`nFixture proof.`n"
+}
 try {
     Native @('init',$fixture,'--project-id','mutation-fixture','--title','Mutation fixture','--workflow','spec-driven','--language','en')
     Native @('domain','create','fixture','--title','Fixture','--json')
@@ -71,6 +76,47 @@ try {
         $actual = Invoke-Harness openspec.change -Context $context -ArgumentList @('archive',$item.Id,'--closure-file',$item.Closure,'--json')
         Check ($actual.status -eq 'Failed') "Archive rejects $($case.name) terminal evaluation"
         Check ((Test-Path (Join-Path $item.Folder 'change.yaml')) -and (Get-FileHash (Join-Path $item.Folder 'change.yaml')).Hash -eq $before) "Archive preserves active manifest after $($case.name) rejection"
+    }
+    foreach ($defect in @('unindexed-data', 'unindexed-closure', 'duplicate-data', 'oversized-index')) {
+        $item = New-Case $defect
+        $indexPath = Join-Path $item.Folder 'attachments/INDEX.md'
+        $entry = 'data/evidence.txt'
+        if ($defect -eq 'unindexed-closure') {
+            $entry = 'data/closure.yaml'
+            $item.Closure = Join-Path $item.Folder "attachments/$entry"
+            Write-Fixture $item.Closure "kind: completed`nreason: Bounded fixture`ntask_dispositions: {}`n"
+        }
+        else { Write-Fixture (Join-Path $item.Folder "attachments/$entry") 'Ordinary evidence, not an issue or Review.' }
+        if ($defect -eq 'duplicate-data') { Add-Content -LiteralPath $indexPath -Value "- ``$entry`` - first entry.`n- [same evidence]($entry) - duplicate entry." }
+        elseif ($defect -eq 'oversized-index') { Add-Content -LiteralPath $indexPath -Value ((@("- ``$entry`` - evidence.") + @(1..121 | ForEach-Object { 'extra navigation text' })) -join "`n") }
+        Refresh-CaseEvaluation $item
+        $before = (Get-FileHash (Join-Path $item.Folder 'change.yaml')).Hash
+        $actual = Invoke-Harness openspec.change -Context $context -ArgumentList @('archive',$item.Id,'--closure-file',$item.Closure,'--json')
+        $errorText = if ($null -ne $actual.error) { [string]$actual.error.message } else { '' }
+        Check ($actual.status -eq 'Failed' -and $errorText -match 'INDEX|index') "Archive refuses $defect with an attachment diagnostic"
+        Check ((Test-Path (Join-Path $item.Folder 'change.yaml')) -and (Get-FileHash (Join-Path $item.Folder 'change.yaml')).Hash -eq $before) "Archive preserves the active record for $defect"
+        Write-Output "Attachment rejection $defect : $($actual.status) $errorText"
+    }
+    foreach ($formatName in @('bare','inline','link','table')) {
+        $item = New-Case "attachment-format-$formatName"
+        $paths = @('data/workflow-evaluation.md','data/evidence.txt','data/closure.yaml')
+        Write-Fixture (Join-Path $item.Folder 'attachments/data/evidence.txt') 'Ordinary evidence.'
+        $item.Closure = Join-Path $item.Folder 'attachments/data/closure.yaml'
+        Write-Fixture $item.Closure "kind: completed`nreason: Bounded fixture`ntask_dispositions: {}`n"
+        [void][IO.Directory]::CreateDirectory((Join-Path $item.Folder 'attachments/unused-empty-directory'))
+        $entries = foreach ($entry in $paths) {
+            switch ($formatName) {
+                bare { "- $entry - evidence." }
+                inline { "- ``$entry`` - evidence." }
+                link { "- [evidence]($entry) - read when relevant." }
+                table { "| ``$entry`` | evidence |" }
+            }
+        }
+        Write-Fixture (Join-Path $item.Folder 'attachments/INDEX.md') ((@('# INDEX','') + @($entries) + @('', 'Prose mentions data/evidence.txt without being another entry.', '- `openspec/specs/fixture/data/evidence.txt` - a durable reference, not another local entry.')) -join "`n")
+        Refresh-CaseEvaluation $item
+        $actual = Invoke-Harness openspec.change -Context $context -ArgumentList @('archive',$item.Id,'--closure-file',$item.Closure,'--json')
+        Check ($actual.status -eq 'Succeeded' -and -not (Test-Path $item.Folder)) "Archive accepts $formatName exact entries, an indexed local closure, an empty directory and non-entry prose"
+        Write-Output "Attachment format $formatName : $($actual.status)"
     }
     $format = New-Case 'format'
     foreach ($content in @("kind: completed`nkind: abandoned`nreason: duplicate", "kind: *unresolved`nreason: ambiguous")) {

@@ -704,9 +704,10 @@ function Test-UnrealRunStateTransition {
     if ($CurrentState -eq $NextState) { return $true }
     $allowed = switch ($CurrentState) {
         'Queued' { @('WaitingWorkspace', 'Failed', 'TimedOut', 'Cancelled') }
-        'WaitingWorkspace' { @('WaitingExecutionDrive', 'Failed', 'TimedOut', 'Cancelled') }
-        'WaitingExecutionDrive' { @('WaitingEngine', 'Running', 'Failed', 'TimedOut', 'Cancelled') }
-        'WaitingEngine' { @('Running', 'Failed', 'TimedOut', 'Cancelled') }
+        'WaitingWorkspace' { @('WaitingExternalBuild', 'WaitingExecutionDrive', 'Failed', 'TimedOut', 'Cancelled') }
+        'WaitingExecutionDrive' { @('WaitingExternalBuild', 'WaitingEngine', 'Running', 'Failed', 'TimedOut', 'Cancelled') }
+        'WaitingEngine' { @('WaitingExternalBuild', 'Running', 'Failed', 'TimedOut', 'Cancelled') }
+        'WaitingExternalBuild' { @('WaitingExecutionDrive', 'Running', 'Failed', 'TimedOut', 'Cancelled') }
         'Running' { @('Succeeded', 'Failed', 'TimedOut', 'Cancelled') }
         default { @() }
     }
@@ -1051,6 +1052,39 @@ function Invoke-UnrealNativeProcess {
     }
 }
 
+function Wait-UnrealExternalWorkspaceBuild {
+    param([Parameter(Mandatory = $true)] $Request, [Parameter(Mandatory = $true)][string] $MetadataPath)
+    # The private workspace lease excludes other managed workers, not an IDE.
+    # Observe existing external UBT before taking other lanes and again just
+    # before launch. This cannot lock out an IDE that starts after the last scan.
+    if ([string] $Request.operation -notin @('Build', 'QueryTargets', 'Ubt')) { return }
+    $previousMessage = ''
+    while ($true) {
+        if ((Get-UnrealRemainingTimeout -Request $Request) -le 0) {
+            return Update-UnrealRunMetadata -Path $MetadataPath -Changes @{ state='TimedOut'; exitCode=2; timedOut=$true; completedAtUtc=[DateTimeOffset]::UtcNow.ToString('o'); message='Total timeout expired while checking or waiting for external same-workspace UBT.' }
+        }
+        $contenders = @(foreach ($candidate in @(Get-HarnessUnrealProcessList -RequireComplete -Limit 256)) {
+            if ($candidate.Kind -in @('Ubt', 'UbtBuild') -and -not [string]::IsNullOrWhiteSpace([string]$candidate.ProjectFile) -and
+                (Test-UnrealProjectFileIdentity -Left ([string]$candidate.ProjectFile) -Right ([string]$Request.projectFile))) { $candidate }
+        })
+        if ((Get-UnrealRemainingTimeout -Request $Request) -le 0) { continue }
+        if ($contenders.Count -eq 0) {
+            if ($previousMessage) { [void](Update-UnrealRunMetadata -Path $MetadataPath -Changes @{ message='' }) }
+            return
+        }
+        $identities = @($contenders | ForEach-Object { "PID $($_.Id) ($($_.ProjectFile))" }) -join ', '
+        $message = "External same-workspace UBT is active: $identities. Inspect ue.process.list; Harness will not stop these processes."
+        if ([string]$Request.concurrency.policy -eq 'Fail') {
+            return Update-UnrealRunMetadata -Path $MetadataPath -Changes @{ state='Failed'; exitCode=4; completedAtUtc=[DateTimeOffset]::UtcNow.ToString('o'); message=$message }
+        }
+        if ($message -ne $previousMessage) {
+            [void](Update-UnrealRunMetadata -Path $MetadataPath -Changes @{ state='WaitingExternalBuild'; message=$message })
+            $previousMessage = $message
+        }
+        Start-Sleep -Milliseconds ([Math]::Min(250, (Get-UnrealRemainingTimeout -Request $Request)))
+    }
+}
+
 function Invoke-UnrealRequestWorker {
     param([Parameter(Mandatory = $true)][string] $RequestPath)
     Assert-UnrealPowerShell
@@ -1078,6 +1112,8 @@ function Invoke-UnrealRequestWorker {
             $code = if ($state -eq 'TimedOut') { 2 } else { 4 }
             return Update-UnrealRunMetadata -Path $paths.MetadataPath -Changes @{ state = $state; exitCode = $code; timedOut = $state -eq 'TimedOut'; completedAtUtc = [DateTimeOffset]::UtcNow.ToString('o'); message = 'Workspace lease was not acquired.' }
         }
+        $externalAdmission = Wait-UnrealExternalWorkspaceBuild -Request $request -MetadataPath $paths.MetadataPath
+        if ($null -ne $externalAdmission) { return $externalAdmission }
         [void](Update-UnrealRunMetadata -Path $paths.MetadataPath -Changes @{ state = 'WaitingExecutionDrive' })
         if ([string] $request.execution.strategy -ceq 'DosDevice') {
             $driveLease = Enter-UnrealLease `
@@ -1108,6 +1144,8 @@ function Invoke-UnrealRequestWorker {
         }
         $driveMapping = Enter-UnrealExecutionDriveMapping -Execution $request.execution -RunId ([string] $request.runId)
         [void](Update-UnrealRunMetadata -Path $paths.MetadataPath -Changes @{ execution = $driveMapping.Execution })
+        $externalAdmission = Wait-UnrealExternalWorkspaceBuild -Request $request -MetadataPath $paths.MetadataPath
+        if ($null -ne $externalAdmission) { return $externalAdmission }
         [void](Update-UnrealRunMetadata -Path $paths.MetadataPath -Changes @{ state = 'Running' })
         $result = if ([string] $request.operation -eq 'Suite') {
             Invoke-UnrealSuiteRequest -Request $request -MetadataPath $paths.MetadataPath

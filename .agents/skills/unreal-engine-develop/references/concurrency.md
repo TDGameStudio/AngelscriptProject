@@ -4,7 +4,7 @@ Load this reference only when choosing build concurrency, deciding what to do wi
 
 ## Two independent choices
 
-`BuildConcurrency` controls how a typed `ue.build` shares one Engine installation. `ConcurrencyPolicy` controls what the caller does when a required Harness lease is already busy.
+`BuildConcurrency` controls how a typed `ue.build` shares one Engine installation. `ConcurrencyPolicy` controls what the caller does when a required Harness lease or a detected external same-workspace UBT build is busy.
 
 | Parameter | Value | Result |
 |---|---|---|
@@ -13,7 +13,7 @@ Load this reference only when choosing build concurrency, deciding what to do wi
 | `BuildConcurrency` | `Serialize` | Use the exclusive Engine lane and UBT mutex waiting. |
 | `ConcurrencyPolicy` | `Auto` | Wait within the operation timeout under the current policy. |
 | `ConcurrencyPolicy` | `Wait` | Explicitly wait within the operation timeout. |
-| `ConcurrencyPolicy` | `Fail` | Return immediately when a required lease is busy. |
+| `ConcurrencyPolicy` | `Fail` | Reject admission when a required lease or a detected external same-workspace UBT build is busy. |
 
 `BuildConcurrency` applies only to the typed `ue.build` route. Generic UBT, target queries, source/unknown-engine builds, and explicitly serialized builds use the exclusive Engine lane.
 
@@ -25,7 +25,16 @@ exact WorkspaceRoot -> exclusive workspace lease
                     -> other UBT work               -> exclusive Engine lane
 ```
 
-The same workspace never runs two UE operations concurrently. Distinct worktrees may overlap only when each operation is eligible for its lane.
+The same workspace never runs two Harness-managed UE operations concurrently. Distinct worktrees may overlap only when each operation is eligible for its lane.
+
+## External IDE build admission
+
+- Before a Build, QueryTargets or generic UBT operation acquires its drive/engine lanes, the worker holds its workspace lease and checks the bounded process inventory for UBT using the same physical project. It checks again after lane and mapping acquisition, immediately before native launch.
+- Identity uses the parsed absolute project path and actual project-file identity on Windows. A mapped execution drive or junction cannot bypass admission; a nested or similarly named distinct workspace does not match by substring.
+- `Auto` and `Wait` expose `WaitingExternalBuild` with the external PID/project and wait within the original total timeout. `Fail` returns a failed run without launching its native child. Incomplete process inspection fails explicitly instead of claiming admission is safe.
+- Waiting does not kill the external process. Explicit cancellation still targets only the selected Harness worker and its children. A plain open Editor does not constitute an external UBT build.
+- This is an admission check, not an atomic lock shared with IDEs. An external process can start after the final scan, or use an unrecognized/relative project command line. Harness cannot exclude that activity. The existing serialized `-WaitMutex` lane coordinates with external UBT only when both use the same UBT assembly mutex; it is not a universal same-workspace lock either.
+- Eligible builds in distinct workspaces retain the shared lane. There is no automatic switch to serialization, background watcher, external-process cancellation, or build retry.
 
 For controlled parallel Installed Engine builds, Harness supplies the paired UBT flags `-NoMutex -NoEngineChanges` and isolates run-local temporary and log paths. `-NoMutex` is not inherently unsafe; the safe boundary is the whole owned combination. For serialized UBT work, Harness supplies `-WaitMutex` and coordinates with external UBT processes that use the same assembly mutex. Callers cannot inject `-NoMutex`, `-WaitMutex`, or `-NoEngineChanges` through extra arguments.
 
@@ -42,7 +51,7 @@ Progress is known only when Harness can correlate all of the following:
 - the matching native process identity; and
 - a private run-local log beneath that run directory.
 
-The parser uses the latest bounded `@progress ... N%` or `[current/total] action` record. It never trusts an arbitrary command-line `-Log` path. An external or otherwise uncorrelated UBT process may still expose basic identity, but returns `ProgressKnown = false` rather than an invented percentage.
+The parser uses the latest bounded `@progress ... N%` or `[current/total] action` record. It never trusts an arbitrary command-line `-Log` path. An external UBT command can expose its project and simple target/platform/configuration arguments without a managed log. These are observed command-line identity, not proof of a managed run: `RecognizedBuild` and `ProgressKnown` remain false until the full managed correlation succeeds.
 
 ## Known shared-engine conflict
 

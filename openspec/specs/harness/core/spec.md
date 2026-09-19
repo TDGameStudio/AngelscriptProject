@@ -739,6 +739,28 @@ Harness SHALL expose cheap visible feedback without expanding authorized scope a
 - **THEN** the user selects, defers or dismisses bounded scopes; harness.evolution.triage retains exact observation IDs, DecisionSource and Scope
 - **AND** a resolved result requires a prior selected scope plus Result and Evidence while retaining original authority; new recurrence remains pending
 
+#### Scenario: Isolate synthetic observation measurements
+
+- **GIVEN** performance measurements may query an explicitly selected real Change
+- **WHEN** the benchmark measures the observation write route
+- **THEN** it writes raw observations and the derived inbox only in an isolated fixture workspace, leaving the selected project's observations and triage unchanged
+- **AND** the measured route still writes and validates its real artifacts; isolation does not replace the measurement with a no-op
+
+#### Scenario: Reconcile historical feedback with exact evidence
+
+- **GIVEN** the user authorizes a batch containing old observations without triage records
+- **WHEN** the agent checks each observation's source and the exact linked issue, task and final closure evidence
+- **THEN** it distinguishes current findings from historically completed corrections and synthetic measurements before reporting actionable work
+- **AND** historical completion is recorded through selected-to-resolved triage with existing evidence and an explicit reconciliation result, without claiming a new repair or test run
+- **BUT** rejection from another Change's scope does not establish a repair, and raw records and immutable archives remain unchanged
+
+#### Scenario: Explain local feedback retention
+
+- **WHEN** the user asks whether collected feedback survives sessions, cleanup or workspace changes
+- **THEN** the agent explains that raw observations, triage and the inbox are Git-ignored workspace-local files, and that ignored drafts do not provide Git-backed retention either
+- **AND** admitted Change issues retain indexed evidence while verified reusable outcomes belong in maintained Skills, tools, tests or capability knowledge
+- **BUT** an update notice or Git commit does not back up ignored pending feedback, and no global tracked backlog or automatic migration is implied
+
 #### Scenario: Preserve an immutable archive
 
 - **WHEN** a new workflow problem is discovered after archive
@@ -757,6 +779,8 @@ Harness SHALL evaluate terminal closure only for one exact active Change and one
 
 The public archive mutation MUST enforce the terminal gate using the exact closure file kind and current active inputs immediately before the move. The kind MUST be an explicit root discriminator in plain/quoted YAML or JSON; the checked closure bytes MUST be the bytes consumed by the native archive operation. A previous successful query or alternate casing of a route MUST NOT bypass a mutation gate.
 
+The terminal gate MUST require exactly one attachment-relative INDEX entry for every file beneath the exact active Change's attachments directory except INDEX itself, including ordinary data, knowledge and any locally stored closure file. INDEX MUST remain within 120 lines. Exact entries MAY use inline-code, bare-path or Markdown-link bullets, or an inline-code path in the first table column. Prose mentions and empty directories MUST NOT count as entries. This complete membership check MUST remain local to the terminal boundary rather than adding a directory scan to ordinary status.
+
 Active material issues and Reviews MUST be discovered recursively and validated against the exact active TaskPlan, attachment index, lifecycle schema, evidence body, timestamps, and terminal disposition. Active schema-less issues or Reviews MUST NOT receive historical compatibility. A superseded issue MUST reference one exact active, indexed, non-superseded v2 owner with a reciprocal source reference. Review absence SHALL remain valid, while any existing Review MUST be closed or superseded with no open or deferred Critical/Required finding.
 
 The canonical workflow evaluation MUST name the requested closure kind, include a lowercase SHA-256 of every ordinary active Change input except itself, and be captured no earlier than the latest terminal issue or Review event. Harness SHALL report the current input digest during ordinary exact status so the evaluation can be written last. Any later input mutation MUST make the evaluation stale and block terminal closure.
@@ -768,8 +792,21 @@ The canonical workflow evaluation MUST name the requested closure kind, include 
 - **AND** a valid current evaluation permits the exact requested closure without another human confirmation
 
 #### Scenario: Reject incomplete completed closure
+
 - **WHEN** terminal evaluation requests `completed` for an active Change whose portable TaskPlan is missing, invalid, empty, or contains an incomplete node
 - **THEN** Harness reports the exact task blocker and does not declare the Change closure-ready
+
+#### Scenario: Reject incomplete attachment navigation before moving
+
+- **GIVEN** a Change with a current passed evaluation and an otherwise valid completed closure
+- **WHEN** public archive finds an unindexed attachment, more than one exact entry for a file, or an INDEX longer than 120 lines
+- **THEN** it reports the INDEX defect and preserves the active directory and manifest
+- **AND** ordinary data and locally stored closure files receive the same coverage as issues, Reviews and workflow evaluation
+
+#### Scenario: Accept supported exact index entries
+
+- **WHEN** each attachment is indexed once using a supported bullet or table entry and other terminal checks pass
+- **THEN** archive accepts that navigation without counting prose mentions, empty directories or longer paths with a matching suffix as duplicate entries
 
 #### Scenario: Reject stale workflow evaluation
 - **WHEN** an active Change input differs from the digest recorded by its passed workflow evaluation or its evaluation predates a terminal issue or Review event
