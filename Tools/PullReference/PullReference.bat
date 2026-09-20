@@ -168,6 +168,51 @@ if /I "%REFERENCE_KEY%"=="tiddlywiki-codemirror-6" (
     goto :ValidateGit
 )
 
+if /I "%REFERENCE_KEY%"=="spek" (
+    set "REPO_NAME=spek"
+    set "REPO_SSH=git@github.com:spekhq/spek.git"
+    set "REPO_HTTPS=https://github.com/spekhq/spek.git"
+    set "REPO_COMMIT=71f109a032e2a29ccecc69b2d2ca0852522dd2d6"
+    if "%TARGET_DIR%"=="" set "TARGET_DIR=%PROJECT_ROOT%\Reference\spek"
+    goto :ValidateGit
+)
+
+if /I "%REFERENCE_KEY%"=="openspec-ui" (
+    set "REPO_NAME=openspec-ui"
+    set "REPO_SSH=git@github.com:ToruAI/openspec-ui.git"
+    set "REPO_HTTPS=https://github.com/ToruAI/openspec-ui.git"
+    set "REPO_COMMIT=6fd5997b6ea1aea3e61cd87cd79172df4d246be0"
+    if "%TARGET_DIR%"=="" set "TARGET_DIR=%PROJECT_ROOT%\Reference\openspec-ui"
+    goto :ValidateGit
+)
+
+if /I "%REFERENCE_KEY%"=="mattpocock-skills" (
+    set "REPO_NAME=mattpocock-skills"
+    set "REPO_SSH=git@github.com:mattpocock/skills.git"
+    set "REPO_HTTPS=https://github.com/mattpocock/skills.git"
+    set "REPO_COMMIT=3cca18b368ae95cdbdebbff572ccafa662551015"
+    if "%TARGET_DIR%"=="" set "TARGET_DIR=%PROJECT_ROOT%\Reference\mattpocock-skills"
+    goto :ValidateGit
+)
+
+if /I "%REFERENCE_KEY%"=="ripwire" (
+    set "REPO_NAME=ripwire"
+    set "REPO_SSH=git@github.com:redhat-et/ripwire.git"
+    set "REPO_HTTPS=https://github.com/redhat-et/ripwire.git"
+    set "REPO_COMMIT=30f14a274d24ce56a1984e04306b972e1a565d6f"
+    if "%TARGET_DIR%"=="" set "TARGET_DIR=%PROJECT_ROOT%\Reference\ripwire"
+    goto :ValidateGit
+)
+
+if /I "%REFERENCE_KEY%"=="open-code-review" (
+    set "REPO_NAME=open-code-review"
+    set "REPO_SSH=git@github.com:alibaba/open-code-review.git"
+    set "REPO_HTTPS=https://github.com/alibaba/open-code-review.git"
+    set "REPO_COMMIT=189be5b024d3309dd10fdc8cd8ee31b2530c210b"
+    if "%TARGET_DIR%"=="" set "TARGET_DIR=%PROJECT_ROOT%\Reference\open-code-review"
+    goto :ValidateGit
+)
+
 if /I "%REFERENCE_KEY%"=="hazelight" goto :Hazelight
 
 echo Unknown reference key: %REFERENCE_KEY%
@@ -193,6 +238,11 @@ echo   tiddlyseq         - Pull TiddlySeq source at the reviewed commit
 echo   tw-command-palette - Pull command palette source at the reviewed commit
 echo   tiddlywiki-plugins - Pull preview-glass source at the reviewed commit
 echo   tiddlywiki-codemirror-6 - Pull CodeMirror 6 source at the reviewed commit
+echo   spek              - Pull Spek at the pinned Harness Web research commit
+echo   openspec-ui       - Pull OpenSpec UI at the pinned Harness Web research commit
+echo   mattpocock-skills - Pull mattpocock/skills (grilling, domain-modeling) at the pinned commit
+echo   ripwire           - Pull redhat-et/ripwire at the pinned skill-design commit
+echo   open-code-review  - Pull alibaba/open-code-review at the pinned review-pipeline commit
 echo   hazelight         - Local config only, read AgentConfig.ini
 exit /b 0
 
@@ -225,6 +275,11 @@ echo   Tools\PullReference\PullReference.bat tiddlyseq
 echo   Tools\PullReference\PullReference.bat tw-command-palette
 echo   Tools\PullReference\PullReference.bat tiddlywiki-plugins
 echo   Tools\PullReference\PullReference.bat tiddlywiki-codemirror-6
+echo   Tools\PullReference\PullReference.bat spek
+echo   Tools\PullReference\PullReference.bat openspec-ui
+echo   Tools\PullReference\PullReference.bat mattpocock-skills
+echo   Tools\PullReference\PullReference.bat ripwire
+echo   Tools\PullReference\PullReference.bat open-code-review
 echo   Tools\PullReference\PullReference.bat angelscript "J:\UnrealEngine\AngelscriptProject\Reference\angelscript-v2.38.0"
 echo   Tools\PullReference\PullReference.bat list
 exit /b 1
