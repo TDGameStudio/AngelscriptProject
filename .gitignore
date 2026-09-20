@@ -177,6 +177,12 @@ Script/PrecompiledScript.Cache
 # Retired OpenSpec tree kept locally during repository refactor.
 /openspec-old/
 
+# Retired documentation tree kept locally for reference.
+/Documents-old/
+
+# Retired test-source corpus kept locally for reference.
+/TestSource-old/
+
 # Brainstorming drafts are personal working records for now; the Change keeps
 # indexed copies of the approved design/handoff and confirmed talks/knowledge.
 /openspec/drafts/
