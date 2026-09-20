@@ -1,0 +1,14 @@
+api_version: openspec.dev/v1
+kind: change
+metadata:
+  uid: change_ad715164-f803-4369-ae1a-a464739d09fe
+  id: angelscript/feature-container-type-directories
+  title: Rewrite container fixtures into type directories
+workflow: angelscript
+created_at: 2026-09-17T09:46:00Z
+goal: Replace flat Containers type pockets with per-type directories of observation-named authors, then project and publish prefix FileTags.
+archived_at: 2026-09-17T10:21:36Z
+archive_schema: closure-v1
+closure:
+  kind: completed
+  reason: All 11 Task DAG nodes passed their proving commands. Container authors live under Containers/<Type>/<Observation> FileTags; flat type pockets are gone. Durable delta is already synchronized into current spec angelscript/testing/host-api-fixtures. Knowledge candidates remain change-local. TArray type-axis and UFUNCTION direction coverage from TestSource-old is a follow-up Change, not this archive.

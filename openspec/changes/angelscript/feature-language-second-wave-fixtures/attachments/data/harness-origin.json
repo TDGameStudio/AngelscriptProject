@@ -1,0 +1,47 @@
+{
+  "schema": 2,
+  "changeId": "angelscript/feature-language-second-wave-fixtures",
+  "origin": "Draft",
+  "draftId": "angelscript/language-fixture-quality",
+  "scope": "pending-coverage",
+  "reason": null,
+  "approvalRound": "R27",
+  "expectedExports": [
+    {
+      "Source": "design.md",
+      "Target": "attachments/drafts/design.md",
+      "Reason": "Accepted scoped design"
+    },
+    {
+      "Source": "handoff.md",
+      "Target": "attachments/drafts/handoff.md",
+      "Reason": "Accepted handoff"
+    },
+    {
+      "Source": "glossary.md",
+      "Target": "attachments/drafts/glossary.md",
+      "Reason": "Settled names"
+    },
+    {
+      "Source": "../../findings/pending-coverage.md",
+      "Target": "attachments/drafts/findings/pending-coverage.md",
+      "Reason": "Gap census"
+    },
+    {
+      "Source": "../../findings/two-changes.md",
+      "Target": "attachments/drafts/findings/two-changes.md",
+      "Reason": "Split from Unreal"
+    },
+    {
+      "Source": "../../log.md#r27",
+      "Target": "attachments/talks/talk-20260917-161200-second-wave-scope.md",
+      "Reason": "Approve six themes and this Change"
+    },
+    {
+      "Source": "../../findings/pending-coverage.md",
+      "Target": "attachments/knowledges/second-wave-host-free-themes.md",
+      "Reason": "File count is not coverage"
+    }
+  ],
+  "createdAt": "2026-09-17T08:17:25.4316713Z"
+}

@@ -1,0 +1,14 @@
+api_version: openspec.dev/v1
+kind: change
+metadata:
+  uid: change_e8e89aa2-3f9c-4919-9c38-0ac6a2bd67b9
+  id: angelscript/feature-classgen-type-materialization
+  title: Materialize UCLASS, USTRUCT, and UENUM from the new frontend
+workflow: angelscript
+created_at: 2026-09-17T12:01:11Z
+goal: Connect Builder Resolved descriptors and Taken definitions to the existing ClassGenerator so UCLASS, USTRUCT, and UENUM attach asType UserData to the generated Unreal objects, with NativeEngine Compile verification. Delegates stay untested.
+archived_at: 2026-09-17T12:48:33Z
+archive_schema: closure-v1
+closure:
+  kind: completed
+  reason: SuperClass and Project authority are proven. ClassGen UserData was withdrawn after editor ClassGen crashed on missing asCModule shells. Module materialization is a later Change. Knowledge stays change-local.

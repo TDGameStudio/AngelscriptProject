@@ -28,7 +28,8 @@ case path and SHALL reject ambiguous or stale selections.
 #### Scenario: Rows are reordered
 - **WHEN** a provider changes row order without changing row identities
 - **THEN** each row retains its Automation path
-  > Example: `Angelscript.UnitTest.NativeEngine.Lexer.IntegerLiteral.Rows.HexBoundary`.
+
+    > Example: `Angelscript.UnitTest.NativeEngine.Lexer.IntegerLiteral.Rows.HexBoundary`.
 
 #### Scenario: One row is selected
 - **WHEN** Automation selects one valid row from the current catalog snapshot
@@ -38,7 +39,8 @@ case path and SHALL reject ambiguous or stale selections.
 #### Scenario: A provider is empty or ambiguous
 - **WHEN** a provider returns no rows or repeats a RowId
 - **THEN** discovery reports an invalid case definition instead of a successful empty test
-  > Observables: The registered family exposes a reserved Rows.CatalogError diagnostic item that fails with the catalog errors without constructing its case fixture. Authors cannot claim that reserved RowId.
+
+    > Observables: The registered family exposes a reserved Rows.CatalogError diagnostic item that fails with the catalog errors without constructing its case fixture. Authors cannot claim that reserved RowId.
 
 #### Scenario: A selected snapshot is stale
 - **WHEN** execution receives a selection from a different catalog generation or digest

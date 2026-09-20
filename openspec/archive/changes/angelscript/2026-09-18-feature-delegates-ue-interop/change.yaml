@@ -1,0 +1,24 @@
+api_version: openspec.dev/v1
+kind: change
+metadata:
+  uid: change_33b989e3-9223-4d2a-964f-915127971e74
+  id: angelscript/feature-delegates-ue-interop
+  title: UE-style delegate declarations, native callables, and Unreal interoperability
+  description: Replace AngelScript delegate/event keywords with the six UE DECLARE_* families (60 spellings), execute Bind/Execute/Broadcast on the replacement host, then materialize native adapters, UDelegateFunction, Blueprint, and cooked load. Implementation is authorized; 1.1 remains the planning-validation gate.
+workflow: angelscript
+created_at: 2026-09-05T17:26:14Z
+goal: Provide C++-style delegate use in the replacement AngelScript compiler with a shared typed callable model and explicit native and reflected Unreal integration paths.
+affected_areas:
+- angelscript/language/frontend/lexing
+- angelscript/language/frontend/declarations
+- angelscript/language/frontend/preprocessing
+- angelscript/language/frontend/bodies
+- angelscript/language/frontend/reflection-dependencies
+- angelscript/testing/language-fixtures
+- angelscript/runtime/delegates
+- angelscript/bindings/delegates
+archived_at: 2026-09-18T13:44:56Z
+archive_schema: closure-v1
+closure:
+  kind: completed
+  reason: Six DECLARE_* families bind, execute, broadcast, adapt native TDelegate, publish dynamic UDelegateFunction, and fire a transient Blueprint listener. Keyword leftovers reject. Full Windows cook omitted until a cooked-load asset exists.

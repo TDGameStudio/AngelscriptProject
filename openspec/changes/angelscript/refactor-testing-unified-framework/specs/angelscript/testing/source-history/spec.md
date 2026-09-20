@@ -28,8 +28,10 @@ tree-local VersionTags with a single parent for every non-root version.
 
 ### Requirement: Authored snapshots determine generated diffs
 
-The system SHALL derive external parent-to-child diffs from full authored
-snapshots and verify exact reconstruction before embedding them.
+The system SHALL derive later reload-history parent-to-child diffs from full
+authored snapshots and verify exact reconstruction before using them. Those
+diffs are not the checked-in TestCode carrier and MUST NOT replace structured
+mirrored registrations under `TestCode/Generated`.
 
 #### Scenario: A child snapshot is exported
 - **WHEN** a non-root version is processed
@@ -40,7 +42,8 @@ snapshots and verify exact reconstruction before embedding them.
 #### Scenario: An unchanged snapshot is declared as a new version
 - **WHEN** a child snapshot is identical to its parent
 - **THEN** validation reports a redundant source version
-  > Details: A no-change observation or analysis references the existing tag; it does not require a fake diff edge.
+
+    > Details: A no-change observation or analysis references the existing tag; it does not require a fake diff edge.
 
 #### Scenario: Empty source differs from module deletion
 - **WHEN** a version intentionally contains empty source bytes

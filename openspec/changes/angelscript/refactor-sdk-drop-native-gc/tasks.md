@@ -19,6 +19,8 @@ Native VM objects stay refcounted: the last `Release` runs the destructor, unroo
 
 ## Global constraints
 
+- SDK files now live under `Source/AngelscriptRuntime/angelscript`; the dormant native host is `AngelscriptLSP/` with unchanged Standalone product identity. Task 3.1 must establish a real replacement host-schema proving seam before claiming execution; the legacy generator is not a supported fallback. Archive history and completed sibling task evidence remain unchanged.
+
 - NewVersion CQTest identities stay under `Angelscript.UnitTest.NativeEngine.<Area>.<Scenario>`.
 - Do not enable `WITH_ANGELSCRIPT_UNITTESTS`.
 - Do not call Unreal `CollectGarbage` as a substitute for the deleted native collector in NativeEngine tests.
@@ -37,7 +39,7 @@ Native VM objects stay refcounted: the last `Release` runs the destructor, unroo
 | Release the last runtime object after its host owners | 2.1 |
 | Plugin UObject script classes still emit Unreal `ReferenceSchema`; inventories omit `as_gc.cpp` | 3.1 |
 
-Self-review 2026-09-11: syntax migration only; coverage and symbols unchanged from the original plan. Record: `attachments/data/planning-validation.md`.
+Maintenance check 2026-09-12: original requirement mapping and pending state retained; record format and current-source references checked. Detailed design/card acceptance remains future work. Record: `attachments/data/maintenance-20260912.md`.
 
 ## [ ] 1.1 Reject asOBJ_GC publication and stop writing VM tests against the collector
 
@@ -76,9 +78,9 @@ Drain/root/integration/dispatch files in this task's Files list must compile wit
 
 ```diff
  Plugins/Angelscript/Source/AngelscriptRuntime/Core/angelscript.h
- Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_scriptengine.cpp
- Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_scriptengine.h
- Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_metadata_image.cpp
+ Plugins/Angelscript/Source/AngelscriptRuntime/angelscript/as_scriptengine.cpp
+ Plugins/Angelscript/Source/AngelscriptRuntime/angelscript/as_scriptengine.h
+ Plugins/Angelscript/Source/AngelscriptRuntime/angelscript/as_module_definition_set.cpp
  Plugins/Angelscript/Source/AngelscriptTest/NewVersion/NativeEngine/VM/VMGCTests.cpp
  Plugins/Angelscript/Source/AngelscriptTest/NewVersion/NativeEngine/VM/VMShutdownDrainTests.cpp
  Plugins/Angelscript/Source/AngelscriptTest/NewVersion/NativeEngine/VM/VMRuntimeDrainTests.cpp
@@ -107,7 +109,7 @@ Completion requires `RejectGcFlag`, `RejectGcBehaviour`, `UnrootedSelfCycleLeaks
 
 Current teardown in `asCScriptEngine::ShutDownAndRelease` calls `GarbageCollect()` then later `gc.ReportAndReleaseUndestroyedObjects()`. `asCScriptEngine` holds `asCGarbageCollector gc`. `asCScriptFunction` delegate construction calls `gc.AddScriptObjectToGC`. `asCCallableType` sets `asOBJ_REF | asOBJ_GC | asOBJ_CALLABLE_TYPE`. `asVmAllocateObject` calls `NotifyGarbageCollectorOfNewObject` when `asOBJ_GC` is set.
 
-Replace that with the existing `vmObjectLeases` drain: every remaining leased payload is released/destroyed during shutdown after admission is closed, unless an external caller still holds it (current `RetainedObjectDelaysDestroyUntilFinalRelease`).
+Replace that with an explicit shutdown drain over native object membership. The current `vmObjectLeases` member is only a scalar lease count; it cannot enumerate or distinguish internally cyclic and externally retained objects. Task 2.1 owns the membership and cleanup design within the accepted shutdown boundary, with cases for exactly-once cycle cleanup and retained-object final release. Do not claim the drain already exists.
 
 **Cases**
 
@@ -125,23 +127,23 @@ Enabled targets must not compile `AngelscriptNativeGarbageCollectorTests.cpp` ag
 **Implementation**
 
 1. After 1.1 tests exist, extend drain/lifetime cases for shutdown-without-collect and missing public APIs. Observe RED where shutdown still depends on `gc`.
-2. Delete `as_gc.cpp` / `as_gc.h`. Remove `gc` from `asCScriptEngine`. Remove public GC methods and `asEP_AUTO_GARBAGE_COLLECT`. Strip GC notify from `as_vm_object.cpp`, `as_scriptfunction.cpp`, `as_scriptobject.cpp`, `as_typeinfo.cpp`, `as_context.cpp`, and `as_restore.cpp` if that file is still compiled. Implement shutdown lease destruction.
+2. Delete `as_gc.cpp` / `as_gc.h`. Remove `gc` from `asCScriptEngine`. Remove public GC methods and `asEP_AUTO_GARBAGE_COLLECT`. Strip GC notify from `as_vm_object.cpp`, `as_scriptfunction.cpp`, `as_scriptobject.cpp`, `as_typeinfo.cpp`, `as_context.cpp`, and `as_restore.cpp` if that file is still compiled. Implement explicit object membership and shutdown destruction; the existing scalar lease count alone is insufficient.
 3. Rerun the proving selection GREEN. Confirm a search of enabled sources has no `asCGarbageCollector` or `Engine->GarbageCollect`.
 
 **Files**
 
 ```diff
  Plugins/Angelscript/Source/AngelscriptRuntime/Core/angelscript.h
- Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_gc.cpp
- Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_gc.h
- Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_scriptengine.cpp
- Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_scriptengine.h
- Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_vm_object.cpp
- Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_scriptfunction.cpp
- Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_scriptobject.cpp
- Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_typeinfo.cpp
- Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_context.cpp
- Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_restore.cpp
+-Plugins/Angelscript/Source/AngelscriptRuntime/angelscript/as_gc.cpp
+-Plugins/Angelscript/Source/AngelscriptRuntime/angelscript/as_gc.h
+ Plugins/Angelscript/Source/AngelscriptRuntime/angelscript/as_scriptengine.cpp
+ Plugins/Angelscript/Source/AngelscriptRuntime/angelscript/as_scriptengine.h
+ Plugins/Angelscript/Source/AngelscriptRuntime/angelscript/as_vm_object.cpp
+ Plugins/Angelscript/Source/AngelscriptRuntime/angelscript/as_scriptfunction.cpp
+ Plugins/Angelscript/Source/AngelscriptRuntime/angelscript/as_scriptobject.cpp
+ Plugins/Angelscript/Source/AngelscriptRuntime/angelscript/as_typeinfo.cpp
+ Plugins/Angelscript/Source/AngelscriptRuntime/angelscript/as_context.cpp
+ Plugins/Angelscript/Source/AngelscriptRuntime/angelscript/as_restore.cpp
  Plugins/Angelscript/Source/AngelscriptTest/NewVersion/NativeEngine/VM/VMGCTests.cpp
  Plugins/Angelscript/Source/AngelscriptTest/NewVersion/NativeEngine/VM/VMShutdownDrainTests.cpp
  Plugins/Angelscript/Source/AngelscriptTest/NewVersion/NativeEngine/VM/VMRuntimeDrainTests.cpp
@@ -167,7 +169,7 @@ Script-held UObject references still reach UE GC through `DetectAngelscriptRefer
 
 `FAngelscriptClassGenerator::DetectAngelscriptReferences` still walks script properties and writes `Class->ReferenceSchema`. `FAngelscriptArrayType` / Map / Set / Optional / UObject / UStruct `EmitReferenceInfo` remain. `FTraceHandleType::NeverRequiresGC` remains true. `ClassReloadHelper.cpp` may still call Unreal `CollectGarbage` on reload; that is host GC, not this task's deletion target.
 
-`AngelscriptStandaloneArchitectureTests.cpp` currently requires `"as_gc.cpp"` in the ThirdParty source list. `AngelscriptOfflineSymbolExporter.cpp` and `AngelscriptRegistrationLoader.cpp` still decode `asOBJ_GC`.
+`AngelscriptStandaloneArchitectureTests.cpp` currently requires `"as_gc.cpp"` in the maintained SDK source list. `AngelscriptOfflineSymbolExporter.cpp` and `AngelscriptRegistrationLoader.cpp` still decode `asOBJ_GC`.
 
 **Cases**
 
@@ -179,7 +181,7 @@ Script-held UObject references still reach UE GC through `DetectAngelscriptRefer
 | InventoryOmitsAsGc | standalone architecture source list | no `as_gc.cpp` / `as_gc.h` | New RED then GREEN |
 | DumpHasNoLiveGcFlag | symbol export of a ref type | no collector-true trait | New |
 
-The reconstruction baseline does not treat `Angelscript.TestModule.Generator.ASClass.ReferenceSchema` as the enabled gate. Add `HostGcSchema` under TestDir `Angelscript.UnitTest.ClassGenerator` in NewVersion. That class compiles a `UObject` script holder with a non-UPROPERTY object handle, asserts `UASClass::ReferenceSchema` is non-empty, and asserts `as_gc.cpp` is absent from the maintained ThirdParty source directory. Do not reactivate the legacy generator corpus.
+The reconstruction baseline does not treat `Angelscript.TestModule.Generator.ASClass.ReferenceSchema` as the enabled gate. Add `HostGcSchema` under TestDir `Angelscript.UnitTest.ClassGenerator` in NewVersion. That class compiles a `UObject` script holder with a non-UPROPERTY object handle, asserts `UASClass::ReferenceSchema` is non-empty, and asserts `as_gc.cpp` is absent from the maintained SDK source directory. Do not reactivate the legacy generator corpus.
 
 **Implementation**
 
@@ -190,8 +192,8 @@ The reconstruction baseline does not treat `Angelscript.TestModule.Generator.ASC
 **Files**
 
 ```diff
- Plugins/Angelscript/Standalone/Tests/AngelscriptStandaloneArchitectureTests.cpp
- Plugins/Angelscript/Standalone/Source/Registration/AngelscriptRegistrationLoader.cpp
+ Plugins/Angelscript/AngelscriptLSP/Tests/AngelscriptStandaloneArchitectureTests.cpp
+ Plugins/Angelscript/AngelscriptLSP/Source/Registration/AngelscriptRegistrationLoader.cpp
  Plugins/Angelscript/Source/AngelscriptRuntime/Dump/AngelscriptOfflineSymbolExporter.cpp
  Plugins/Angelscript/Source/AngelscriptRuntime/ClassGenerator/AngelscriptClassGenerator_Reinstancing.cpp
 +Plugins/Angelscript/Source/AngelscriptTest/NewVersion/ClassGenerator/HostGcSchemaTests.cpp

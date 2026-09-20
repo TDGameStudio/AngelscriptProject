@@ -1,10 +1,10 @@
 ## Why
 
-The user needs to see what AngelScript allocates, how much remains alive, what is retained for reuse or by old generations, and what GC processes and releases in each batch. The request's wording about batches is interpreted as covering both allocation/free accounting and incremental GC/pool work. Observation comes before deciding whether to retain or remove the AS cycle collector.
+The user needs to see what AngelScript allocates, how much remains alive, what is retained for reuse or by old generations, and what GC processes and releases in each batch. The request's wording about batches is interpreted as covering both allocation/free accounting and incremental GC/pool work. The later accepted `angelscript/refactor-sdk-drop-native-gc` Change removes the AS cycle collector. It is still pending, so collector code is present today; this observation plan targets the accepted post-removal lifetime model and must not add a dependency on the retiring collector.
 
 Existing evidence cannot answer these questions consistently:
 
-- Preserved UObject integration disables AS automatic collection and publishes script-held UObject references to UE GC, while the replacement VM allocates its own non-UObject heap and supports AS cycle collection. These are distinct ownership domains.
+- Preserved UObject integration disables AS automatic collection and publishes script-held UObject references to UE GC, while the replacement VM allocates its own non-UObject heap and currently still contains AS cycle collection pending that removal. The target observes refcount release and shutdown drain separately from UE GC.
 - The plugin already has STATGROUP_Angelscript, CPU/CSV timing scopes, a single Angelscript LLM tag and GC counts in legacy-oriented dumps. These are useful foundations, not comprehensive replacement-runtime accounting.
 - The SDK gateway is tagged, but asVmAllocateObject uses FMemory directly and replacement AST nodes use ordinary new. The comment that all AS allocations pass through SDKAlloc/asAllocMem no longer describes all allocation paths. Actual tagging can also depend on an outer scope and worker thread.
 - Object counts are not byte counts; freeing an object into a pool is not releasing its backing memory; GC work iterations are not unique object visits; a retained metadata generation is not automatically a leak. A single number named AS memory or GC count obscures these distinctions.
@@ -29,7 +29,7 @@ The canonical logical counters and UE's allocator accounting describe different 
 
 ### Ownership and category coverage
 
-Inventory allocation and release paths before claiming coverage. The first implementation covers maintained replacement paths for source/frontend nodes and buffers, shared type/identity metadata, executable images and runtime bindings, VM objects, contexts/stacks, GC bookkeeping, function/delegate runtime ownership, reusable storage and diagnostic instrumentation. Use a bounded category set, with an explicit SDK/Other fallback rather than silently dropping uncategorized allocations.
+Inventory allocation and release paths before claiming coverage. The first implementation covers maintained replacement paths for source/frontend nodes and buffers, shared publication/type-identity records, unique DefinitionSet/Engine metadata and executable storage and runtime bindings, VM objects, contexts/stacks, VM shutdown bookkeeping, function/delegate runtime ownership, reusable storage and diagnostic instrumentation. Use a bounded category set, with an explicit SDK/Other fallback rather than silently dropping uncategorized allocations.
 
 Each inventory row identifies the owner, allocating/freeing functions, whether storage is shared or pooled, its thread/lifetime boundaries, physical allocation gateway, logical-count producer and intended LLM scope. Current AST nodes are individually allocated; do not label them an existing arena or report arena capacity unless a real arena is present.
 
@@ -43,26 +43,26 @@ The initial metric contract includes:
 - known requested live bytes and observed peak, with the peak window identified;
 - backing/reserved bytes and used/free capacity only for actual pools or containers whose owners can measure them; allocator-rounded and OS-committed bytes remain distinct;
 - active and retired-but-retained generation/image counts and owned storage, without counting a shared allocation once for every consumer;
-- AS GC registered/new/old candidates, total detected/destroyed, full versus incremental work, collector overhead and actual frees attributable to known owners;
-- collection attempt/result, time, requested iterations, actual phase work and deferred/reentrant attempts;
+- native VM allocation, final-release destruction, retained cycles and shutdown-drain work, with payload death distinct from backing release;
+- UE GC/schema observations only where replacement host APIs exist; native cycle-collector metrics are explicitly unavailable after removal;
 - availability/coverage flags for each metric and profiler mode. Disabled, unsupported or partial observation is not presented as an authoritative zero.
 
 Physical frees and logical destruction are different events. Record actual successful transitions; do not infer GC bytes freed from before/after candidate counts, which can include concurrent allocation, resurrection or retained storage. GC freed payload bytes cover only known AS-owned storage and must not be advertised as process memory returned to the OS.
 
-### GC observation without changing collection policy
+### Lifetime observation after the accepted native-collector removal
 
-Instrument the public/full/incremental collector and the allocation-triggered automatic path. The latter directly invokes collector phase functions, so instrumentation only around asCScriptEngine::GarbageCollect would miss work.
+Observe native VM allocation, final release and shutdown drain. An unrooted cycle is retained while its Engine lives under the accepted removal design; report that retained storage without claiming runtime reclamation. The removal owner must first prove the drain mechanism and externally retained-object contract. Full/incremental/automatic AS collector instrumentation is outside the target.
 
-Use call/step correlation to expose cycle detection, new/old destruction and completion. Count phase work using declared units; revisits are not unique objects. The current return value 1 can indicate unfinished work or a skipped/reentrant attempt, so completion cannot be inferred from the return value alone. Full calls can run multiple passes and run user destruction code; duration is observed, not a hard time-budget guarantee.
+Keep UE GC timing and reference-schema construction separate. Observe actual UE GC boundaries through supported facilities when that replacement host path exists, and report unavailable/dormant probes honestly. Replaced `_REPLACED_N` UClass tombstones are distinct retained host metadata, as recorded by `docs-class-reload-replaced-tombstone-lifetime`; memory reporting does not authorize unrooting or destroying them.
 
-Keep AS GC separate from UE GC timing and reference-schema construction. Observe actual UE GC boundaries through supported facilities when that host path exists; do not describe the whole engine pause as AS-only cost. On the reconstruction baseline, report the host integration as unavailable/dormant rather than activating old services for measurements.
+Historical collector measurements remain September 6 research evidence. A removed metric reports unavailable, never a fabricated zero. This Change implements no collector deletion or alternative collection policy.
 
 ### Attribution and overhead boundaries
 
 - Use bounded stable LLM/Stat/counter names. Per-type, per-module and per-generation drilldown belongs in explicit snapshots or bounded diagnostic trace records, not an unbounded dynamic stat registry.
 - Ensure a generic SDK allocation tag does not mask a more specific owner tag at the top of the LLM stack. Preserve an AS category through owned allocation operations and asynchronous entry points; native callbacks and unrelated engine work must not all be charged to the VM by an excessively broad scope.
 - Store enough ownership information to account for frees on a different thread or after the producer/session has retired. Observer metadata must not keep the object, UObject or generation alive merely to display it.
-- Counters at allocation/destruction boundaries must not allocate, stringify labels or take a contended global reporting lock. Aggregate in bounded owner/thread state and publish coherent snapshots at safe points; avoid traversing mutable GC arrays from a rendering/stat thread.
+- Counters at allocation/destruction boundaries must not allocate, stringify labels or take a contended global reporting lock. Aggregate in bounded owner/thread state and publish coherent snapshots at safe points; avoid traversing mutable owner/drain state from a rendering/stat thread.
 - Keep exact per-owner quiescent snapshots for tests and on-demand diagnosis. Mark rolling concurrent samples with their consistency scope; do not imply individually atomic fields form a transactionally exact process snapshot.
 - Reuse native FMemory tracing and LLM. Do not install a second global allocator or call manual LLM/MemoryTrace allocation events for memory already observed by UE. Custom suballocation tracing is a separate opt-in extension only if real pools require it and UE heap APIs are verified.
 - Gate Stats, LLM and trace outputs against the actual target's UE 5.8 feature defines. The default mode uses bounded aggregate counters; detailed memory callstacks/trace records are opt-in. Measure disabled/basic/detailed overhead before claiming it negligible.
@@ -100,6 +100,6 @@ Removing AS GC, changing ownership semantics, adding a collector scheduler or ha
 
 ### Acceptance direction
 
-Prove balanced allocation/free and rollback, independent logical-versus-physical pool behavior, attribution across workers, no double counting of shared owners or UObjects, AS full/incremental and automatic-path observations, correct late retirement, unavailable-state reporting and agreement between snapshot/Stats/Trace for the same sample. Validate actual LLM/Memory Insights events in a captured session, not only macro presence. Use an explicit bounded workload to measure instrumentation overhead.
+Prove balanced allocation/free and rollback, independent logical-versus-physical pool behavior, attribution across workers, no double counting of shared owners or UObjects, native final-release/shutdown-drain observations and explicitly unavailable retired-collector metrics, correct late retirement, unavailable-state reporting and agreement between snapshot/Stats/Trace for the same sample. Validate actual LLM/Memory Insights events in a captured session, not only macro presence. Use an explicit bounded workload to measure instrumentation overhead.
 
 The creation delivery contains the proposal, research/metric attachments and a pending planning task required by the workflow. Design, durable scenarios and exact implementation cards remain to be authored. It is not implementation-ready and does not claim measured memory sizes, a passing current GC suite or a captured .utrace file.

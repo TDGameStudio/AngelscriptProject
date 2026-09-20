@@ -41,7 +41,7 @@ Ignoring the flag would let metadata dumps, standalone registration, and tests k
 
 ### Runtime cycles leak; shutdown walks leases
 
-Breaking cycles at runtime is the only job `as_gc.cpp` had. Without it, an unrooted self-cycle stays allocated while the Engine lives. `vmObjectLeases` already tracks native VM objects for shutdown; drain that list instead of `gc.ReportAndReleaseUndestroyedObjects()`.
+Breaking cycles at runtime is the only job `as_gc.cpp` had. Without it, an unrooted self-cycle stays allocated while the Engine lives. `vmObjectLeases` currently counts outstanding native VM leases; it is not an enumerable object list. Task 2.1 must establish the bounded object-membership/drain mechanism needed to retire eligible objects, then replace `gc.ReportAndReleaseUndestroyedObjects()`. Preserve externally retained objects until final release and prove cycle-safe exactly-once cleanup.
 
 Alternative considered: forbid any ref type that can store its own handle. Rejected as a language-frontend feature outside this Change.
 
@@ -55,7 +55,7 @@ Script-held `UObject*` values that are not `UPROPERTY` still need `DetectAngelsc
 
 ### Sibling Changes replan; this Change does not patch them
 
-`feature-memory-gc-observability` cannot instrument collector phases after this lands. `feature-types-explicit-ownership` still plans per-Engine instance cycle collection. Those records keep their IDs; their owners replan against this spec delta.
+`feature-memory-gc-observability` cannot instrument collector phases after this lands. `feature-types-explicit-ownership` is a completed archive and remains immutable. Its successor SDK compile-lifecycle is also archived. This Change owns migration of current native VM/definition-set callers; active memory observability consumes the accepted removal target.
 
 ## Risks / Trade-offs
 
@@ -65,6 +65,6 @@ Script-held `UObject*` values that are not `UPROPERTY` still need `DetectAngelsc
 | Delegate capture cycles leak at runtime | Accepted. UE `FScriptDelegate` stays weak on UObject; native funcdef delegates are refcounted |
 | Shutdown must still destroy leftovers | Use existing VM object leases; do not resurrect `asCGarbageCollector` for teardown |
 | Legacy `AngelscriptNativeGarbageCollectorTests.cpp` includes `as_gc.h` | Exclude or stub that file on every enabled target so the removed header cannot break the build |
-| `feature-types-explicit-ownership` tasks still list `as_gc.*` | Documented conflict; that Change replans after this spec is accepted |
+| Ownership and compile-lifecycle predecessors are archived | Preserve their evidence; migrate current callers in this Change and keep active consumers aligned |
 
 Flip condition: if native non-UObject objects must reclaim unrooted cycles while the Engine is live, abandon this Change and keep `as_gc.cpp`.

@@ -1,62 +1,59 @@
 ## Purpose
 
-Define SDK-owned symbolic executable images that can be authored, inspected and cached independently of an Engine, then safely bound to pre-registered current runtime definitions.
+Define SDK-owned symbolic bytecode authored on private script functions without an Engine, then linked against the receiving Engine's admitted host and private dependencies at Registration.
 
 ## Requirements
 
-### Requirement: Executable images are independent of source compilation and runtime identity
+### Requirement: Stable bytecode hangs on the function without an Engine
 
-The SDK SHALL author and inspect executable bytecode with explicit signatures, frame contracts and typed stable symbols without creating a Builder, compiling source or persisting runtime addresses and IDs.
+The SDK SHALL write Emit's stable bytecode onto `asCScriptFunction` without creating a public `asCByteCodeImage`, and SHALL keep that stream free of Engine addresses and numeric TypeIds.
 
-#### Scenario: Author a function using stable type and callable symbols
+#### Scenario: Emit a compiled script function
 
-- **WHEN** a caller supplies a complete function signature, typed operands, labels and required runtime resources to the image builder
-- **THEN** it produces an immutable image with compact image-local symbol slots and sufficient frame, local-object and unwind information for execution
+- **GIVEN** a snapshot Builder that successfully froze `int32 Identity(int32 V) { return V; }`
+- **WHEN** `asCByteCodeEmitter` runs during default `RunThrough`, or a caller calls the public Emit API on that Builder
+- **THEN** that function's `GetStableByteCode` view is non-empty and contains no Engine pointer or TypeId operand
 
-    > Symbols distinguish nominal types, qualified type uses, specializations, callables, properties, globals and string resources. An image-local slot is not an Engine ID.
+    Public `asCByteCodeImage`, `asCExecutableFunction`, and `asCExecutableSnapshot` are not products of this path.
 
-- **BUT** missing labels, invalid operand roles or incomplete bodies produce explicit errors rather than successful empty output
+- **BUT** missing labels, invalid operand roles or incomplete bodies produce explicit errors rather than a successful empty stable body
 
-#### Scenario: Inspect persistent bytecode
+#### Scenario: Inspect stable bytecode on the function
 
-- **WHEN** a caller dumps an encoded or decoded image
+- **WHEN** a caller dumps a function's stable bytecode
 - **THEN** the dump identifies instructions, symbol roles, readable names, stable keys and compatibility requirements
 - **BUT** display names are never parsed to recover authoritative semantic structure
 
-### Requirement: Bytecode persistence is versioned and definition-free
+### Requirement: Registration is the only runtime bytecode writer
 
-The SDK SHALL persist executable bodies and complete symbol requirements in a deterministic bounded format while requiring destination definitions and mutable storage to be supplied independently.
+The SDK SHALL write interpreter runtime bytecode onto `asCScriptFunction` only during `asCEngineCompileRegistration` Link, after Install, and SHALL NOT generate that stream at Emit or at first Prepare.
 
-#### Scenario: Load code against pre-existing definitions
+#### Scenario: Link after Install makes a function Prepare-able
 
-- **GIVEN** a fresh Engine with compatible frozen types, all callable declarations, and global declarations with storage
-- **WHEN** it loads a compatible symbolic bytecode image
-- **THEN** cached bodies and string constants can bind to those current definitions without compiling source
-- **BUT** the cache does not reconstruct types, global or member callable declarations, native addresses, global values, heap objects or suspended stacks
+- **GIVEN** a Taken set whose script functions already have stable bytecode
+- **WHEN** Registration Install+Link succeeds on a live Engine
+- **THEN** each script function's runtime bytecode is present and a Context Prepare of that function succeeds
+- **BUT** Prepare of the same function before Registration returns `asNO_FUNCTION`
 
-    > The rule is uniform for free functions, methods, constructors, destructors and native declarations. A signature in the cache authenticates a definition; it is not permission to create one.
+    Prepare reads the runtime stream. It does not Emit and does not Link.
 
-#### Scenario: Reject an incompatible or corrupt wire image
+#### Scenario: Reject a late binding failure atomically
 
-- **WHEN** an image has an unsupported format/opcode/target/storage ABI, malformed section, invalid count, overflow, excessive nesting or missing dependency requirement
-- **THEN** decoding or admission returns a specific failure without exposing a partial image or Engine mutation
+- **GIVEN** a submitted list whose earlier functions would link
+- **WHEN** a later function fails identity, layout, or Link
+- **THEN** the entire Registration fails with the offending stable symbol and expected/actual contract
+- **AND** no script function from that list is callable
 
-    > The supported format requires the selected architecture, endianness, pointer width and storage/call ABI. Equal nominal keys do not make native bytecode cross-target portable.
-
-#### Scenario: Encode equivalent symbolic input deterministically
-
-- **WHEN** equivalent functions and requirements are supplied in different discovery or registration orders
-- **THEN** canonical ordering and slot remapping yield byte-for-byte equal encoded output
-- **AND** each decoded canonical witness is authenticated, including an explicit rejection of injected hash collisions
+    Candidate runtime streams from the failed list are not observable as successful output.
 
 ### Requirement: Executable verification precedes publication
 
-The SDK SHALL reject invalid instruction, operand, control-flow, symbol, stack and cleanup contracts before an executable becomes visible.
+The SDK SHALL reject invalid instruction, operand, control-flow, symbol, stack and cleanup contracts before runtime bytecode becomes visible on a function.
 
 #### Scenario: Validate malformed executable control flow
 
 - **WHEN** a body contains an unknown or retired opcode, wrong operand width/role, out-of-range symbol, jump into an operand, inconsistent stack join, invalid local range or inconsistent construction/unwind record
-- **THEN** verification identifies the failing instruction or contract and returns no executable snapshot
+- **THEN** verification identifies the failing instruction or contract and Registration publishes no callable runtime bytecode for that function
 
     - Operand and symbol contracts also apply to unreachable instructions. Duplicate function bodies or duplicate requirement identities cannot choose a publication winner by ordering.
     - Local and argument spans follow actual frame addressing and full access width. Declared argument storage and return cleanup agree with the complete callable ABI.
@@ -74,13 +71,13 @@ The SDK SHALL reject invalid instruction, operand, control-flow, symbol, stack a
 
 ### Requirement: Stable symbol linking is transactional and generation-owned
 
-The SDK SHALL resolve complete canonical requirements to the current Engine's materialized TypeInfo and live bindings, and publish executable resources atomically only after identity, visibility, ownership, schema, layout and callable ABI checks succeed.
+The SDK SHALL resolve complete canonical requirements to the current Engine's materialized TypeInfo and live bindings during Registration.Link, and publish runtime bytecode atomically only after identity, visibility, ownership, schema, layout and callable ABI checks succeed.
 
 #### Scenario: Resolve a type use and callable in the current Engine
 
 - **GIVEN** a live Engine with materialized publications, its private TypeInfo and explicit native/global bindings
-- **WHEN** it links nominal, qualified and generic type symbols together with callable and property requirements
-- **THEN** the snapshot exposes that Engine's TypeInfo pointers, published IDs, lowered type uses, callable entries and field addresses
+- **WHEN** Registration links nominal, qualified and generic type symbols together with callable and property requirements
+- **THEN** the function runtime stream uses that Engine's TypeInfo pointers, published IDs, lowered type uses, callable entries and field addresses
 
     Primitive type uses resolve to primitive storage. Specializations resolve by their complete canonical identity. FunctionKey equality never substitutes for complete return/parameter agreement.
 
@@ -102,19 +99,26 @@ The SDK SHALL resolve complete canonical requirements to the current Engine's ma
 - **AND** releasing A does not invalidate B's execution
 - **BUT** cache loading does not authorize foreign TypeInfo adoption or replacement of an installed body
 
-### Requirement: Canonical source compilation produces the same verified executable image
+#### Scenario: Bind one compile independently in two Engines
 
-The SDK SHALL compile the bounded supported AS source surface from its verified canonical frontend into the same symbolic executable format used by direct bytecode authoring, without an Engine prerequisite or a legacy compiler fallback.
+- **WHEN** two Engines with compatible admitted publications each Register their own Taken sets compiled from the same source
+- **THEN** each executes through its own Function runtime bytecode and live TypeInfo
+- **AND** releasing A does not invalidate B's execution
+- **BUT** compiling source does not authorize foreign TypeInfo adoption or replacement of an installed body
+
+### Requirement: Source emission consumes frozen definitions
+
+The SDK SHALL compile the bounded supported AS source surface from its verified canonical frontend into Function-hung stable bytecode, without an Engine prerequisite or a legacy compiler fallback.
 
 #### Scenario: Emit and execute a supported source function
 
-- **GIVEN** verified, sealed source semantics and matching authenticated frozen definitions
+- **GIVEN** verified, sealed source semantics on a Taken definition set
 - **WHEN** a caller requests bytecode for supported basic expressions, control flow, calls and AS object operations
-- **THEN** the resulting image contains executable bodies, complete stable requirements, frame and cleanup contracts, and owned source observations
+- **THEN** each script function holds stable bytecode, complete stable requirements, frame and cleanup contracts, and owned source observations
 
-    > The producer consumes typed declaration/call/conversion/transfer decisions rather than re-parsing source or AST dumps. Function identities match the frozen declarations; emission does not mutate them.
+    The producer consumes typed declaration/call/conversion/transfer decisions rather than re-parsing source or AST dumps. Function identities match the frozen declarations; emission does not mutate them.
 
-- **AND** explicit registration and linking in a live SDK Engine allow the real interpreter to return the expected value and lifetime effects
+- **AND** `asCEngineCompileRegistration` on a live SDK Engine allows the interpreter to return the expected value and lifetime effects
 - **BUT** successful AST inspection or definition construction alone is not executable compilation
 
 #### Scenario: Preserve argument mapping and lazy evaluation
@@ -131,26 +135,27 @@ The SDK SHALL compile the bounded supported AS source surface from its verified 
 #### Scenario: Reject unready or unsupported source emission without partial output
 
 - **WHEN** source contains errors or recovery nodes, its AST is unverified, its definitions do not match, or a valid node is outside the supported source-emission surface
-- **THEN** emission returns a structured failure with source location when available and no usable partial image
+- **THEN** emission returns a structured failure with source location when available and no usable partial stable bytecode
 
-    > Unsupported valid syntax is distinct from a frontend language error. An existing frontend rejection remains a regression control, not evidence that a new emitter has executed.
+    Unsupported valid syntax is distinct from a frontend language error. An existing frontend rejection remains a regression control, not evidence that a new emitter has executed.
 
-- **AND** no executable body is published and no native callback runs
+- **AND** no runtime bytecode is published and no native callback runs
 - **BUT** an empty body, fabricated default return, or legacy compilation path cannot stand in for missing code generation
-
-#### Scenario: Source-produced cache retains definition-free loading
-
-- **WHEN** a source-produced image is encoded, its producer inputs are released, and another Engine supplies compatible TypeInfo independently
-- **THEN** decoding, linking and actual execution preserve expected results through that Engine's own bindings
-- **BUT** source provenance and cached signatures cannot create missing TypeInfo, restore live values, attach an unadmitted publication or adopt another Engine's TypeInfo
 
 ### Requirement: Source definition placement preserves published dependencies and private ownership
 
-The SDK SHALL keep source compilation engine-independent and SHALL allow the receiving Engine to uniquely own successful private TypeInfo batches that reference only its admitted publications.
+The SDK SHALL compile without an Engine and register private source TypeInfo and runtime bytecode only against the receiving Engine's admitted dependencies, retaining shared host graphs without transferring their ownership.
 
 #### Scenario: Adopt compiled source using a prebuilt native type
 
-- **GIVEN** a published Pair record materialized in the receiving Engine
-- **WHEN** source compilation produces a function that uses Pair
-- **THEN** the compiled TypeInfo/functions belong to that Engine
-- **BUT** another Engine must materialize Pair itself before linking the same cache
+- **GIVEN** a frozen HostProcess Pair graph supplied through Options.Dependencies
+- **WHEN** source using Pair is compiled and registered on an Engine that injected that graph
+- **THEN** the new script types/functions and runtime bytecode belong to that Engine, while Pair remains the same shared null-Engine object
+- **BUT** an uninjected Engine cannot register or execute that source merely by possessing the frozen dependency pointer
+
+#### Scenario: Retire private bytecode without retiring host definitions
+
+- **GIVEN** A and B each register private script functions against one injected host Pair graph
+- **WHEN** A's private bytecode and definitions retire
+- **THEN** B's script execution and the shared Pair function/native leases remain valid
+

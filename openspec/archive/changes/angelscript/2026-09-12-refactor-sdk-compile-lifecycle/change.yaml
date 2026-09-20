@@ -1,0 +1,20 @@
+api_version: openspec.dev/v1
+kind: change
+metadata:
+  uid: change_8ef22639-f737-4694-a3a1-950c51067387
+  id: angelscript/refactor-sdk-compile-lifecycle
+  title: Retire MetadataImage for engine-free compile and batch registration
+workflow: angelscript
+created_at: 2026-09-11T13:53:53Z
+goal: Replace Image-owned TypeInfo with per-unit asCModuleDefinitionSet, two Builder products, and one Engine Install+Link after the compile DAG.
+affected_areas:
+- language/frontend/builder
+- runtime/type-registry
+- runtime/bytecode
+- runtime/vm
+- language/types/definitions
+archived_at: 2026-09-12T03:14:28Z
+archive_schema: closure-v1
+closure:
+  kind: completed
+  reason: Engine-free compile now owns TypeInfo on asCModuleDefinitionSet, emits Function-hung stable bytecode, and batch-registers through Install+Link; asCMetadataImage is gone; 1.1–6.2 GREEN; durable deltas synced.

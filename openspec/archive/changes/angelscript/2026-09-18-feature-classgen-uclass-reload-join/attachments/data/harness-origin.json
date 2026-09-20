@@ -1,0 +1,72 @@
+{
+  "schema": 2,
+  "changeId": "angelscript/feature-classgen-uclass-reload-join",
+  "origin": "Draft",
+  "draftId": "angelscript/compiler-execute-join",
+  "scope": "uclass-reload-join",
+  "reason": null,
+  "approvalRound": "R15",
+  "expectedExports": [
+    {
+      "Source": "design.md",
+      "Target": "attachments/drafts/design.md",
+      "Reason": "已批准的范围设计"
+    },
+    {
+      "Source": "handoff.md",
+      "Target": "attachments/drafts/handoff.md",
+      "Reason": "已批准的 handoff"
+    },
+    {
+      "Source": "glossary.md",
+      "Target": "attachments/drafts/glossary.md",
+      "Reason": "已确认的公开名"
+    },
+    {
+      "Source": "../../findings/legacy-reload-slice.md",
+      "Target": "attachments/drafts/findings/legacy-reload-slice.md",
+      "Reason": "旧金样与排除面"
+    },
+    {
+      "Source": "../../findings/change-phases.md",
+      "Target": "attachments/drafts/findings/change-phases.md",
+      "Reason": "两阶段切分"
+    },
+    {
+      "Source": "../../findings/inline-as-not-corpus.md",
+      "Target": "attachments/drafts/findings/inline-as-not-corpus.md",
+      "Reason": "不用语料库"
+    },
+    {
+      "Source": "../../log.md#r8",
+      "Target": "attachments/talks/talk-20260918-144000-uclass-blueprint-first.md",
+      "Reason": "先通 UCLASS+蓝图"
+    },
+    {
+      "Source": "../../log.md#r10",
+      "Target": "attachments/talks/talk-20260918-144100-phase-order.md",
+      "Reason": "先收 UCLASS 缝"
+    },
+    {
+      "Source": "../../log.md#r13",
+      "Target": "attachments/talks/talk-20260918-144200-inline-not-corpus.md",
+      "Reason": "内嵌 .as"
+    },
+    {
+      "Source": "../../log.md#r14",
+      "Target": "attachments/talks/talk-20260918-144300-names.md",
+      "Reason": "N1/N2"
+    },
+    {
+      "Source": "../../log.md#r15",
+      "Target": "attachments/talks/talk-20260918-144400-approval.md",
+      "Reason": "A1 批准"
+    },
+    {
+      "Source": "../../findings/legacy-reload-slice.md",
+      "Target": "attachments/knowledges/old-reload-uses-compile-modules.md",
+      "Reason": "可复用：旧重载入口是 CompileModules"
+    }
+  ],
+  "createdAt": "2026-09-18T06:51:57.0495698Z"
+}

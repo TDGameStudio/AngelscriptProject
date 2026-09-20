@@ -10,24 +10,24 @@ The frontend SHALL represent each supported declaration category with a concrete
 
 #### Scenario: A declaration is accepted through a semantic action
 - **GIVEN** a token stream containing a syntactically valid namespace, type, function, property, parameter, or local declaration header
-  > Context: The typed-AST capability supplies concrete nodes, casting helpers, visitors and context-owned lifetime directly inside the existing AS namespace scope; no nested frontend namespace or compatibility type is required.
+    > Context: The typed-AST capability supplies concrete nodes, casting helpers, visitors and context-owned lifetime directly inside the existing AS namespace scope; no nested frontend namespace or compatibility type is required.
 - **WHEN** asCParser reaches the declaration's grammar milestone
-  > Inputs: asCParser(asCSema&) consumes the retained selected-token input supplied by the compilation session and passes typed source locations, parsed components, attributes, and unresolved type syntax to Sema; it does not hand Sema a generic property bag.
+    > Inputs: asCParser(asCSema&) consumes the retained selected-token input supplied by the compilation session and passes typed source locations, parsed components, attributes, and unresolved type syntax to Sema; it does not hand Sema a generic property bag.
 - **THEN** Sema creates the matching concrete declaration node and places it in its typed declaration context
-  > Observables:
-  >
-  > - Clients distinguish declaration categories with concrete type-safe casts or visitation.
-  > - Authored ranges and attributes remain attached to the typed declaration.
-  > - Semantic identity and resolved type facts are written only by Sema.
+    > Observables:
+    >
+    > - Clients distinguish declaration categories with concrete type-safe casts or visitation.
+    > - Authored ranges and attributes remain attached to the typed declaration.
+    > - Semantic identity and resolved type facts are written only by Sema.
 - **BUT** neither Parser nor Sema constructs an asCObjectType, calls a live asCBuilder, or mutates an asCScriptEngine
-  > Boundaries: Runtime candidates and transactional publication are later capabilities, not hidden side effects of declaration parsing.
+    > Boundaries: Runtime candidates and transactional publication are later capabilities, not hidden side effects of declaration parsing.
 
 #### Scenario: Function bodies are deferred at the declaration boundary
 - **WHEN** collection reaches a function definition whose header and body are both present
 - **THEN** the function's concrete declaration records its header semantics and a validated deferred body range
-  > Observables: The declaration is available to every source file before expression or statement semantics begin.
+    > Observables: The declaration is available to every source file before expression or statement semantics begin.
 - **BUT** declaration resolution does not create body Stmt or Expr semantics, bytecode, runtime functions, or VM state
-  > Boundaries: The body range remains owned by the same immutable source snapshot and token provenance.
+    > Boundaries: The body range remains owned by the same immutable source snapshot and token provenance.
 
 ### Requirement: One compilation session establishes a declaration barrier before resolution
 
@@ -35,28 +35,28 @@ The frontend SHALL collect declarations from every logical source in the compila
 
 #### Scenario: A declaration refers to a type authored later
 - **GIVEN** two logical source files in one compilation request, where an earlier file names a type declared in a later file
-  > Example: A.as declares B@ MakeB() while B.as later declares class B {}.
+    > Example: A.as declares B@ MakeB() while B.as later declares class B {}.
 - **WHEN** the compilation session processes the request
-  > Details: Collection records the unresolved type location in the function declaration, then the declaration barrier closes only after both files have contributed fragments.
+    > Details: Collection records the unresolved type location in the function declaration, then the declaration barrier closes only after both files have contributed fragments.
 
-  1. Collect every top-level and nested declaration header.
-  2. Deterministically merge declaration contexts and canonical symbols.
-  3. Resolve names, bases, and complete signatures against the frozen declaration set.
+    1. Collect every top-level and nested declaration header.
+    2. Deterministically merge declaration contexts and canonical symbols.
+    3. Resolve names, bases, and complete signatures against the frozen declaration set.
 - **THEN** Sema resolves the reference to the same canonical type declaration regardless of source-file submission order
-  > Observables: The resolved typed AST and structured diagnostics are equal for both orders.
+    > Observables: The resolved typed AST and structured diagnostics are equal for both orders.
 - **AND** no source-level import directive or pre-registered runtime type stub is required
-  > Verification: The scenario contains only the two ordinary source files and the session input list.
+    > Verification: The scenario contains only the two ordinary source files and the session input list.
 
 #### Scenario: Declaration phases expose distinct allowed products
 - **WHEN** a client observes the compilation session at a declared phase boundary
 - **THEN** only the products allowed for that completed phase are visible
 
-  | Completed phase | Visible typed products | Products that remain unavailable |
-  |---|---|---|
-  | Collection | Concrete declarations, scopes, attributes, unresolved type locations, deferred body ranges | Resolved cross-file types, body semantics, runtime objects |
-  | Declaration resolution | Canonical symbols, resolved bases and signatures, declaration-reference edges, diagnostics | Body semantics, bytecode, Engine publication |
+    | Completed phase | Visible typed products | Products that remain unavailable |
+    |---|---|---|
+    | Collection | Concrete declarations, scopes, attributes, unresolved type locations, deferred body ranges | Resolved cross-file types, body semantics, runtime objects |
+    | Declaration resolution | Canonical symbols, resolved bases and signatures, declaration-reference edges, diagnostics | Body semantics, bytecode, Engine publication |
 - **BUT** a client cannot resolve against a partially collected source set
-  > Boundaries: Closing the collection barrier is an explicit one-way session transition.
+    > Boundaries: Closing the collection barrier is an explicit one-way session transition.
 
 ### Requirement: Declaration lookup is source-order independent and stable-key based
 
@@ -65,20 +65,20 @@ The frontend SHALL perform declaration-context lookup, duplicate detection, over
 #### Scenario: Equivalent source sets arrive in different orders
 - **WHEN** two sessions receive byte-identical logical sources in different enumeration orders
 - **THEN** their canonical declarations, lookup results, overload ordering, and diagnostic sequence are identical
-  > Observables: Stable type and symbol keys, not insertion order, select the same declarations.
+    > Observables: Stable type and symbol keys, not insertion order, select the same declarations.
 - **AND** declaration-reference edges point to typed declaration identities that remain valid for the frozen AST lifetime
-  > Verification: No edge contains an asCObjectType pointer, runtime type ID, function ID, or module registration slot.
+    > Verification: No edge contains an asCObjectType pointer, runtime type ID, function ID, or module registration slot.
 
 #### Scenario: Conflicting declarations are diagnosed deterministically
 - **GIVEN** multiple files contribute declarations that conflict under the language's redeclaration rules
 - **WHEN** Sema forms the canonical declaration set
 - **THEN** it selects the same primary declaration and emits the same error and related-source notes for every worker count and input enumeration order
-  > Observables:
-  >
-  > - The primary location is chosen by stable logical source ordering and byte range.
-  > - Each conflicting declaration remains queryable as a typed invalid or redeclaration node.
+    > Observables:
+    >
+    > - The primary location is chosen by stable logical source ordering and byte range.
+    > - Each conflicting declaration remains queryable as a typed invalid or redeclaration node.
 - **BUT** conflict handling never publishes a partial winner to the Engine
-  > Boundaries: A declaration result with errors is inspectable but not runtime-publishable.
+    > Boundaries: A declaration result with errors is inspectable but not runtime-publishable.
 
 ### Requirement: Declaration fragments are isolated and merge deterministically
 
@@ -88,14 +88,14 @@ The frontend SHALL permit declaration fragments to be collected independently an
 - **GIVEN** immutable options, source snapshots, tokens, directive records, and stable identity inputs
 - **WHEN** declaration collection executes once with one worker and once with multiple workers
 - **THEN** both executions produce an equivalent typed declaration tree, canonical symbol index, reference set, and structured diagnostic sequence
-  > Observables: Equality is assessed by stable keys, concrete node kinds, source ranges, semantic fields, and diagnostics rather than arena addresses.
+    > Observables: Equality is assessed by stable keys, concrete node kinds, source ranges, semantic fields, and diagnostics rather than arena addresses.
 - **AND** fragment merge follows a stable ordering rule
-  > Verification:
-  >
-  > 1. Logical source key and source range order declarations.
-  > 2. Stable semantic key and fragment-local ordinal break remaining ties.
+    > Verification:
+    >
+    > 1. Logical source key and source range order declarations.
+    > 2. Stable semantic key and fragment-local ordinal break remaining ties.
 - **BUT** worker completion order, atomics, pointer values, and thread IDs are not semantic inputs
-  > Boundaries: Workers do not mutate one shared live Engine, Builder, or module registry.
+    > Boundaries: Workers do not mutate one shared live Engine, Builder, or module registry.
 
 ### Requirement: Declaration recovery preserves later semantic work
 
@@ -103,24 +103,94 @@ The frontend SHALL represent recoverable declaration failures with typed recover
 
 #### Scenario: A malformed declaration precedes a valid declaration
 - **WHEN** Parser encounters a malformed declaration header followed by a recoverable boundary and a valid declaration
-  > Details: Recovery may synchronize at a balanced declaration terminator, closing brace, or another grammar-defined declaration starter.
+    > Details: Recovery may synchronize at a balanced declaration terminator, closing brace, or another grammar-defined declaration starter.
 - **THEN** the AST contains a range-bearing typed recovery or invalid declaration for the malformed construct and a normal concrete declaration for the later construct
-  > Observables:
-  >
-  > - The primary diagnostic points at the malformed range and may carry fix-its or related ranges.
-  > - The later declaration participates in lookup when its own semantics are valid.
+    > Observables:
+    >
+    > - The primary diagnostic points at the malformed range and may carry fix-its or related ranges.
+    > - The later declaration participates in lookup when its own semantics are valid.
 - **AND** finalization marks the overall declaration result as containing errors
-  > Verification: Inspection remains available for tooling and additional diagnostics.
+    > Verification: Inspection remains available for tooling and additional diagnostics.
 - **BUT** invalid declarations cannot become canonical runtime candidates or satisfy otherwise unresolved type references
-  > Boundaries: Recovery improves analysis continuity; it does not invent successful semantics.
+    > Boundaries: Recovery improves analysis continuity; it does not invent successful semantics.
 
 ### Requirement: Native callable type declarations
-The Parser and Sema SHALL represent delegate and event as explicit callable-type declarations with single/multicast classification and structured signatures.
+
+The Parser and Sema SHALL represent the six UE `DECLARE_*` families as explicit callable-type declarations with ordinary-versus-dynamic flavor, single-versus-multicast classification, and structured signatures. The Parser and Sema SHALL reject `delegate` and `event` as callable introducers.
+
+    Supported families, each with no suffix through `NineParams` (60 spellings): `DECLARE_DELEGATE`, `DECLARE_DELEGATE_RetVal`, `DECLARE_MULTICAST_DELEGATE`, `DECLARE_DYNAMIC_DELEGATE`, `DECLARE_DYNAMIC_DELEGATE_RetVal`, `DECLARE_DYNAMIC_MULTICAST_DELEGATE`. Ordinary forms take unnamed parameter types. Dynamic forms take type/name pairs. Multicast forms require void returns. One declaration-form table and one 60-row expectation matrix implement the surface; the frontend SHALL NOT grow a parser per spelling.
 
 #### Scenario: Resolve a forward-referenced signature
-- **WHEN** a delegate/event signature refers to a type collected later in the same source set
+
+- **WHEN** a `DECLARE_*` signature refers to a type collected later in the same source set
+
+    > Inputs: `DECLARE_DELEGATE_RetVal_OneParam(int, FMake, Payload);` while `class Payload {}` is declared later in the same compilation.
+
 - **THEN** declaration collection retains the unresolved type location and declaration resolution supplies the canonical type and dependency
+
+    > Observables: resolved signature type, nominal delegate name `FMake`.
+
 - **BUT** the frontend does not manufacture an AS wrapper struct or infer the signature from generated Execute/Broadcast methods
+
+    > Boundaries: preprocessor `ProcessDelegates` wrapper generation is not a valid implementation of this requirement.
+
+#### Scenario: Reject removed delegate and event keywords
+
+- **WHEN** active source declares `delegate int FOnDone();` or `event void FOnChanged();`
+
+    > Inputs: the former AngelScript callable introducers.
+
+- **THEN** Parser reports `removed-delegate-event-keyword` on the introducer range and can continue with the following declaration
+
+    > Observables: diagnostic id, source range, recovery to the next declaration.
+
+- **BUT** no `asCCallableTypeDecl` is published for that name
+
+    > Boundaries: this is a transitional reject, not a preprocessor rewrite into `_FScriptDelegate`, and not a durable keyword product. Token deletion is a later Change.
+
+#### Scenario: Admit a DECLARE_DELEGATE_OneParam form
+
+- **WHEN** active source contains `DECLARE_DELEGATE_OneParam(FOnDone, int);`
+
+    > Inputs: ordinary void single-cast, one unnamed parameter type `int`, name `FOnDone`.
+
+- **THEN** Sema publishes a callable type named `FOnDone` with ordinary flavor, single-cast classification, void return, and one `int` parameter
+
+    > Observables: name, flavor, multicast flag, parameter count and types.
+
+- **AND** an equivalent later `DECLARE_DELEGATE_OneParam(FOnDone, int);` in the same compilation is the same nominal identity
+
+    > Verification: NativeEngine Sema `DelegateDeclarations`.
+
+#### Scenario: Admit ordinary versus dynamic flavor
+
+- **WHEN** source declares `DECLARE_DELEGATE_OneParam(FOnDone, int);` and `DECLARE_DYNAMIC_DELEGATE_OneParam(FDynOne, int, Value);`
+
+    > Inputs: one ordinary unnamed-type form and one dynamic type/name pair.
+
+- **THEN** Sema publishes `FOnDone` with ordinary flavor and `FDynOne` with dynamic flavor
+
+    > Observables: `asECallableFlavor` on `asCCallableTypeDecl`. Dynamic form retains parameter name `Value`. Ordinary form has no authored parameter name.
+
+    > Verification: NativeEngine Sema `DelegateDeclarations`.
+
+- **BUT** flavor does not by itself create a `UDelegateFunction`
+
+    > Boundaries: reflection materialization belongs to the bindings capability.
+
+#### Scenario: Diagnose an unsupported UE family
+
+- **WHEN** active source spells `DECLARE_EVENT`, `DECLARE_DERIVED_EVENT`, `DECLARE_TS_MULTICAST_DELEGATE`, or `DECLARE_DYNAMIC_MULTICAST_SPARSE_DELEGATE` with a legal arity suffix
+
+    > Inputs: the 31 deferred spellings inventoried from UE 5.8 `DelegateCombinations.h`, `Delegate.h`, and `SparseDelegate.h`.
+
+- **THEN** Parser reports `unsupported-delegate-declaration-form` and recovers
+
+    > Observables: diagnostic id, original spelling range.
+
+- **BUT** the form is not silently treated as `DECLARE_MULTICAST_DELEGATE` or a dynamic multicast
+
+    > Boundaries: owner-only Event publication, TS threading, sparse storage, and derived-event bases are out of scope.
 
 ### Requirement: Removed asset and import syntax fails explicitly
 The replacement frontend SHALL reject the legacy asset declaration and import syntax with source diagnostics and controlled recovery.
@@ -133,7 +203,7 @@ The replacement frontend SHALL reject the legacy asset declaration and import sy
 #### Scenario: Use ordinary asset identifiers or inactive old syntax
 - **WHEN** asset/of occurs as an ordinary identifier, in a string/comment, or in a skipped conditional branch
 - **THEN** the removed-declaration diagnostic is not emitted for that occurrence
-  > Boundaries: Removal does not globally reserve asset/of or remove unrelated UE asset APIs.
+    > Boundaries: Removal does not globally reserve asset/of or remove unrelated UE asset APIs.
 
 ### Requirement: Declaration membership is supplied by the compilation request
 

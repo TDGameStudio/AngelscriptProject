@@ -1,0 +1,9 @@
+api_version: openspec.dev/v1
+kind: change
+metadata:
+  uid: change_d651dcd0-4efe-4a59-9932-86f93d740e51
+  id: angelscript/feature-pending-math-function-merge
+  title: Complete Pending/Math Function program merge
+workflow: angelscript
+created_at: 2026-09-17T09:03:44Z
+goal: Admit the 30 leftover Pending/Math Function parameter and return programs into the existing Unreal type pockets.

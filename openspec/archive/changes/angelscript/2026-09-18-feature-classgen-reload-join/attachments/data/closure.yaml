@@ -1,0 +1,2 @@
+kind: completed
+reason: Per-file asCDefinitions Register is proven. CompileModules FullReload and SoftReloadOnly skip Stage1-4, rematerialize ClassGen UserData, and keep the last generation on failure. Knowledge stays change-local.

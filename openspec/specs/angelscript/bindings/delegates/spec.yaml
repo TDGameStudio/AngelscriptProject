@@ -1,0 +1,7 @@
+api_version: openspec.dev/v1
+kind: spec
+metadata:
+  uid: spec_c4242d8e-cdf7-4e18-b979-cf71d6eddabb
+  id: angelscript/bindings/delegates
+  title: Delegate Bindings
+  description: Materialize dynamic DECLARE_* forms as Unreal reflection objects and adapt registered native TDelegate values.

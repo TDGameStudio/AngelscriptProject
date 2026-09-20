@@ -1,0 +1,38 @@
+{
+  "schema": 3,
+  "changeId": "angelscript/feature-delegates-uproperty-execute",
+  "origin": "Draft",
+  "draftId": "angelscript/delegates-full-coverage",
+  "scope": "coverage-scope",
+  "reason": null,
+  "approvalRound": "",
+  "expectedExports": [
+    {
+      "Source": "design.md",
+      "Target": "attachments/drafts/design.md",
+      "Reason": "已选范围与词汇"
+    },
+    {
+      "Source": "handoff.md",
+      "Target": "attachments/drafts/handoff.md",
+      "Reason": "范围与已接受交接"
+    }
+  ],
+  "gate": {
+    "schema": "harness-handoff-v1",
+    "handoff_id": "handoff-8ecfec44c2224c89",
+    "operation": "create",
+    "target_change": "angelscript/feature-delegates-uproperty-execute",
+    "revision": "decf819be11b0551135f3fa26df0b857b19409a5f1c13531c705eff908dc2111",
+    "convergence_source": "user:继续",
+    "decision_source": "AskQuestion:Gate=A",
+    "decision": "create",
+    "created_at": "2026-09-19T02:55:19.364402+08:00",
+    "draft_id": "angelscript/delegates-full-coverage",
+    "scope": "coverage-scope",
+    "session_id": "87924172-1bec-426d-a73d-2eeff6ae7c8c",
+    "workspace_id": "git_3b46972bbc7ef05a4244fd2890d18183",
+    "post_talk_id": "grill-20260918-185519-handoff-8ecfec44c2224c89"
+  },
+  "createdAt": "2026-09-18T18:55:19.3786311Z"
+}

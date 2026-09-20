@@ -28,7 +28,7 @@ None. This Change removes a collector; it does not add a capability.
 
 ## Impact
 
-Product implementation belongs in `Plugins/Angelscript`: maintained ThirdParty SDK, Runtime Engine setup, dump/registration inventories, NewVersion NativeEngine VM tests, and Standalone architecture inventory. Parent-repository changes are this OpenSpec record and later spec sync. `Source/AngelscriptProject` stays untouched.
+Product implementation belongs in `Plugins/Angelscript`: maintained runtime-owned angelscript SDK, Runtime Engine setup, dump/registration inventories, NewVersion NativeEngine VM tests, and Standalone architecture inventory. Parent-repository changes are this OpenSpec record and later spec sync. `Source/AngelscriptProject` stays untouched.
 
 Active Changes that still assume a native collector must replan after this record is accepted; this Change does not edit their files:
 

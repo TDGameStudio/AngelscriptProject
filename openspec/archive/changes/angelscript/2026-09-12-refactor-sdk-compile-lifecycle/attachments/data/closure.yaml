@@ -1,0 +1,2 @@
+kind: completed
+reason: Engine-free compile now owns TypeInfo on asCModuleDefinitionSet, emits Function-hung stable bytecode, and batch-registers through Install+Link; asCMetadataImage is gone; 1.1–6.2 GREEN; durable deltas synced.

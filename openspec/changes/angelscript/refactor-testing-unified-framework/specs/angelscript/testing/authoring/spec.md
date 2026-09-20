@@ -39,7 +39,8 @@ exact-text alternative without changing the legacy string-returning macro API.
 #### Scenario: Text layout is the test input
 - **WHEN** a test uses the exact-text entry
 - **THEN** its supplied literal value is retained without trim, dedent or newline normalization
-  > Boundaries: Exact physical bytes are supplied through the length-delimited byte entry.
+
+    > Boundaries: Exact physical bytes are supplied through the length-delimited byte entry.
 
 #### Scenario: A source macro is evaluated
 - **WHEN** the macro creates its source value

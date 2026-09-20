@@ -1,0 +1,14 @@
+api_version: openspec.dev/v1
+kind: change
+metadata:
+  uid: change_d57cff03-a4be-4851-bf6f-9757281708ac
+  id: angelscript/feature-host-api-fixtures
+  title: Admit host API fixtures from Bindings leftovers and Pending containers
+workflow: angelscript
+created_at: 2026-09-17T08:22:10Z
+goal: Rewrite the 580 Bindings leftovers plus Pending/Containers into admitted Containers/ and Unreal/<Type> pockets under the current @begin contract without treating admission as execution.
+archived_at: 2026-09-17T08:51:04Z
+archive_schema: closure-v1
+closure:
+  kind: completed
+  reason: All 5 Task DAG nodes passed their proving commands. Containers and remaining Bindings leftovers are admitted under Containers/ and Unreal/<Type>, with Fail siblings and Pending/Math merge. Durable delta is synchronized into current spec angelscript/testing/host-api-fixtures. Knowledge candidates remain change-local.

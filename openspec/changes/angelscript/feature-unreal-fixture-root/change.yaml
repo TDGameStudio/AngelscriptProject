@@ -1,0 +1,9 @@
+api_version: openspec.dev/v1
+kind: change
+metadata:
+  uid: change_5bf6ee12-863c-4745-913a-5a6d2e7d0f40
+  id: angelscript/feature-unreal-fixture-root
+  title: Admit an Unreal author root for UE fixtures
+workflow: angelscript
+created_at: 2026-09-17T08:17:25Z
+goal: Create AngelscriptTestCode/Unreal and rewrite the 124 Language UClass files plus Pending/World into theme pockets, leaving the 580 Bindings leftovers out.

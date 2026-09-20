@@ -3,7 +3,9 @@
 ## Purpose
 
 Define one reusable source interface for authored, inline and generated AS test
-inputs, with explicit identities and a plugin-consumable embedded release.
+inputs, with explicit identities. Checked-in AngelScript originals use structured
+mirrored registrations; this Change must not emit a second shard or aggregate
+carrier for that corpus.
 
 ## ADDED Requirements
 
@@ -17,14 +19,16 @@ source registry.
 - **GIVEN** an admitted source with an explicit SourceId and VersionTag
 - **WHEN** multiple test consumers resolve that reference
 - **THEN** each receives the same immutable payload and content identity
-  > Observables: The payload retains its logical compiler path and authoring origin.
+
+    > Observables: The payload retains its logical compiler path and authoring origin.
 - **AND** lookup requires neither a case catalog row nor an active AS engine
 
 #### Scenario: A reference does not resolve
 - **WHEN** a consumer requests an unknown SourceId or VersionTag
 - **THEN** lookup returns a structured source error
 - **BUT** an empty successful source is not substituted for the missing reference
-  > Boundaries: A deliberately empty payload remains a valid, distinct test input.
+
+    > Boundaries: A deliberately empty payload remains a valid, distinct test input.
 
 ### Requirement: Source identity is separate from location and content
 
@@ -67,28 +71,34 @@ and supports exact byte inputs independently of normalized text authoring.
 
 ### Requirement: Embedded source delivery is deterministic and self-contained
 
-The system SHALL derive the plugin's embedded source release from selected
-authoring inputs without requiring those inputs at test runtime.
+The system SHALL make admitted TestCode originals available to plugin tests
+without requiring parent authoring inputs at test runtime, using the structured
+mirrored registrations owned by the checked-in TestCode delivery Change.
 
-#### Scenario: The plugin consumes a generated release independently
-- **GIVEN** a complete embedded release in the plugin
+    This Change MUST NOT emit byte-array shards, per-byte origin arrays,
+    parent-to-child generated diffs, or a generated aggregate as a second
+    carrier for `AngelscriptTestCode` or `TestCode/Generated`.
+
+#### Scenario: The plugin consumes structured registrations independently
+- **GIVEN** checked-in structured TestCode registrations in the plugin
 - **WHEN** the plugin's replacement tests build and resolve admitted sources without the parent authoring directory
 - **THEN** they obtain the declared source bytes and metadata
-- **AND** source consumption requires neither Python nor a filesystem search for TestSource
+- **AND** source consumption requires neither Python nor a filesystem search for TestSource or `AngelscriptTestCode`
 
-#### Scenario: The same authoring selection is exported twice
-- **WHEN** the selected source, metadata, schema and generator identity are unchanged
-- **THEN** the generated files and release manifest are byte-identical
-  > Boundaries: Machine paths, timestamps and parent commit IDs are not generation inputs.
+#### Scenario: A competing shard or aggregate carrier is requested
+- **WHEN** a catalog or generation tool is asked to emit `NewVersion/Generated/TestCode` shards or an aggregate registrar for the same corpus
+- **THEN** it refuses and leaves existing structured registrations unchanged
 
-#### Scenario: Generation fails partway
-- **WHEN** validation or generation fails before a complete staged release is accepted
-- **THEN** the existing release remains unchanged
+    > Boundaries: Machine paths, timestamps and parent commit IDs are not generation inputs.
 
-#### Scenario: An embedded release is stale
-- **WHEN** regeneration differs from the plugin's embedded files or manifest
-- **THEN** the consistency check fails with the differing logical entries
-- **BUT** it does not silently rewrite the release during a build
+#### Scenario: Catalog validation fails
+- **WHEN** case/row catalog validation fails before admission is accepted
+- **THEN** existing structured TestCode registrations remain unchanged
+
+#### Scenario: Structured registrations drift from authored fixtures
+- **WHEN** the structured-registration `check` differs from authored `.as` files
+- **THEN** that Change's consistency check fails with the differing logical entries
+- **BUT** this Change does not silently rewrite `TestCode/Generated` during a build
 
 ### Requirement: Admission and source inventory remain distinct
 

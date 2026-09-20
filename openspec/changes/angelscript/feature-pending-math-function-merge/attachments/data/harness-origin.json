@@ -1,0 +1,11 @@
+{
+  "schema": 2,
+  "changeId": "angelscript/feature-pending-math-function-merge",
+  "origin": "Direct",
+  "draftId": null,
+  "scope": null,
+  "reason": "Archived host-api-fixtures already settled Unreal/<Type> as the Pending/Math destination and merged 81 of 111 files. Completing the remaining 30 Function* programs is a mechanical gap close, not a new root or destination decision.",
+  "approvalRound": null,
+  "expectedExports": null,
+  "createdAt": "2026-09-17T09:03:44.2590020Z"
+}

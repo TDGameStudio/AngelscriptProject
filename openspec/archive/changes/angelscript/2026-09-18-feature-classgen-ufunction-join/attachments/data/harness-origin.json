@@ -1,0 +1,57 @@
+{
+  "schema": 2,
+  "changeId": "angelscript/feature-classgen-ufunction-join",
+  "origin": "Draft",
+  "draftId": "angelscript/compiler-execute-join",
+  "scope": "classgen-ufunction-join",
+  "reason": null,
+  "approvalRound": "R5",
+  "expectedExports": [
+    {
+      "Source": "design.md",
+      "Target": "attachments/drafts/design.md",
+      "Reason": "已批准的范围设计"
+    },
+    {
+      "Source": "handoff.md",
+      "Target": "attachments/drafts/handoff.md",
+      "Reason": "已批准的 handoff"
+    },
+    {
+      "Source": "glossary.md",
+      "Target": "attachments/drafts/glossary.md",
+      "Reason": "已确认的公开名"
+    },
+    {
+      "Source": "../../findings/ufunction-join.md",
+      "Target": "attachments/drafts/findings/ufunction-join.md",
+      "Reason": "Analyze 读宿主 Methods"
+    },
+    {
+      "Source": "../../log.md#r2",
+      "Target": "attachments/talks/talk-20260918-140500-ufunction-layer.md",
+      "Reason": "Q1=U"
+    },
+    {
+      "Source": "../../log.md#r3",
+      "Target": "attachments/talks/talk-20260918-140600-descriptor-and-proof.md",
+      "Reason": "Q2=P Q3=E"
+    },
+    {
+      "Source": "../../log.md#r4",
+      "Target": "attachments/talks/talk-20260918-140700-source-and-names.md",
+      "Reason": "Q4=A 与命名"
+    },
+    {
+      "Source": "../../log.md#r5",
+      "Target": "attachments/talks/talk-20260918-140800-approval.md",
+      "Reason": "整包批准"
+    },
+    {
+      "Source": "../../findings/ufunction-join.md",
+      "Target": "attachments/knowledges/classgen-reads-host-methods.md",
+      "Reason": "可复用：ClassGen 不读 Builder 投影"
+    }
+  ],
+  "createdAt": "2026-09-18T06:24:52.4224779Z"
+}

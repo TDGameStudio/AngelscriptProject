@@ -1,6 +1,6 @@
 ## Purpose
 
-Define complete maintained AngelScript SDK interpreter execution against explicit Engine-owned runtime services without requiring source compilation or dormant Unreal integration.
+Define complete maintained AngelScript SDK interpreter execution against receiving-Engine admission and Engine-local mutable state, including shared HostProcess callables whose GetEngine remains null.
 
 ## Requirements
 
@@ -10,14 +10,14 @@ The SDK SHALL execute validated bytecode through the actual maintained interpret
 
 #### Scenario: Execute hand-authored primitive and control-flow code
 
-- **WHEN** a caller prepares a linked function with typed arguments and executes it
+- **WHEN** a caller prepares a registered function with typed arguments and executes it
 - **THEN** the interpreter provides the maintained primitive widths, arithmetic/conversion semantics, branching, loops, script calls, recursion and return values
 - **AND** invalid arithmetic, null access or stack limits report the specified runtime failure rather than host corruption
 - **BUT** successful bytecode generation or type lookup alone is not execution success
 
 #### Scenario: Keep UE services dormant during SDK execution
 
-- **WHEN** an explicitly owned SDK Engine executes a linked image in replacement tests
+- **WHEN** an explicitly owned SDK Engine executes a registered function in replacement tests
 - **THEN** it requires no UClass/UObject registry, World, legacy engine pool, source compiler, Blueprint policy, DebugServer or JIT startup
 - **AND** the project subsystem continues to publish no ambient engine
 
@@ -96,7 +96,7 @@ The SDK SHALL support suspension, resumption, abort, reuse, nesting, exceptions 
 
 #### Scenario: Suspend and resume a linked call
 
-- **WHEN** execution suspends and later resumes without changing its owning snapshot
+- **WHEN** execution suspends and later resumes without changing its function's runtime bytecode
 - **THEN** its arguments, locals, object roots and next instruction remain valid and final results match uninterrupted execution
 - **BUT** suspension is not normal completion and abort never resumes the abandoned body
 
@@ -114,7 +114,7 @@ The SDK SHALL support suspension, resumption, abort, reuse, nesting, exceptions 
 
     | Operation after the shutdown request | Observable behavior |
     |---|---|
-    | New public Prepare, Execute, image link, definition registration or native/global binding | Rejected without replacing retained cleanup bindings |
+    | New public Prepare, Execute, definition registration or native/global binding | Rejected without replacing retained cleanup bindings |
     | An already executing call | Keeps the code, IDs and native contracts required for its continuation |
     | Destruction of an already owned object | Can invoke script or native destructors and release temporary objects through owned cleanup services |
 
@@ -126,16 +126,16 @@ The SDK SHALL support suspension, resumption, abort, reuse, nesting, exceptions 
 
 #### Scenario: Release the last runtime object after its host owners
 
-- **GIVEN** an SDK object whose producer, caller-held executable snapshot and host Engine owners have been released
+- **GIVEN** an SDK object whose producer, caller-held function runtime bytecode and host Engine owners have been released
 - **WHEN** its last external runtime reference is released
 - **THEN** its native or script destructor completes exactly once with its required type, code and native bindings still valid
 
-    > A script destructor may call a helper from a separately linked executable image. Ownership covers the complete cleanup dependency path, not only the destructor declaration.
+    > A script destructor may call a helper from a separately registered function. Ownership covers the complete cleanup dependency path, not only the destructor declaration.
 
 - **AND** object, collector and Engine ownership is released after cleanup without a permanent reference cycle
 - **BUT** internal cleanup authority does not reopen public execution or reattach retired definitions
 
-    > A separately retained executable snapshot may remain readable after the Engine is destroyed; releasing that snapshot cannot call its former Engine.
+    Releasing a function after Engine destruction cannot call its former Engine.
 
 #### Scenario: Handle maintained marker and observer instructions
 
@@ -147,41 +147,83 @@ The SDK SHALL support suspension, resumption, abort, reuse, nesting, exceptions 
 
 ### Requirement: Shared publications never determine execution ownership
 
-The SDK SHALL obtain runtime ownership from the executing Engine's materialized TypeInfo, Context or object header, and SHALL retain mutable native, type-user-data and object-lifetime state per Engine.
+The SDK SHALL obtain execution ownership from the receiving Context or runtime object ownership and retain mutable native, adapter, auxiliary and lifetime state per Engine, even when HostProcess definitions are shared.
 
 #### Scenario: Execute one external function with different auxiliary state
 
-- **GIVEN** A and B materialized the same Pair publication, with native auxiliary results 42 and 99 respectively
-- **WHEN** each Engine executes Sum
-- **THEN** A returns 42 and B returns 99 without changing BindInfo
-- **AND** replacing or releasing A's binding does not change B's native state
+- **GIVEN** A and B inject the same host function and install local native auxiliary results 42 and 99
+- **WHEN** each Engine executes that function
+- **THEN** A returns 42 and B returns 99 without modifying shared definitions
+- **AND** replacing or releasing A's binding does not change B's state or prematurely release an active A generation
 
 #### Scenario: Allocate and collect objects using published type metadata
 
-- **GIVEN** A and B materialized the same VM-managed object publication
-- **WHEN** their contexts allocate objects and their collectors later release unreachable objects
-- **THEN** each object retains its allocating Engine and follows that Engine's cleanup bindings
-- **BUT** a numeric publication ID does not transfer an object or its execution authority to another Engine
+- **GIVEN** A and B admit the same host type metadata for a supported VM-managed object
+- **WHEN** their Contexts allocate objects and their maintained lifetime mechanism releases them
+- **THEN** every object retains its allocating owner and follows that owner's cleanup bindings
+- **BUT** the common TypeId or TypeInfo pointer cannot transfer a private object's execution ownership
 
 #### Scenario: Keep mutable type sidecars isolated
 
-- **WHEN** A changes its type user data or template operations state for a materialized publication
-- **THEN** B's corresponding state and the BindInfo record remain unchanged
-- **BUT** writing Engine-owned state into BindInfo or into a discarded Image is rejected
+- **WHEN** A changes its adapter, type-sidecar or private template-operation state
+- **THEN** B and the shared host graph remain unchanged
+- **BUT** an Engine-owned mutable sidecar cannot be written into shared TypeInfo userData
 
 #### Scenario: Retire one consumer of a shared publication
 
-- **GIVEN** A and B have independent live calls or objects using independently materialized TypeInfo
-- **WHEN** A requests shutdown, including from its native callback
-- **THEN** A completes its admitted cleanup while B continues execution
-- **AND** BindInfo remains until the host drops it
+- **GIVEN** A and B use one host graph with active call/resource leases
+- **WHEN** A requests shutdown, including from a native callback
+- **THEN** A completes admitted cleanup while B continues executing against the unchanged shared graph
+- **AND** a retained function/native lease keeps its required graph valid until release
 
 ### Requirement: Context admission validates the receiving Engine's definition set
 
-The SDK SHALL admit a callable only when its TypeInfo and required executable/native binding belong to the receiving Engine, without requiring Image or TypeInfo to return a BoundEngine from a shared object.
+The SDK SHALL admit HostProcess functions only when the Context's Engine has injected the exact callable and dependencies and resolves a valid retained native interface. ScriptEngine and LiveRegister callables SHALL require exact receiving-owner admission.
 
 #### Scenario: Prepare an admitted external callable
 
-- **WHEN** a Context prepares a callable TypeInfo owned by its own Engine
+- **GIVEN** A and B injected host Add(int,int), while C did not
+- **WHEN** their Contexts prepare the same function pointer
+- **THEN** A and B can execute Add(20,22) as 42
+- **BUT** C returns asINVALID_ARG without executing native code
+
+    Null GetEngine on the host function is expected, not a reason to skip directory membership, retirement or target validation.
+
+#### Scenario: Reject a foreign private function
+
+- **WHEN** A prepares B's ScriptEngine or LiveRegister function
+- **THEN** admission fails even if names, compatible fingerprints or inspected publication facts match
+
+### Requirement: Shared native interfaces retain graph and execution leases
+
+The SDK SHALL preserve Engine-local native publication precedence and otherwise obtain an admitted HostProcess function's immutable native interface while retaining its definition graph for the complete call.
+
+#### Scenario: Reenter another Engine and resume
+
+- **GIVEN** A's native callback enters B using different auxiliary data
+- **WHEN** B returns and A resumes
+- **THEN** A's original executing owner and captured auxiliary generation are restored
+- **AND** releasing the host collection during the call cannot invalidate either active interface
+
+#### Scenario: Construct a callable wrapper from a shared host method
+
+- **WHEN** an admitted host method is used through a supported delegate or object-call wrapper
+- **THEN** reference acquisition and cleanup use the executing or explicit receiving owner
+- **BUT** the wrapper cannot dereference the host function's null GetEngine as an execution owner
+
+### Requirement: Prepare reads Function runtime bytecode
+
+The SDK SHALL admit a script callable only when that `asCScriptFunction` already holds Registration-written runtime bytecode on the receiving Engine.
+
+#### Scenario: Prepare after Registration
+
+- **WHEN** a Context prepares a script function whose TypeInfo is owned by its own Engine and whose runtime bytecode was written by Registration.Link
 - **THEN** Prepare succeeds
-- **BUT** a TypeInfo pointer from another Engine is rejected even when the publication ID matches
+- **BUT** a TypeInfo pointer from another Engine is rejected even when names match
+
+#### Scenario: Prepare before runtime bytecode exists
+
+- **WHEN** a Context prepares a script function that has stable bytecode but no runtime bytecode
+- **THEN** Prepare returns `asNO_FUNCTION`
+
+    First Prepare does not Emit and does not Link.

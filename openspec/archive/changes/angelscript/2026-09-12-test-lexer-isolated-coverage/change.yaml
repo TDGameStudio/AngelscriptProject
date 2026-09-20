@@ -1,0 +1,17 @@
+api_version: openspec.dev/v1
+kind: change
+metadata:
+  uid: change_5714dcee-545e-45c3-ad90-dfbeb0669bce
+  id: angelscript/test-lexer-isolated-coverage
+  title: Isolate NativeEngine lexer tests and kind coverage
+workflow: angelscript
+created_at: 2026-09-12T03:43:19Z
+goal: Move reconstructed asCTokenizer tests out of NewVersion, add LexerTest helpers and spelled-kind coverage, and prove them with the NativeEngine.Lexer prefix.
+affected_areas:
+- angelscript/testing
+- angelscript/language/frontend/lexing
+archived_at: 2026-09-12T06:40:38Z
+archive_schema: closure-v1
+closure:
+  kind: completed
+  reason: All four tasks are complete; the final-content editor build and focused 31-test Lexer run pass; strict Change, current-spec, and repository validation pass; durable deltas are synchronized; and verified reusable lexer-test guidance is promoted to capability knowledge.

@@ -1,0 +1,7 @@
+api_version: openspec.dev/v1
+kind: spec
+metadata:
+  uid: spec_67d7a284-098a-464e-ba4a-ab0046111b0e
+  id: angelscript/runtime/class-generation
+  title: Class Generation
+  description: Host ClassGen materializes UCLASS/USTRUCT/UENUM and a callable UFUNCTION through ProcessEvent after per-file Builder+Register, including FullReload and SoftReloadOnly.

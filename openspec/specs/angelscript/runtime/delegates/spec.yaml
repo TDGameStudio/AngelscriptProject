@@ -1,0 +1,7 @@
+api_version: openspec.dev/v1
+kind: spec
+metadata:
+  uid: spec_930b70e5-e382-4f5a-a808-3075cb83d5e7
+  id: angelscript/runtime/delegates
+  title: Delegate Runtime
+  description: Execute UE DECLARE_* callables on the replacement host without restoring the dormant legacy wrapper runtime.

@@ -1,0 +1,14 @@
+api_version: openspec.dev/v1
+kind: change
+metadata:
+  uid: change_0451a9d7-d478-4eed-903c-998274bfa6c5
+  id: angelscript/feature-delegates-uproperty-execute
+  title: Complete UPROPERTY delegate execute on CallPtr
+workflow: angelscript
+created_at: 2026-09-18T18:55:19Z
+goal: Close IsBound, UFUNCTION writeback, convert-and-fire, SoftReload copy, and BindDynamic(this) on NativeEngine DelegateProperty without overlaying native storage.
+archived_at: 2026-09-18T19:53:12Z
+archive_schema: closure-v1
+closure:
+  kind: completed
+  reason: CallPtr UPROPERTY execute is green on NativeEngine DelegateProperty. Shared proof c01796b177fd4b2fbb6b473d8daaed42 is 17/17, including IsBound, AddDynamic(this), quiet ExecuteIfBound, ReturnParm/FName writeback, ProcessCallPtr, and SoftReload CallPtr copy. Overlay storage, Language execute, cook, and PIE stay out.

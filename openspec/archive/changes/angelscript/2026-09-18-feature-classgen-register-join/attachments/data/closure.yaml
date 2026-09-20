@@ -1,0 +1,2 @@
+kind: completed
+reason: CompileModules(Initial) Builder+Register skip is proven. ClassGen writes class/struct/enum UserData. FullReload keeps the dead Stage1 path. Knowledge stays change-local.

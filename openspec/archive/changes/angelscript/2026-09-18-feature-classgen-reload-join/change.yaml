@@ -1,0 +1,14 @@
+api_version: openspec.dev/v1
+kind: change
+metadata:
+  uid: change_fb116d08-8e5e-4e1a-b60f-df24ee965798
+  id: angelscript/feature-classgen-reload-join
+  title: Join hot reload to ClassGen through per-file definition sets
+workflow: angelscript
+created_at: 2026-09-18T05:09:15Z
+goal: Register one asCDefinitions per .as, then CompileModules FullReload and SoftReloadOnly retire those sets, Builder+Register, skip Stage1-4, and ClassGen updates UserData.
+archived_at: 2026-09-18T05:37:57Z
+archive_schema: closure-v1
+closure:
+  kind: completed
+  reason: Per-file asCDefinitions Register is proven. CompileModules FullReload and SoftReloadOnly skip Stage1-4, rematerialize ClassGen UserData, and keep the last generation on failure. Knowledge stays change-local.

@@ -1,0 +1,72 @@
+{
+  "schema": 2,
+  "changeId": "angelscript/feature-language-syntax-coverage",
+  "origin": "Draft",
+  "draftId": "angelscript/language-syntax-coverage",
+  "scope": "syntax-coverage",
+  "reason": null,
+  "approvalRound": "R8",
+  "expectedExports": [
+    {
+      "Source": "design.md",
+      "Target": "attachments/drafts/design.md",
+      "Reason": "Accepted scoped design"
+    },
+    {
+      "Source": "handoff.md",
+      "Target": "attachments/drafts/handoff.md",
+      "Reason": "Accepted handoff"
+    },
+    {
+      "Source": "glossary.md",
+      "Target": "attachments/drafts/glossary.md",
+      "Reason": "Settled Change ID"
+    },
+    {
+      "Source": "../../findings/current-layout.md",
+      "Target": "attachments/drafts/findings/current-layout.md",
+      "Reason": "Two layout contracts"
+    },
+    {
+      "Source": "../../findings/coverage-gaps.md",
+      "Target": "attachments/drafts/findings/coverage-gaps.md",
+      "Reason": "Thin pockets and dirty Pending"
+    },
+    {
+      "Source": "../../findings/per-syntax-grain.md",
+      "Target": "attachments/drafts/findings/per-syntax-grain.md",
+      "Reason": "Per-syntax directory rule"
+    },
+    {
+      "Source": "../../findings/real-scale.md",
+      "Target": "attachments/drafts/findings/real-scale.md",
+      "Reason": "Honest corpus size"
+    },
+    {
+      "Source": "../../findings/directory-options.md",
+      "Target": "attachments/drafts/findings/directory-options.md",
+      "Reason": "Why not merge-dir FileTag"
+    },
+    {
+      "Source": "../../log.md#r8",
+      "Target": "attachments/talks/talk-20260917-172000-syntax-coverage-one-change.md",
+      "Reason": "Full scale, one Change"
+    },
+    {
+      "Source": "../../findings/per-syntax-grain.md",
+      "Target": "attachments/knowledges/per-syntax-directory-grain.md",
+      "Reason": "Directory vs file depends on coverage"
+    },
+    {
+      "Source": "../../findings/real-scale.md",
+      "Target": "attachments/knowledges/language-corpus-is-thin.md",
+      "Reason": "Two-thirds of positives have ≤5 cases"
+    },
+    {
+      "Source": "../../findings/parallel-dag.md",
+      "Target": "attachments/drafts/findings/parallel-dag.md",
+      "Reason": "One Change; chapter tasks parallel; join on generate"
+    }
+  ],
+  "createdAt": "2026-09-17T09:24:49.7006330Z"
+}

@@ -1,0 +1,52 @@
+{
+  "schema": 2,
+  "changeId": "angelscript/feature-classgen-type-materialization",
+  "origin": "Draft",
+  "draftId": "angelscript/class-generation-handoff",
+  "scope": "classgen-handoff",
+  "reason": null,
+  "approvalRound": "R4",
+  "expectedExports": [
+    {
+      "Source": "design.md",
+      "Target": "attachments/drafts/design.md",
+      "Reason": "Accepted scoped design"
+    },
+    {
+      "Source": "handoff.md",
+      "Target": "attachments/drafts/handoff.md",
+      "Reason": "Accepted handoff"
+    },
+    {
+      "Source": "../../glossary.md",
+      "Target": "attachments/drafts/glossary.md",
+      "Reason": "Confirmed public names"
+    },
+    {
+      "Source": "../../findings/can-connect.md",
+      "Target": "attachments/drafts/findings/can-connect.md",
+      "Reason": "Gap evidence"
+    },
+    {
+      "Source": "../../findings/astype-uclass-link.md",
+      "Target": "attachments/drafts/findings/astype-uclass-link.md",
+      "Reason": "asType↔UClass attach evidence"
+    },
+    {
+      "Source": "../../log.md#r3",
+      "Target": "attachments/talks/talk-20260917-195700-scope.md",
+      "Reason": "Scope lock and delegate exclusion"
+    },
+    {
+      "Source": "../../log.md#r4",
+      "Target": "attachments/talks/talk-20260917-195800-names.md",
+      "Reason": "Change id and test identity"
+    },
+    {
+      "Source": "../../findings/astype-uclass-link.md",
+      "Target": "attachments/knowledges/astype-userdata-is-uclass.md",
+      "Reason": "Reusable: asType UserData is the UClass pointer"
+    }
+  ],
+  "createdAt": "2026-09-17T12:01:11.5763190Z"
+}

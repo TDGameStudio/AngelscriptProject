@@ -1,0 +1,23 @@
+api_version: openspec.dev/v1
+kind: change
+metadata:
+  uid: change_617c55b2-c13c-4c36-a159-a135ac907751
+  id: angelscript/refactor-bindings-process-host-typeinfo
+  title: Share process-owned host definitions and restore engine-local registration
+  description: 'Planning-only delivery approved in bindings-gap-audit Q65-Q68: shared HostProcess definitions, engine-local Register reconstruction, production collection/injection and configurable Blueprint writes.'
+workflow: angelscript
+created_at: 2026-09-16T02:45:48Z
+goal: Plan shared host TypeInfo and callable lifetime across Engines while preserving script ownership and restoring isolated live registration.
+affected_areas:
+- angelscript/language/types/definitions
+- angelscript/runtime/type-registry
+- angelscript/runtime/binding-engine
+- angelscript/runtime/vm
+- angelscript/bindings/runtime
+- angelscript/language/frontend/builder
+- angelscript/runtime/bytecode
+archived_at: 2026-09-16T06:19:31Z
+archive_schema: closure-v1
+closure:
+  kind: completed
+  reason: All 21 Task DAG nodes passed their proving commands. HostProcess collection, injection, live Register reconstruction, production entry and class-owned Blueprint writes are implemented. Durable deltas are synchronized into the seven affected current specs. Knowledge candidates are promoted as Change-local attachments. Frozen 6.1 snapshot 2b852fdd69e241fcb0291484937fded5 is complete across the eleven required prefixes.

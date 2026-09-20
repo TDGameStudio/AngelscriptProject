@@ -1,6 +1,6 @@
 ## Purpose
 
-Define independently executable AngelScript frontend stages whose results remain inspectable without a script engine or an active runtime backend.
+Define independently executable AngelScript frontend stages that create private ScriptEngine TypeInfo on asCDefinitions without an Engine, while frozen HostProcess graphs may be supplied as shared dependencies.
 
 ## Requirements
 
@@ -20,59 +20,81 @@ The Builder SHALL compile through explicit typed stage results without requiring
 
 #### Scenario: Compile without a host consumer
 
-- **WHEN** a caller supplies source, immutable language options, explicit type context and diagnostics without an Engine or UE reflection consumer
-- **THEN** syntax, semantic definitions and layout validation complete and create actual TypeInfo owned by `asCModuleDefinitionSet` with null Engine and TypeId -1
+- **WHEN** a caller supplies source, immutable options, explicit type context and diagnostics without an Engine or UE reflection consumer
+- **THEN** syntax, semantic definitions and layout create actual ScriptEngine TypeInfo on asCDefinitions with null Engine and TypeId -1
 
-    Script compile does not create Engine-owned runtime objects and does not assign process TypeIds. ClassGen UClass materialize remains a later host step.
+    Script compilation does not create runtime objects or assign its private process TypeIds. ClassGen UClass materialization remains a later host step.
 
-- **BUT** unavailable execution backends remain explicit unsupported operations, not hidden legacy fallbacks
+- **BUT** unavailable backends remain explicit unsupported operations rather than hidden legacy fallbacks
 
-    Stopping at `DefinitionsFrozen` does not require stable bytecode. Default `RunThrough` continues through `ByteCodeEmitted`.
+    Stopping at DefinitionsFrozen does not require stable bytecode. Default RunThrough continues through ByteCodeEmitted.
 
 ### Requirement: Maintained language semantics survive frontend replacement
 The replacement frontend SHALL preserve the maintained language's declaration, expression and statement semantics except explicitly removed syntax.
 
 #### Scenario: Analyze supported source through the replacement
+
 - **WHEN** supported source exercises type lookup, inheritance, overloads, expressions or control flow
 - **THEN** typed nodes and resolved semantic relationships express the language result
 - **AND** invalid input emits structured source diagnostics with controlled recovery rather than silently discarding tokens
-  > Verification: A migration matrix maps maintained syntax and old native SDK fixtures to positive, negative and boundary tests.
+
+    > Verification: A migration matrix maps maintained syntax and old native SDK fixtures to positive, negative and boundary tests.
 
 ### Requirement: Builder yields two takeable products
 
-The Builder SHALL expose `asCCompileOutput` and `asCModuleDefinitionSet` as parallel products after a successful run, and SHALL NOT place TypeInfo, functions, or bytecode inside `asCCompileOutput`.
+The Builder SHALL expose asCCompileOutput and private asCDefinitions as parallel products and SHALL NOT place TypeInfo, functions or bytecode inside asCCompileOutput.
 
 #### Scenario: Take the definition set off the Builder
 
-- **GIVEN** a snapshot Builder that successfully ran through at least `DefinitionsFrozen` on `class Unit { int32 Value; void Set(int32 V) { Value = V; } }`
-- **WHEN** the caller calls `TakeModuleDefinitionSet()`
-- **THEN** the returned UniquePtr uniquely owns the Unit TypeInfo and methods
+- **GIVEN** successful compilation through DefinitionsFrozen of a Unit class with an int32 Value field and Set(int32) method
+- **WHEN** the caller takes the Builder's definitions
+- **THEN** the returned UniquePtr owns Unit and its methods with null GetEngine and TypeId -1
 
-    `GetEngine()` is null. `GetTypeId()` is -1. A second Take returns null. The Builder no longer owns the graph.
+    A second take returns null; the Builder no longer owns that graph.
 
-- **AND** destroying that UniquePtr without Registration deletes those TypeInfo objects
-- **BUT** a failed RunThrough does not yield a usable Taken set
+- **AND** destroying that unregistered owner deletes its private objects
+- **BUT** failed compilation does not yield a usable taken graph
 
 #### Scenario: Compile a later unit against a Taken set
 
-- **GIVEN** a Taken `asCModuleDefinitionSet` from a successful compile of `class First { int32 Value; }`
-- **WHEN** a second snapshot Builder compiles `class Second { First@ Ref; }` with `Options.Dependencies` holding a non-owning pointer to that set
-- **THEN** Second resolves First without any Engine Registration
+- **GIVEN** frozen asCDefinitions containing First from an earlier compile
+- **WHEN** a second Builder compiles class Second with a First handle field using Options.Dependencies
+- **THEN** Second resolves First without Engine registration while owning only Second
+- **BUT** unready dependencies and cross-unit cycles are rejected
 
-    The first set remains immutable. The second set uniquely owns Second only.
-
-- **BUT** depending on a set that has not finished a successful RunThrough is rejected
-
-    Cross-unit cycles are rejected. Types that must see each other share one snapshot. Frozen-host native graphs use Frozen DefinitionSet pointers in `Options.Dependencies`. `asSBuilderOptions` has no Image host list.
+    Mutually dependent types share one snapshot. Frozen HostProcess definitions may also be dependencies; their shared ownership and preassigned IDs do not assign an Engine or runtime IDs to private script objects.
 
 #### Scenario: CompileOutput carries ClassGen descriptors without ScriptType
 
-- **WHEN** the caller `GetCompileOutput()` or `TakeCompileOutput()` after a successful compile of a class named `Widget`
-- **THEN** `asCDefinitionCompileOutput` contains `FAngelscriptModuleDesc` / `FAngelscriptClassDesc` whose class name is `Widget`
+- **WHEN** a caller reads or takes CompileOutput after compiling Widget
+- **THEN** asCDefinitionCompileOutput contains the Widget module/class descriptors with null ScriptType and ScriptFunction
+- **AND** each module descriptor's ScriptModule remains null
 
-    `FAngelscriptClassDesc::ScriptType` is null. `FAngelscriptFunctionDesc::ScriptFunction` is null. The bag does not own TypeInfo or bytecode.
+    CompileOutput does not construct `asCModule`. Register later fills ScriptModule.
 
-- **BUT** CompileOutput is not a substitute for `TakeModuleDefinitionSet`
+- **BUT** that descriptor output does not own TypeInfo/bytecode and cannot replace taking the private definitions
+
+#### Scenario: CompileOutput keeps Projected descriptors after definitions exist
+
+- **WHEN** a caller compiles a USTRUCT with a UPROPERTY through `DefinitionsFrozen` or the default `ByteCodeEmitted` stop
+
+    The source is `USTRUCT() struct FPoint { UPROPERTY() int X; };`.
+    DefinitionsBuilt has already created private TypeInfo on `asCDefinitions`.
+
+- **THEN** CompileOutput modules still come from `DescriptorConsumer.Project`
+
+    `FPoint.bIsStruct` is true and `Properties` contains one entry named `X`.
+    A TypeInfo name-only scan is not the CompileOutput authority.
+
+    > Verification: NativeEngine CompileLifecycle `ProjectedUStructSurvivesDefinitionsFrozen` and `ProjectedUStructSurvivesByteCodeEmitted`.
+
+- **AND** `ScriptType`, `ScriptFunction`, and `ScriptModule` remain null
+
+    CompileOutput still does not own TypeInfo, bytecode, or `asCModule`.
+
+- **BUT** taking private definitions remains a separate product
+
+    `TakeDefinitions()` still returns the unique TypeInfo graph.
 
 ### Requirement: Default RunThrough emits stable bytecode
 

@@ -1,0 +1,14 @@
+api_version: openspec.dev/v1
+kind: change
+metadata:
+  uid: change_2d5f86ef-5495-4047-8eed-86f8c3e93e6a
+  id: angelscript/feature-language-syntax-coverage
+  title: Reconstruct Language syntax fixtures by coverage
+workflow: angelscript
+created_at: 2026-09-17T09:24:49Z
+goal: Rewrite live Language syntax as per-theme directories or files with thickened hand-authored cases, retire second-wave flat FileTags, and keep chapter tasks parallel until one generate and corpus join.
+archived_at: 2026-09-17T10:05:03Z
+archive_schema: closure-v1
+closure:
+  kind: completed
+  reason: All 15 Task DAG nodes passed their proving commands. Language authors sit under chapter FileTags; retired flats are gone. Durable delta is synchronized into current spec angelscript/testing/language-fixtures. Knowledge candidates remain change-local.

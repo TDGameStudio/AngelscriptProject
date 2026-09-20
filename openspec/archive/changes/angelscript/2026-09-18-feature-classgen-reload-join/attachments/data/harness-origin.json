@@ -1,0 +1,52 @@
+{
+  "schema": 2,
+  "changeId": "angelscript/feature-classgen-reload-join",
+  "origin": "Draft",
+  "draftId": "angelscript/classgen-register-join",
+  "scope": "reload-classgen-join",
+  "reason": null,
+  "approvalRound": "R10",
+  "expectedExports": [
+    {
+      "Source": "design.md",
+      "Target": "attachments/drafts/design.md",
+      "Reason": "已批准的范围设计"
+    },
+    {
+      "Source": "handoff.md",
+      "Target": "attachments/drafts/handoff.md",
+      "Reason": "已批准的 handoff"
+    },
+    {
+      "Source": "glossary.md",
+      "Target": "attachments/drafts/glossary.md",
+      "Reason": "已确认的公开名"
+    },
+    {
+      "Source": "../../findings/reload-join.md",
+      "Target": "attachments/drafts/findings/reload-join.md",
+      "Reason": "换代冲突与候选"
+    },
+    {
+      "Source": "../../log.md#r8",
+      "Target": "attachments/talks/talk-20260918-123000-reload-width-and-replace.md",
+      "Reason": "W1=S 与 R1=P"
+    },
+    {
+      "Source": "../../log.md#r9",
+      "Target": "attachments/talks/talk-20260918-123100-packaging-and-names.md",
+      "Reason": "一个 Change 与命名"
+    },
+    {
+      "Source": "../../log.md#r10",
+      "Target": "attachments/talks/talk-20260918-123200-approval.md",
+      "Reason": "整包批准"
+    },
+    {
+      "Source": "../../findings/reload-join.md",
+      "Target": "attachments/knowledges/per-file-definition-sets-enable-reload-retire.md",
+      "Reason": "可复用：单 set 无法按文件退休"
+    }
+  ],
+  "createdAt": "2026-09-18T05:09:15.4320851Z"
+}

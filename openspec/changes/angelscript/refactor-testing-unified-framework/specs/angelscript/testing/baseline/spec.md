@@ -7,7 +7,8 @@
 #### Scenario: Data rows extend the replacement identity explicitly
 - **WHEN** a replacement data case exposes independently executable rows
 - **THEN** each row registers at `<PublicCasePath>.Rows.<RowId>` with PublicCasePath beneath `Angelscript.UnitTest`
-  > Example: `Angelscript.UnitTest.NativeEngine.Lexer.IntegerLiteral.Rows.HexBoundary`.
+
+    > Example: `Angelscript.UnitTest.NativeEngine.Lexer.IntegerLiteral.Rows.HexBoundary`.
 - **AND** existing ordinary CQTest public names remain unchanged
 - **BUT** the common catalog does not register a second execution copy of an ordinary CQTest method
 

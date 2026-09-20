@@ -33,9 +33,11 @@ workspace merely because the planning artifacts are complete.
   internal storage implementation.
 - Support external AS, local inline AS, generated source, and AS-free C++ data
   cases without requiring every test to have an AS file or JSON manifest.
-- Retain `TestSource` as the file-based authoring center. Use deterministic
-  tooling to produce a plugin-owned embedded C++ release. Runtime tests consume
-  that release without reading the parent project's authoring directory.
+- Retain `TestSource` as the file-based case/row authoring center. Checked-in
+  AngelScript TestCode originals are structured mirrored registrations owned by
+  `angelscript/refactor-test-code-structured-registration`. Runtime tests consume
+  that database and inline sources without reading the parent authoring directory
+  or a second shard/aggregate carrier.
 - Make `SourceId + VersionTag` the source reference. Retain root source plus
   comment-contained child snapshots; generate and verify parent-to-child diffs.
   Source ancestry and C++ reload execution order are separate contracts.
@@ -73,9 +75,10 @@ workspace merely because the planning artifacts are complete.
 ### New capabilities
 
 - `angelscript/testing/test-code`: source identities, input forms, local source
-  scope, the public TestCode entry point, and deterministic embedded delivery.
-- `angelscript/testing/source-history`: tagged trees, verified materialization,
-  source provenance, and the boundary with typed reload scenarios.
+  scope, and the public TestCode entry point. Checked-in original-file delivery
+  is owned by the structured-registration Change.
+- `angelscript/testing/source-history`: tagged trees and later reload-history
+  materialization. This is not the checked-in TestCode carrier.
 - `angelscript/testing/data-driven`: typed rows, discovery, fixture lifecycle,
   capability selection, reproducible generators, and evidence.
 - `angelscript/testing/authoring`: test structure, inline macro semantics,

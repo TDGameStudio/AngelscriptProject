@@ -1,0 +1,9 @@
+api_version: openspec.dev/v1
+kind: change
+metadata:
+  uid: change_611c943a-2651-4976-ae53-0e1edabeb68e
+  id: angelscript/refactor-builder-source-entry
+  title: Shared Source and Builder Compilation Entry
+  description: Stabilize shared UTF-8 source input, per-module declarations, callbacks and terminal result ownership without SDK file loading.
+workflow: angelscript
+created_at: 2026-09-12T20:13:59Z

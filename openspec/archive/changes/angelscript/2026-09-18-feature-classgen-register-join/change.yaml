@@ -1,0 +1,14 @@
+api_version: openspec.dev/v1
+kind: change
+metadata:
+  uid: change_0dd8f675-03e1-4b95-b425-ef6520644250
+  id: angelscript/feature-classgen-register-join
+  title: Join Register modules to ClassGen on Initial compile
+workflow: angelscript
+created_at: 2026-09-18T02:01:16Z
+goal: CompileModules(Initial) runs Builder+Register, skips dead Stage1-4, and ClassGen materializes UCLASS/USTRUCT/UENUM UserData from preprocessor descriptors.
+archived_at: 2026-09-18T02:50:10Z
+archive_schema: closure-v1
+closure:
+  kind: completed
+  reason: CompileModules(Initial) Builder+Register skip is proven. ClassGen writes class/struct/enum UserData. FullReload keeps the dead Stage1 path. Knowledge stays change-local.

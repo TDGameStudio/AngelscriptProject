@@ -1,0 +1,7 @@
+api_version: openspec.dev/v1
+kind: spec
+metadata:
+  uid: spec_c2d36509-3825-44ad-8426-7341260e0a60
+  id: angelscript/testing/unreal-fixtures
+  title: Unreal hand-authored fixtures
+  description: Durable contracts for admitted UE-feature author pockets under Unreal/.

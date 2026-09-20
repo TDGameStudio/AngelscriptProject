@@ -29,7 +29,7 @@ All paths in the following table are relative to `Plugins/Angelscript/Source/Ang
 | `Framework/Reporting/AngelscriptTestRunResult.h` and `.cpp` | Run identity, capability/status/evidence records and diagnostic captures |
 | `Framework/Reporting/AngelscriptTestReportWriter.h` and `.cpp` | Checked JSON and failure-artifact writing within the supplied managed run directory |
 | `Framework/Frontend/AngelscriptTestFrontendFixture.h` and `.cpp` | Current frontend source snapshot, file mapping, identifiers and typed diagnostic capture |
-| `Generated/TestCode/AngelscriptGeneratedTestCode.h` and aggregate/shard `.cpp` files | Generated source/history/case input tables and one explicitly referenced release entry |
+| `TestCode/Generated/*.generated.cpp` | Checked-in structured registrations owned by `angelscript/refactor-test-code-structured-registration`; this Change must not add a shard/aggregate sibling |
 
 Public author-facing types keep the global Unreal `FAngelscript...` spelling. Private implementation helpers use the named namespace
 `AngelscriptTest::Private`. These APIs initially belong to the `AngelscriptTest` module; public here means public to test authors, not a new runtime
@@ -287,10 +287,12 @@ The public facade absorbs source lookup/history/query/sample/export from the old
 helpers. The internal store is not returned to authors. It owns validated descriptor tables, source aliases, payload leases, history diff tables, and
 the release digest. It contains no UClass, UFunction, mutable engine, executable AS pointer, test result, or expected-value callback.
 
-The generated aggregate exports one immutable release table. Replacement module startup explicitly references it and builds/publishes a fully
-validated store. Publication swaps one immutable snapshot only after validation succeeds. Failure keeps the previous valid snapshot, records catalog
-errors, and does not present the failed release as active. Initial absence of a valid release is an empty unavailable source snapshot with
-diagnostics, not successful resolution.
+Central activation admits structured `FAngelscriptTestCodeRegistration` batches
+and publishes one immutable store. Publication swaps one immutable snapshot only
+after validation succeeds. Failure keeps the previous valid snapshot, records
+catalog errors, and does not present the failed batch as active. Initial absence
+of a valid release is an empty unavailable source snapshot with diagnostics, not
+successful resolution. This Change does not add a generated shard aggregate.
 
 `GetSnapshot` pins a release. Convenience `Resolve(Ref)` takes the currently published snapshot once; a fixture resolving multiple inputs uses the
 explicit snapshot overload. A later publication cannot change already pinned source or case data. Unknown IDs/tags and ambiguous legacy aliases return
@@ -972,8 +974,9 @@ mark the run successful. The writer does not update authored manifests, admissio
 
 The supported first-slice call sequence is:
 
-1. Replacement module references the generated aggregate and validates/publishes
-   source and case input snapshots; static family registrations contain no engine.
+1. Replacement module activates structured TestCode registrations and
+   validates/publishes source and case input snapshots; static family
+   registrations contain no engine and no generated shard aggregate.
 2. A family adapter invokes its typed provider with read-only Build context;
    decoder/provider errors become catalog diagnostics before normal row exposure.
 3. Automation selects a stable case/row token tied to the catalog digest.

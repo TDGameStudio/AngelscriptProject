@@ -28,12 +28,15 @@ Establish one supported authoring-to-execution path for replacement AngelScript 
 
 ## Architecture
 
-Authored `TestSource` content passes through a plugin-owned Python validator and emitter into generated C++ source/diff/descriptor shards consumed by `FAngelscriptTestCode`, the sole public AS test-source center backed internally by `FAngelscriptTestSourceStore`. Inline `AS_TEST_SOURCE` / exact-byte sources and embedded `SourceId + VersionTag` references resolve to the same owned test-source abstraction, which ordinary CQTest classes and typed data rows registered as independent Automation items consume through Harness `ue.test`. See `design.md` and `attachments/data/class-contracts.md`.
+Authored case/row catalog inputs and inline `AS_TEST_SOURCE` / exact-byte sources resolve through `FAngelscriptTestCode`, the sole public AS test-source center backed internally by `FAngelscriptTestSourceStore`. Checked-in AngelScript TestCode originals are one mirrored structured registration per `.as`, owned by `angelscript/refactor-test-code-structured-registration`; this Change consumes that database and does not emit source/diff/descriptor shards or a generated aggregate for that corpus. Ordinary CQTest classes and typed data rows consume the same owned source abstraction through Harness `ue.test`. See `design.md` and `attachments/data/class-contracts.md`.
 
 ## Global constraints
 
+- The installed skill name remains `angelscript-test-guide`, at `.agents/skills/angelscript-test/SKILL.md`. SDK compile/Builder and frontend directory migrations are completed archives. Parent `TestSource` has no surviving corpus in this workspace: create only the new bounded catalog/fixture inputs owned by these tasks; historical corpus counts in provenance do not prove current availability.
+- Do not own, mutate, or regenerate `AngelscriptTestCode/**` or `Plugins/Angelscript/Source/AngelscriptTest/TestCode/Generated/**`. Do not emit byte-array shards, per-byte origin arrays, parent-to-child generated diffs, or a generated aggregate as the checked-in TestCode carrier. That delivery, the v1 fixture protocol, and one-mirrored-file structured registrations belong to `angelscript/refactor-test-code-structured-registration`. Source-history/diff work remaining here is a later reload-history capability only.
+
 - The user authorized creation of this Change only. Do not execute these nodes in the planning delivery. All checkboxes remain unchecked, including the Skill cleanup. A derived `ready` value describes graph prerequisites, not permission to implement. This file is the sole future Task DAG.
-- Read `attachments/INDEX.md`, `design.md` and the linked class contracts before an owning node. Existing unrelated dirty files and the Builder Change are not owned by this work.
+- Read `attachments/INDEX.md`, `design.md` and the linked class contracts before an owning node. Existing unrelated dirty files and the current Builder implementation are not owned by this work.
 - Each C++ task requires a fresh successful `ue.build` of `AngelscriptProjectEditor` (Win64, Development) after adding its failing test and again after implementation changes, before running its exact test proof. The task's exact `ue.test` command is the RED/GREEN behavioral proof, not a claim that an old executable contains the newly written test. Build failures stay in the owning task. Use one managed process for the focused prefix.
 - Python task commands refer to files created by that task or a prerequisite; they are not claimed to exist in the present planning delivery.
 - Never claim source inventory, export, unavailable backend or skipped execution as PASS. Broader suites need actual shared impact. No automatic review or full-suite node is part of normal progress.
@@ -45,8 +48,8 @@ Authored `TestSource` content passes through a plugin-owned Python validator and
 | Requirement | Tasks |
 |---|---|
 | TestCode public authority, stable identity, owned bytes, local bundles | 2.1, 2.2, 3.2 |
-| Embedded release, admission and plugin consumption | 3.1, 3.3, 6.2 |
-| Tagged tree validation, materialization and provenance | 2.3, 2.4, 5.2 |
+| Catalog admission and plugin consumption without a competing TestCode carrier | 3.1, 3.3, 6.2 |
+| Tagged tree validation for later reload-history, not checked-in TestCode delivery | 2.3, 2.4, 5.2 |
 | Typed source-free/source-backed rows and independent discovery | 4.1, 6.1 |
 | Fixture lifetime, capability outcomes, evidence and diagnostics | 4.2, 5.2, 6.2 |
 | Reproducible generators | 5.1, 6.1 |
@@ -54,33 +57,37 @@ Authored `TestSource` content passes through a plugin-owned Python validator and
 | Replacement gates, names and legacy isolation | 3.2, 4.1, 6.2 |
 | Verified contract synchronization | 7.2 |
 
-Self-review 2026-09-11: syntax migration only; coverage and symbols unchanged from the original plan. Record: `attachments/data/planning-validation.md`.
+Historical self-review 2026-09-11 covered syntax migration only. Current-source maintenance 2026-09-12 is recorded in `attachments/data/maintenance-20260912.md`. The 2026-09-14 replan releases overlapping TestCode shard/history-carrier ownership; original requirement coverage remains mapped to the pending tasks. Record: `attachments/data/planning-validation.md`.
 
 ## 1. Current authoring guidance
 
 ## [ ] 1.1 Consolidate currently applicable testing Skill rules and historical routing
 
+Consolidate currently applicable testing Skill rules and historical routing.
+
+**Outcome**
+
+1. Preserve the pre-existing replacement intro and user edits. Promote the no-single-class-anonymous-namespace rule, class-local narrow helpers, public hooks, visible scenario flow, checked return values and deterministic cleanup into current guidance.
+2. Use only existing CQTest and NativeEngine source APIs in current executable examples. Keep new macros/TestCode/data registration as explicitly planned links to this Change.
+3. Retain SKILL_ZH.md as navigation, consume the current cqtest.md engine reference and existing legacy-source-isolation.md, and refresh historical routing only where still present. The old cqtest-guide files and Documents authority have already been removed in the current workspace; do not recreate them.
+4. Check actual links AND backticked path instructions, current symbols, gates and public-name composition. Exercise the authoring situations in `design.md` section 11; a format validator alone does not prove correct guidance.
+
 **Files**
 
 ```diff
-+.agents/skills/angelscript-test-guide/SKILL.md
-+.agents/skills/angelscript-test-guide/SKILL_ZH.md
-+.agents/skills/angelscript-test-guide/cqtest*.md
-+.agents/skills/angelscript-test-guide/references/case-authoring.md
-+.agents/skills/angelscript-test-guide/references/legacy-authoring-notes.md
-+.agents/skills/angelscript-test-guide/references/legacy-source-isolation.md
+ .agents/skills/angelscript-test/SKILL.md
+ .agents/skills/angelscript-test/SKILL_ZH.md
+ .agents/skills/angelscript-test/cqtest.md
++.agents/skills/angelscript-test/references/case-authoring.md
++.agents/skills/angelscript-test/references/legacy-authoring-notes.md
+ .agents/skills/angelscript-test/references/legacy-source-isolation.md
 ```
 
 **Verification**
 
 ```sh
-python C:/Users/scottmei/.codex/skills/.system/skill-creator/scripts/quick_validate.py .agents/skills/angelscript-test-guide
+python C:/Users/scottmei/.codex/skills/.system/skill-creator/scripts/quick_validate.py .agents/skills/angelscript-test
 ```
-
-1. Preserve the pre-existing replacement intro and user edits. Promote the no-single-class-anonymous-namespace rule, class-local narrow helpers, public hooks, visible scenario flow, checked return values and deterministic cleanup into current guidance.
-2. Use only existing CQTest and NativeEngine source APIs in current executable examples. Keep new macros/TestCode/data registration as explicitly planned links to this Change.
-3. Turn the Chinese copy into navigation, mark old CQTest notes historical, remove old Documents/Tools authority from active routes, and fix the archived quarantine script path recorded in provenance.
-4. Check actual links AND backticked path instructions, current symbols, gates and public-name composition. Exercise the authoring situations in `design.md` section 11; a format validator alone does not prove correct guidance.
 
 ## 2. Sources and tagged histories
 
@@ -149,13 +156,9 @@ python -B -m pytest Plugins/Angelscript/Tests/Tools/TestCode/tests/test_catalog.
 +Plugins/Angelscript/Tests/Tools/TestCode/angelscript_test_code/diff.py
 +Plugins/Angelscript/Tests/Tools/TestCode/angelscript_test_code/catalog.py
 +Plugins/Angelscript/Tests/Tools/TestCode/tests/test_source_history.py
- TestSource/Generation/python/angelscript_generation/reload_history.py
- TestSource/Generation/python/angelscript_generation/audit_v2.py
- TestSource/Generation/python/validate_testsource.py
- TestSource/Generation/python/tests/test_reload_history.py
 ```
 
-> File scope: SourceHistory compatibility delegation only; preserve unmigrated ordinary Contract V2 CLI and audit/strict behavior.
+> File scope: the new plugin-owned SourceHistory tool only. Removed parent Generation tools are read-only Git-history evidence, not current compatibility consumers to recreate. Do not parse `AngelscriptTestCode/**`, write `TestCode/Generated/**`, or treat parent-to-child diffs as the checked-in TestCode carrier.
 
 **Verification**
 
@@ -164,9 +167,9 @@ python -B -m pytest Plugins/Angelscript/Tests/Tools/TestCode/tests/test_source_h
 ```
 
 1. Capture RED for histories silently skipped by the public validator, duplicate/root-parent/cycle/unknown markers, branch order and corrupt diff behavior.
-2. Port useful existing pure parser/diff functions with provenance. Route admitted histories into the public validator and delegate old SourceHistory parsing to the shared implementation. Preserve ordinary Contract V2 callers, arguments and audit/strict results; this task does not migrate the entire old validator or corpus. Exercise both admitted histories and preserved ordinary V2 behavior in the same focused proof.
+2. Recover useful pure parser/diff algorithms from the indexed historical source and record the exact Git object used. Route admitted histories through the new plugin-owned public validator. Parent Generation tools and the old corpus are absent; do not recreate their CLI or claim compatibility execution against nonexistent consumers. Test the admitted history import/data semantics with independent new fixtures under the focused proof.
 3. Implement topological parent resolution, checked root/child snapshots, reversible generated diffs, stable LF materialization and authoring mappings. Reject redundant identical child snapshots and ambiguous comment/marker delimiters explicitly.
-4. Test empty edited source separately from deletion, legacy marker import without executable oracle interpretation, and source ancestry through a compile-invalid child without runtime activation assumptions.
+4. Test empty edited source separately from deletion, legacy marker import without executable oracle interpretation, and source ancestry through a compile-invalid child without runtime activation assumptions. History materialization is a later reload-history capability and must not generate or replace structured TestCode registrations.
 
 ## [ ] 2.4 Implement C++ history materialization and local history construction
 
@@ -186,31 +189,30 @@ Invoke-Harness -Command ue.test -Context $context -Parameters @{ TestPrefix = 'A
 1. Create failing C++ tests from deterministic Python history fixtures, including chain, branch and failed-source-parent shapes.
 2. Implement checked history descriptors, `FAngelscriptTestSourceHistoryBuilder`, root/diff and local-full-snapshot storage forms with the same Resolve contract.
 3. Verify each parent/child hash and forward materialization against authored golden bytes. Resolve a sibling from its declared ancestry, never from an ambient currently used source.
-4. Prove invalid references, cycles, stale hash and corrupt hunk errors publish no source, and that materialized source owners survive temporary builder destruction.
+4. Prove invalid references, cycles, stale hash and corrupt hunk errors publish no source, and that materialized source owners survive temporary builder destruction. Do not emit or consume `TestCode/Generated/**` or a generated aggregate as history storage.
 
 ## 3. Embedded release and TestCode
 
-## [ ] 3.1 Implement deterministic staged C++ release generation and comparison
+## [ ] 3.1 Withdraw competing TestCode shard and aggregate generation
+
+Withdraw the planned byte-array shard, parent-to-child generated-diff carrier, and one-aggregate TestCode release. Checked-in AngelScript originals remain one mirrored structured registration owned by `angelscript/refactor-test-code-structured-registration`.
+
+**Outcome**
+
+The plugin catalog tool, if present, validates TestSource case/row admission only. It has no `emit-cpp` shard/aggregate path and refuses to write `NewVersion/Generated/TestCode/**` or `TestCode/Generated/**`. Existing structured registrations are not replaced. Failed catalog validation mutates no generated TestCode files.
 
 **Files**
 
 ```diff
-+Plugins/Angelscript/Tests/Tools/TestCode/angelscript_test_code/cpp_export.py
-+Plugins/Angelscript/Tests/Tools/TestCode/angelscript_test_code/release.py
-+Plugins/Angelscript/Tests/Tools/TestCode/test_code.py
-+Plugins/Angelscript/Tests/Tools/TestCode/tests/test_cpp_export.py
+ Plugins/Angelscript/Tests/Tools/TestCode/test_code.py
++Plugins/Angelscript/Tests/Tools/TestCode/tests/test_no_testcode_shard_export.py
 ```
 
 **Verification**
 
 ```sh
-python -B -m pytest Plugins/Angelscript/Tests/Tools/TestCode/tests/test_cpp_export.py -q -p no:cacheprovider
+python -B -m pytest Plugins/Angelscript/Tests/Tools/TestCode/tests/test_no_testcode_shard_export.py -q -p no:cacheprovider
 ```
-
-1. Observe RED for double-export identity, byte-array payload escaping, hash drift, removed shards and failed staging publication.
-2. Implement emit-cpp and check-embedded using explicit lengths, root/diff tables, canonical metadata, deterministic shard groups and one aggregate entry.
-3. Test arbitrary payload bytes and C++ delimiter-like text; exclude workspace paths/timestamps/parent commits from generated identity. Failed generation preserves every existing release file.
-4. Verify source/data/schema/tool edits invalidate comparison and unchanged inputs do not rewrite files. Do not add UBT-time mutation or per-source static registration.
 
 ## [ ] 3.2 Implement TestCode facade, immutable source store and explicit module registration
 
@@ -222,10 +224,9 @@ python -B -m pytest Plugins/Angelscript/Tests/Tools/TestCode/tests/test_cpp_expo
  Plugins/Angelscript/Source/AngelscriptTest/NewVersion/Framework/Source/AngelscriptTestSourceBundle.*
  Plugins/Angelscript/Source/AngelscriptTest/NewVersion/FrameworkTests/Catalog/**
  Plugins/Angelscript/Source/AngelscriptTest/AngelscriptTestModule.cpp
- Plugins/Angelscript/Source/AngelscriptTest/NewVersion/Generated/TestCode/**
 ```
 
-> File scope: framework fixture release.
+> File scope: framework facade over the existing structured-registration database. Do not create `NewVersion/Generated/TestCode/**` or a generated aggregate.
 
 **Verification**
 
@@ -234,12 +235,20 @@ Invoke-Harness -Command ue.test -Context $context -Parameters @{ TestPrefix = 'A
 ```
 
 1. Add failing source lookup/query/history/snapshot tests while the legacy runtime remains dormant.
-2. Implement the class-contract entry points and immutable release lease. Wire one generated aggregate reference in the replacement module; preserve the existing shell and legacy gates.
+2. Implement the class-contract entry points and immutable release lease over admitted structured registrations and inline sources. Do not wire a generated shard aggregate. Preserve the existing shell and legacy gates.
 3. Prove explicit SourceId/VersionTag resolution, missing-reference errors, deterministic query/sample, duplicate/alias rejection, independent source use without a data case, and source lifetime across snapshot replacement.
 4. Prove there is no public ScriptCorpus/Snippet parallel registry, implicit latest lookup, source-file disk fallback or source-center execution/expectation helper.
 5. Integrate the catalog-aware source bundle: case/row/logical-path identity binding, empty AS-free bundle, duplicate slots, local/public collision errors, external references and local tagged histories. Verify frozen bundle ownership and immutable source sharing under the same Catalog prefix.
 
 ## [ ] 3.3 Admit and verify a small external-source release in the parent/plugin boundary
+
+Admit and verify a small external-source release in the parent/plugin boundary.
+
+**Outcome**
+
+1. Select a normal AS source, a branched SourceHistory and exact-byte fixture metadata; add only dedicated framework fixtures, preserving any remaining unrelated authoring inputs; the old parent TestSource corpus is removed in the current workspace.
+2. Admit those fixtures through structured FileTags or inline `AS_TEST_SOURCE`. Do not emit-cpp, stage, or publish a shard/aggregate release under `NewVersion/Generated/TestCode/**`.
+3. Require catalog-validation equality; neither source inventory nor a matched catalog is marked compile/runtime-verified. Keep plugin commit/gitlink operations and `AngelscriptTestCode/**` regeneration outside this task's authority.
 
 **Files**
 
@@ -248,18 +257,13 @@ Invoke-Harness -Command ue.test -Context $context -Parameters @{ TestPrefix = 'A
  TestSource/Catalog/cases/**
 +TestSource/Catalog/selections/framework-pilot.json
  TestSource/Framework/**
- Plugins/Angelscript/Source/AngelscriptTest/NewVersion/Generated/TestCode/**
 ```
 
 **Verification**
 
 ```sh
-python Plugins/Angelscript/Tests/Tools/TestCode/test_code.py check-embedded --root TestSource --selection TestSource/Catalog/selections/framework-pilot.json --embedded Plugins/Angelscript/Source/AngelscriptTest/NewVersion/Generated/TestCode
+python Plugins/Angelscript/Tests/Tools/TestCode/test_code.py validate --root TestSource --selection TestSource/Catalog/selections/framework-pilot.json
 ```
-
-1. Select a normal AS source, a branched SourceHistory and exact-byte fixture metadata; add only dedicated framework fixtures, preserving existing unconverted corpus.
-2. Use emit-cpp into staging and publish the complete small release. Store source provenance and logical identities in the manifests.
-3. Require regeneration equality; neither source inventory nor a matched release is marked compile/runtime-verified. Keep plugin commit/gitlink operations outside this task's authority.
 
 ## 4. Typed rows, fixtures and evidence
 
@@ -359,7 +363,7 @@ python -B -m pytest Plugins/Angelscript/Tests/Tools/TestCode/tests/test_generati
 Invoke-Harness -Command ue.test -Context $context -Parameters @{ TestPrefix = 'Angelscript.UnitTest.Framework.Frontend'; Fast = $true; TimeoutMs = 600000 }
 ```
 
-1. Before editing, inspect the concurrent Builder task/INDEX and settled public source/diagnostic interfaces; do not modify its implementation, task state or in-flight files. Schedule overlapping support edits after its owner finishes them.
+1. Before editing, inspect the completed Builder/SDK compile-lifecycle and frontend-phase-directory archives, then the current public source/diagnostic interfaces. Refresh consumed signatures and inspect current uncommitted support edits; do not assume an archived Builder is still an in-flight producer.
 2. Add failing tests for source-bundle snapshot ownership, multi-file logical mapping, stage-local observations and typed diagnostic comparison through the real frontend interfaces.
 3. Implement a small test fixture over public snapshot/source-manager/diagnostic consumers; keep concrete language assertions in test bodies and no ambient AS engine. Adapt only common preparation that has a verified replacement.
 4. Prove inline/embedded byte equivalence, history-tag diagnostic mapping, malformed bytes and stable observations under source ordering. Do not create another parser or string-only diagnostic authority.
@@ -376,7 +380,6 @@ Invoke-Harness -Command ue.test -Context $context -Parameters @{ TestPrefix = 'A
  TestSource/Catalog/sources/**
  TestSource/Catalog/cases/**
 +TestSource/Catalog/selections/framework-pilot.json
- Plugins/Angelscript/Source/AngelscriptTest/NewVersion/Generated/TestCode/**
 ```
 
 > File scope: pilot additions only.
@@ -387,7 +390,7 @@ Invoke-Harness -Command ue.test -Context $context -Parameters @{ TestPrefix = 'A
 Invoke-Harness -Command ue.test -Context $context -Parameters @{ TestPrefix = 'Angelscript.UnitTest.Framework.Adoption'; Fast = $true; TimeoutMs = 600000 }
 ```
 
-1. Add independent named data rows for pure C++, local normalized/exact AS, shared external AS and a deterministic generated input. Preserve ordinary baseline tests.
+1. Add independent named data rows for pure C++, local normalized/exact AS, shared external AS and a structured FileTag or inline source. Preserve ordinary baseline tests. Do not add a shard/aggregate generated input.
 2. Add actual frontend compile/diagnostic observations for root and a deliberately invalid tag; assert source materialization alone does not prove compilation or runtime reload.
 3. Verify multiple cases reuse the same source/tag, row reorder and isolated selection, complete failure reproduction and source/expectation field diagnostics.
 4. Keep fixture-only helper code inside its owning test class; no anonymous namespace solely for one class. Retain these actual examples as the later Skill source of truth.
@@ -412,7 +415,7 @@ Invoke-Harness -Command ue.test -Context $context -Parameters @{ TestPrefix = 'A
 ```
 
 1. Rebuild the final framework content and inspect actual Automation paths for ordinary/data registration ownership, exact row suffixes and absent legacy prefixes.
-2. Test the embedded resolver with authoring access unavailable in its test environment; no source-filesystem dependency or Python startup is allowed. Inspect generated include/dependency inputs to confirm no parent authoring build dependency.
+2. Test the structured-registration resolver with authoring access unavailable in its test environment; no source-filesystem dependency or Python startup is allowed. Inspect includes/dependencies to confirm no parent authoring build dependency and no `NewVersion/Generated/TestCode` shard aggregate.
 3. Record exact integrated counts and report identity, plus source-tool fixture results. This full Framework prefix is justified by the shared registration/source/result contract; omit legacy, full NativeEngine, World, VM/cache/JIT and Harness aggregate suites unless separate evidence expands scope.
 4. Keep runtime/reload adapters deferred and unverified. No worktree creation or destructive removal of TestSource is needed to simulate resource-only consumption.
 
@@ -420,30 +423,42 @@ Invoke-Harness -Command ue.test -Context $context -Parameters @{ TestPrefix = 'A
 
 ## [ ] 7.1 Promote implemented source/data examples into the maintained testing Skill
 
-**Files**
+Promote implemented source/data examples into the maintained testing Skill.
 
-```diff
-+.agents/skills/angelscript-test-guide/SKILL.md
-+.agents/skills/angelscript-test-guide/SKILL_ZH.md
-+.agents/skills/angelscript-test-guide/references/case-authoring.md
-+.agents/skills/angelscript-test-guide/references/inline-source.md
-+.agents/skills/angelscript-test-guide/references/test-code.md
-+.agents/skills/angelscript-test-guide/references/source-history.md
-+.agents/skills/angelscript-test-guide/references/legacy-authoring-notes.md
-```
-
-**Verification**
-
-```sh
-python C:/Users/scottmei/.codex/skills/.system/skill-creator/scripts/quick_validate.py .agents/skills/angelscript-test-guide
-```
+**Outcome**
 
 1. Promote only APIs proved by completed framework/adoption nodes. Source each runnable example from actual verified code and preserve correct CQTest class-name composition.
 2. Cover ordinary C++, independent data rows, local AS, exact bytes, shared SourceId/VersionTag, child diagnostic mapping and owned source lifetime without making every test create a manifest.
 3. Keep future live reload/World/backend examples visibly unavailable. Validate both current routes and realistic user requests: one-class helper placement, pure C++ data, malformed input, shared source and focused test execution.
 4. Preserve unrelated existing Skill edits and use one English authority with Chinese navigation.
 
+**Files**
+
+```diff
+ .agents/skills/angelscript-test/SKILL.md
+ .agents/skills/angelscript-test/SKILL_ZH.md
++.agents/skills/angelscript-test/references/case-authoring.md
++.agents/skills/angelscript-test/references/inline-source.md
++.agents/skills/angelscript-test/references/test-code.md
++.agents/skills/angelscript-test/references/source-history.md
++.agents/skills/angelscript-test/references/legacy-authoring-notes.md
+```
+
+**Verification**
+
+```sh
+python C:/Users/scottmei/.codex/skills/.system/skill-creator/scripts/quick_validate.py .agents/skills/angelscript-test
+```
+
 ## [ ] 7.2 Synchronize verified first-slice contracts and prepare completion evidence
+
+Synchronize verified first-slice contracts and prepare completion evidence.
+
+**Outcome**
+
+1. Map every first-slice requirement to actual evidence and semantically synchronize only verified deltas. Do not claim deferred runtime behavior or copy this delta over the current baseline.
+2. Record tests actually run, omitted heavier checks with reasons, exact content provenance and completion disposition. Close material issues if any were created; do not manufacture a Review.
+3. Use the matching lifecycle Skill for any later authorized archive. The present planning delivery never selects this node or changes current specs.
 
 **Files**
 
@@ -464,7 +479,3 @@ python C:/Users/scottmei/.codex/skills/.system/skill-creator/scripts/quick_valid
 ```powershell
 & { $c = Invoke-Harness -Command openspec.validate -Context $context -ArgumentList @('angelscript/refactor-testing-unified-framework','--type','change','--strict','--json'); if ($c.status -ne 'Succeeded') { throw 'Change validation failed' }; $s = Invoke-Harness -Command openspec.validate -Context $context -ArgumentList @('--specs','--strict','--json'); if ($s.status -ne 'Succeeded') { throw 'Specification validation failed' }; $s }
 ```
-
-1. Map every first-slice requirement to actual evidence and semantically synchronize only verified deltas. Do not claim deferred runtime behavior or copy this delta over the current baseline.
-2. Record tests actually run, omitted heavier checks with reasons, exact content provenance and completion disposition. Close material issues if any were created; do not manufacture a Review.
-3. Use the matching lifecycle Skill for any later authorized archive. The present planning delivery never selects this node or changes current specs.

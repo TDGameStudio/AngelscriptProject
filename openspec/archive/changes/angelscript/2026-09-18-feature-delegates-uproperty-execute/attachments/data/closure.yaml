@@ -1,0 +1,2 @@
+kind: completed
+reason: CallPtr UPROPERTY execute is green on NativeEngine DelegateProperty. Shared proof c01796b177fd4b2fbb6b473d8daaed42 is 17/17, including IsBound, AddDynamic(this), quiet ExecuteIfBound, ReturnParm/FName writeback, ProcessCallPtr, and SoftReload CallPtr copy. Overlay storage, Language execute, cook, and PIE stay out.

@@ -4,4 +4,4 @@ metadata:
   uid: spec_38195ec2-49cc-4897-a434-9714849665eb
   id: angelscript/testing/language-fixtures
   title: Language hand-authored fixtures
-  description: Durable contracts for the 47-container hand-authored Language source corpus admitted through the existing code database.
+  description: Durable contracts for the hand-authored Language source corpus, including first-wave themes and second-wave chapter FileTags such as Language/Auto/InferFromLiteral, Language/Interface/Declare, and Language/Delegate/Declare.

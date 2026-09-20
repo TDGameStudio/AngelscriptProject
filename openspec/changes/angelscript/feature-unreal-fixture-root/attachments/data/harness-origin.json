@@ -1,0 +1,57 @@
+{
+  "schema": 2,
+  "changeId": "angelscript/feature-unreal-fixture-root",
+  "origin": "Draft",
+  "draftId": "angelscript/language-fixture-quality",
+  "scope": "unreal-home",
+  "reason": null,
+  "approvalRound": "R27",
+  "expectedExports": [
+    {
+      "Source": "design.md",
+      "Target": "attachments/drafts/design.md",
+      "Reason": "Accepted scoped design"
+    },
+    {
+      "Source": "handoff.md",
+      "Target": "attachments/drafts/handoff.md",
+      "Reason": "Accepted handoff"
+    },
+    {
+      "Source": "glossary.md",
+      "Target": "attachments/drafts/glossary.md",
+      "Reason": "Settled names"
+    },
+    {
+      "Source": "../../findings/unreal-home.md",
+      "Target": "attachments/drafts/findings/unreal-home.md",
+      "Reason": "Why Unreal not Language"
+    },
+    {
+      "Source": "../../findings/unreal-intake.md",
+      "Target": "attachments/drafts/findings/unreal-intake.md",
+      "Reason": "CodeGen discovery"
+    },
+    {
+      "Source": "../../findings/unreal-all-intake.md",
+      "Target": "attachments/drafts/findings/unreal-all-intake.md",
+      "Reason": "First-batch tree"
+    },
+    {
+      "Source": "../../findings/two-changes.md",
+      "Target": "attachments/drafts/findings/two-changes.md",
+      "Reason": "Split from Language"
+    },
+    {
+      "Source": "../../log.md#r27",
+      "Target": "attachments/talks/talk-20260917-161210-unreal-root.md",
+      "Reason": "Approve Unreal root and intake"
+    },
+    {
+      "Source": "../../findings/unreal-home.md",
+      "Target": "attachments/knowledges/ue-fixtures-live-under-unreal.md",
+      "Reason": "UE material is not Language"
+    }
+  ],
+  "createdAt": "2026-09-17T08:17:26.0376869Z"
+}

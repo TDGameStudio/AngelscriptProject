@@ -1,0 +1,2 @@
+kind: completed
+reason: Initial CompileModules plus existing ClassGen binds a hand-filled UFUNCTION to UASFunction. ProcessEvent returns 7. Knowledge stays change-local.

@@ -1,0 +1,62 @@
+{
+  "schema": 2,
+  "changeId": "angelscript/feature-module-register-identity",
+  "origin": "Draft",
+  "draftId": "angelscript/module-identity-attach",
+  "scope": "runtime-identity",
+  "reason": null,
+  "approvalRound": "R10",
+  "expectedExports": [
+    {
+      "Source": "design.md",
+      "Target": "attachments/drafts/design.md",
+      "Reason": "Accepted scoped design"
+    },
+    {
+      "Source": "handoff.md",
+      "Target": "attachments/drafts/handoff.md",
+      "Reason": "Accepted handoff"
+    },
+    {
+      "Source": "glossary.md",
+      "Target": "attachments/drafts/glossary.md",
+      "Reason": "Confirmed Change id and GetModule signature"
+    },
+    {
+      "Source": "../../findings/register-module-flow.md",
+      "Target": "attachments/drafts/findings/register-module-flow.md",
+      "Reason": "Register-time module split"
+    },
+    {
+      "Source": "../../findings/why-module-not-generated.md",
+      "Target": "attachments/drafts/findings/why-module-not-generated.md",
+      "Reason": "Per-file descriptors already exist"
+    },
+    {
+      "Source": "../../findings/getmodule-why-removed.md",
+      "Target": "attachments/drafts/findings/getmodule-why-removed.md",
+      "Reason": "Why 09-08 removed the factory"
+    },
+    {
+      "Source": "../../findings/engine-module-coupling.md",
+      "Target": "attachments/drafts/findings/engine-module-coupling.md",
+      "Reason": "Constructor still needs Engine"
+    },
+    {
+      "Source": "../../log.md#r4",
+      "Target": "attachments/talks/talk-20260917-234800-restore-lookup.md",
+      "Reason": "Restore lookup, generate per .as"
+    },
+    {
+      "Source": "../../log.md#r10",
+      "Target": "attachments/talks/talk-20260917-234900-handoff.md",
+      "Reason": "Handoff approval"
+    },
+    {
+      "Source": "../../findings/getmodule-why-removed.md",
+      "Target": "attachments/knowledges/getmodule-lookup-is-not-compile.md",
+      "Reason": "Lookup GetModule is not the compile factory"
+    }
+  ],
+  "createdAt": "2026-09-17T15:52:02.5213286Z"
+}

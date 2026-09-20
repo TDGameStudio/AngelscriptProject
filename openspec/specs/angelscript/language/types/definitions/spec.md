@@ -1,76 +1,94 @@
 ## Purpose
 
-Define actual engine-independent type/function metadata, immutable definition ownership and atomic single-engine registration.
+Define actual engine-independent HostProcess, ScriptEngine and LiveRegister type/function objects, share frozen host graphs by injection, and keep private script/live definitions uniquely owned by their receiving Engine.
 
 ## Requirements
 
+### Requirement: Script TypeInfo lives on a module definition set until batch Engine transfer
+
+The system SHALL create actual script TypeInfo without an Engine, uniquely owned by asCDefinitions until asCEngineCompileRegistration transfers the private graph.
+
+#### Scenario: Query script types before Registration
+
+- **WHEN** a snapshot Builder successfully compiles class Node with a Node handle field and the caller takes its definitions
+- **THEN** member and method queries expose the graph with null GetEngine and TypeId -1
+- **AND** recursive handles are legal and destroying the unregistered private definitions deletes Node
+- **BUT** retained shared host dependencies are not deleted with the private graph
+
 ### Requirement: Detached actual type and function definitions
 
-The system SHALL describe class information for publication without creating an Engine, and SHALL create actual TypeInfo only when a receiving Engine materializes a publication or adopts a private compilation.
+The SDK SHALL permit host callbacks to create actual HostProcess types and functions before any Engine, freeze their complete graph and publish shared identity without a descriptive replay product.
 
 #### Scenario: Query a detached recursive type graph
 
-- **WHEN** a caller records type shells, fields and methods into BindInfo and freezes a valid unique Image helper
-- **THEN** UE-facing member/function queries expose the described relationships without an Engine TypeInfo pointer
-- **AND** destroying the Image helper leaves BindInfo records valid
-- **BUT** invalid by-value recursion, incomplete required layout or post-freeze mutation of the helper fails explicitly
+- **WHEN** a host creates shells, fields and functions and freezes a valid host graph
+- **THEN** actual TypeInfo member/function queries expose the declared relationships without an Engine
+- **AND** external leases retain the graph after its producer reference is released
+- **BUT** invalid by-value recursion, incomplete layout or post-freeze mutation fails explicitly without publishing a usable graph
 
 #### Scenario: Publish a detached external graph
 
-- **WHEN** the host publishes the BindInfo record
-- **THEN** the publication gains queryable IDs before an Engine exists
-- **AND** later Engine materialization creates Engine-owned TypeInfo that report those IDs without sharing TypeInfo pointers
+- **WHEN** the host freezes and publishes actual HostProcess definitions
+- **THEN** type/function process IDs are fixed before the first Engine injection
+- **AND** later injections return those same pointers and IDs without constructing host TypeInfo again
 
-### Requirement: Atomic image lifetime without internal reference cycles
+### Requirement: Atomic definition-set lifetime without internal reference cycles
 
-The system SHALL keep a definition image alive through external type/function leases and SHALL release its internally recursive graph after the final owner releases it.
+The system SHALL retain a definition graph through its Collection, admitted consumers and external type/function/native leases, and SHALL release internally recursive owned objects exactly once after the final lease.
 
 #### Scenario: Retain only a method after destroying its producer
 
-- **WHEN** the Builder and Engine are destroyed while an external method reference remains
-- **THEN** the method signature, owner and required type graph remain readable
-- **AND** releasing the final lease destroys the owned graph and namespaces exactly once
+- **WHEN** producer and Engine owners are destroyed while an external method reference remains
+- **THEN** the method signature, declaring type and required graph remain readable
+- **AND** releasing the final lease destroys the graph and namespaces exactly once
 
-    > Boundaries: Cross-image dependencies retain frozen owners without strong dependency cycles; concurrent references use actual atomic operations.
+    Dependencies retain frozen owners without strong dependency cycles; concurrent references use actual atomic operations.
 
-### Requirement: Transactional single-engine definition binding
+### Requirement: Definition admission follows explicit origin and is transactional
 
-The system SHALL give each Engine exclusive ownership of the TypeInfo it materializes or compiles, while allowing multiple Engines to materialize the same BindInfo publication independently.
+The SDK SHALL distinguish HostProcess, ScriptEngine and LiveRegister definitions, admit immutable host graphs without transferring them, and keep script/live private definitions bound to their receiving Engine.
 
-#### Scenario: Publish a valid image
+#### Scenario: Inject one frozen host graph twice into different Engines
 
-- **WHEN** Engine materialization or private compilation validates identities, dependencies and layouts successfully
-- **THEN** Engine queries return that Engine's TypeInfo pointers and the published numeric IDs
-- **AND** publication IDs remain identical in every admitting Engine while TypeInfo pointers differ
-- **BUT** stable identity remains independent of those IDs
+- **GIVEN** a frozen HostProcess graph containing Pair and Sum
+- **WHEN** A and B inject it
+- **THEN** both directories contain identical type/function pointers and IDs with null GetEngine
+- **AND** reinjecting the identical graph into A reports AlreadyRegistered without duplicate admission
 
 #### Scenario: Reject conflicting or competing registration
 
-- **WHEN** preparation fails for any member or another Engine attempts to adopt TypeInfo that already belongs to a different Engine
-- **THEN** the failed attempt publishes no partial TypeInfo
+- **WHEN** a host injection has invalid origin, layout, identity or dependency admission, or a script batch competes for another private owner
+- **THEN** it publishes no partial type/function entries and leaves previous admitted objects unchanged
 - **AND** concurrent private adoption has at most one successful owner
 
-    Duplicate registration reports explicit state. Distinct Engine TypeInfo objects are not merged solely by hash.
+    Distinct private objects are not merged by matching fingerprints. Conflicts include a previously registered live name.
 
-#### Scenario: Retire an attached image
+#### Scenario: Retire an attached definition set
 
 - **WHEN** an Engine retires or is destroyed
-- **THEN** it stops new executable admissions and completes active runtime cleanup before removing its TypeInfo and resources
+- **THEN** it stops new execution admission and completes admitted resource cleanup before removing its local bindings
 
-    1. Active Contexts stop or unwind while their type, callable and native bindings remain valid.
-    2. Runtime objects and executable leases finish their required cleanup.
-    3. The retiring Engine's TypeInfo and execution bindings retire; BindInfo publications remain readable.
+    1. Active Contexts stop or unwind while their callable/native leases remain valid.
+    2. Runtime objects and executable resources complete required cleanup.
+    3. Private definitions retire and shared-host admission is detached without retiring the host graph.
 
-- **AND** other Engines' materialized TypeInfo remain valid
-- **BUT** a retained pointer to the destroyed Engine's TypeInfo cannot execute
+- **AND** other Engines retain their admitted host and private definitions
+- **BUT** retained pointers alone cannot authorize new execution on the retired Engine
+
+#### Scenario: Transfer a private script graph with host dependencies
+
+- **GIVEN** private script definitions depending on a frozen HostProcess graph already injected into A and B
+- **WHEN** A registers and later retires its script definitions
+- **THEN** only the private graph changes ownership and retirement state
+- **AND** the shared host graph retains null Engine, Frozen state and unchanged IDs for B
 
 ### Requirement: Callable definitions use structured metadata instead of funcdef registration
 
-The maintained SDK SHALL expose nominal callable types and structural signatures through structured MetadataImage APIs, without source-string funcdef registration or legacy funcdef-named public interfaces.
+The maintained SDK SHALL expose nominal callable types and structural signatures through structured definition-set APIs, without source-string funcdef registration or legacy funcdef-named public interfaces.
 
 #### Scenario: Construct and register a retained callable type
 
-- **WHEN** a host defines a signature and a nominal callable type using stable keys and typed parameter/return definitions, then freezes and registers the image
+- **WHEN** a host defines a signature and a nominal callable type using stable keys and typed parameter/return definitions, then freezes and registers the definition set
 - **THEN** named callable identity, signature compatibility, indirect invocation and reference ownership remain valid
 - **AND** distinct nominal delegate/event types may share one structural signature without losing nominal identity
 
@@ -79,15 +97,15 @@ The maintained SDK SHALL expose nominal callable types and structural signatures
 - **WHEN** C++ code attempts to call a removed funcdef registration/query interface
 - **THEN** that interface is absent from the maintained public SDK rather than forwarded through a compatibility alias
 
-    > Boundaries: Migration uses structured callable creation and MetadataImage registration; no replacement source-string parser is introduced.
+    > Boundaries: Migration uses structured callable creation and definition-set registration; no replacement source-string parser is introduced.
 
 ### Requirement: Definition membership does not use script shared-owner policy
 
-The maintained SDK SHALL use definition-image ownership, explicit provider dependencies and Engine registration rather than shared declaration flags or legacy module-owner reassignment to manage retained definitions.
+The maintained SDK SHALL use definition-set ownership, explicit provider dependencies and Engine registration rather than shared declaration flags or legacy module-owner reassignment to manage retained definitions.
 
 #### Scenario: Use a frozen provider without shared declarations
 
-- **WHEN** a compilation or Engine receives a valid externally supplied definition image
+- **WHEN** a compilation or Engine receives a valid externally supplied definition set
 - **THEN** existing dependency leases, compatibility checks and registration lifecycle determine visibility and lifetime
 - **BUT** no source shared/external flag or mutable legacy module query grants ownership
 
@@ -123,24 +141,38 @@ The SDK SHALL define native fields using explicit validated storage and addressi
 
 ### Requirement: Executable bodies remain separate from immutable callable declarations
 
-The SDK SHALL allow published callable descriptions to acquire Engine-local executable bindings on that Engine's TypeInfo without modifying BindInfo records.
+The SDK SHALL retain immutable host callable declarations and their shared native interface while allowing compatible Engine-local native overrides; private script runtime bytecode SHALL remain on its owning script function.
 
 #### Scenario: Bind a declared method body
 
-- **GIVEN** a published class with a declared method and complete return/parameter contract
-- **WHEN** an Engine that materialized that publication installs a compatible executable body
-- **THEN** BindInfo records remain unchanged and the executable binding is owned by that Engine
-- **BUT** an undeclared method, incompatible signature or already installed body is rejected without modifying BindInfo
+- **GIVEN** an admitted host declaration with complete return and parameter facts
+- **WHEN** the receiving Engine supplies a compatible local callable implementation
+- **THEN** shared declarations and the process-native target remain unchanged
+- **BUT** an undeclared or incompatible target cannot alter the prior usable binding
 
 #### Scenario: Use equivalent definitions in separate Engines
 
 - **WHEN** two Engines compile separately constructed equivalent private ScriptThing sources
-- **THEN** their keys and compatible fingerprints may agree while their TypeInfo objects and runtime IDs are independently owned
-- **BUT** one Engine's TypeInfo cannot be adopted by the other Engine
+- **THEN** their keys and compatible fingerprints may agree while their TypeInfo objects and runtime IDs remain independently owned
+- **BUT** one Engine cannot adopt the other's private objects
 
 #### Scenario: Bind one external declaration independently
 
-- **GIVEN** one Pair publication materialized by Engines A and B
-- **WHEN** each Engine supplies its own compatible native binding
-- **THEN** both report the same publication ID while preserving independent call targets, auxiliary ownership and cleanup
-- **AND** destroying A leaves B's binding usable
+- **GIVEN** A and B inject one Pair host declaration
+- **WHEN** each supplies its own compatible native binding
+- **THEN** both report the same ID and pointer while retaining independent targets, auxiliary ownership and cleanup
+- **AND** destroying A leaves B callable
+
+### Requirement: MetadataImage is not a TypeInfo owner
+
+The SDK SHALL use asCDefinitions for actual host and private script ownership and SHALL NOT construct asCMetadataImage or restore its registration APIs.
+
+#### Scenario: No Image type on the script or BindInfo path
+
+- **WHEN** a Builder takes private definitions or a host collection constructs its frozen graph
+- **THEN** those objects have a Definitions owner and no MetadataImage
+
+    Private script objects have null Engine and TypeId -1 before unique transfer. HostProcess objects keep null Engine permanently and receive IDs before injection.
+
+- **AND** public SDK headers expose no asCMetadataImage, RegisterMetadataImage, metadataImages or GetRegisteredMetadataImages
+- **BUT** commented binding tests or legacy startup cannot substitute for actual maintained binding execution

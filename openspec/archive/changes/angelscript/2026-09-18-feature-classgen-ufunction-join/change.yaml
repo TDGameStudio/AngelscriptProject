@@ -1,0 +1,14 @@
+api_version: openspec.dev/v1
+kind: change
+metadata:
+  uid: change_5420e6d9-0d0d-49b1-b50f-5c3f172ade2c
+  id: angelscript/feature-classgen-ufunction-join
+  title: Join UFUNCTION ProcessEvent after ClassGen
+workflow: angelscript
+created_at: 2026-09-18T06:24:52Z
+goal: After Initial CompileModules and ClassGen, a hand-filled UFUNCTION method is callable through ProcessEvent and returns 7.
+archived_at: 2026-09-18T06:32:18Z
+archive_schema: closure-v1
+closure:
+  kind: completed
+  reason: Initial CompileModules plus existing ClassGen binds a hand-filled UFUNCTION to UASFunction. ProcessEvent returns 7. Knowledge stays change-local.

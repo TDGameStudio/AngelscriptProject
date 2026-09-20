@@ -1,10 +1,15 @@
 # Attachment index
 
+## Maintenance baseline — 2026-09-12
+
+Read [Current-baseline maintenance](data/maintenance-20260912.md) before historical attachments. It records current source ownership, preserved task state, exact format checks and remaining planning boundaries. Historical talks, research snapshots and applied replans are provenance rather than current API authority.
+
 ## Current status and reading order
 
-This Change is **planning-only**. The authorized delivery creates its proposal,
-design, delta specs, future tasks, and supporting evidence/examples. It does not
-implement the framework or modify current Skill/specification behavior.
+This Change remains **planning-only**. The 2026-09-14 replan released overlapping
+TestCode shard, aggregate, and history-carrier ownership to
+`angelscript/refactor-test-code-structured-registration`. It still does not
+implement the framework.
 
 When resuming, read `../tasks.md` and this index first, then the one focused
 attachment needed for the selected task. `../design.md` owns implementation
@@ -15,8 +20,9 @@ an attachment is proposed until its future implementation task is verified.
 
 - Preserve `FAngelscriptTestCode` as the sole public AS source center; merge
   ScriptCorpus/Snippet source responsibilities into it. SourceStore is internal.
-- Keep file-based TestSource authoring and deterministic plugin-owned embedded
-  C++ release generation; runtime consumption needs neither Python nor TestSource.
+- Keep file-based TestSource case/row authoring. Checked-in AngelScript originals
+  use structured registrations; this Change must not emit a shard/aggregate
+  carrier. Runtime consumption needs neither Python nor TestSource.
 - Support external AS, terse `AS_TEST_SOURCE(...)`, exact inputs, and AS-free C++.
 - Use `SourceId + VersionTag`; source ancestry and C++ reload operation order are
   separate. Local inline source receives case scope on logical-file binding.
@@ -54,3 +60,6 @@ The framework inventory and historic prototypes are design evidence. Future
 verification records must identify the exact selected workspace, command, result,
 and artifacts. The current delivery validates documents only; it makes no fresh
 Unreal build, Automation pass-count, or runtime reload claim.
+
+- [Applied current-baseline replan](replans/replan-20260912-073639-current-baseline.md) — accepted record maintenance; current paths, ownership and proof boundaries; historical before the 2026-09-14 ownership replan.
+- [Applied TestCode-ownership replan](replans/replan-20260914-123500-testcode-ownership.md) — releases shard/aggregate/history-carrier claims overlapping structured registration; read before any product task on either Change.

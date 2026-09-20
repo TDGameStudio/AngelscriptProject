@@ -1,0 +1,17 @@
+api_version: openspec.dev/v1
+kind: change
+metadata:
+  uid: change_ffc37d59-8737-42c0-8743-341c660529fc
+  id: angelscript/refactor-test-code-structured-registration
+  title: Generate structured AngelScript test-code registrations
+  description: Move checked-in AngelScript test-code projections from opaque activation-time byte parsing to deterministic Python-parsed, readable, structured C++ registrations while retaining the independent C++ parser.
+workflow: angelscript
+created_at: 2026-09-14T12:09:51Z
+goal: Generate directly registered immutable test source cases with authored metadata, annotations, and origin mappings before Unreal module activation.
+affected_areas:
+- angelscript/testing/code-database
+archived_at: 2026-09-14T13:11:24Z
+archive_schema: closure-v1
+closure:
+  kind: completed
+  reason: All eight Task DAG nodes passed their proving commands. Durable angelscript/testing/code-database deltas are synchronized. Structured Counter registrations activate without the generated parser, Python/C++ conformance fixtures match primary code and location, and the handwritten JIT provider remains on the same center.

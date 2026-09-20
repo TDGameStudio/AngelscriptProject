@@ -1,0 +1,92 @@
+{
+  "schema": 2,
+  "changeId": "angelscript/feature-container-type-directories",
+  "origin": "Draft",
+  "draftId": "angelscript/container-fixture-coverage",
+  "scope": "container-pocket-rewrite",
+  "reason": null,
+  "approvalRound": "R6",
+  "expectedExports": [
+    {
+      "Source": "design.md",
+      "Target": "attachments/drafts/design.md",
+      "Reason": "Accepted scoped design"
+    },
+    {
+      "Source": "handoff.md",
+      "Target": "attachments/drafts/handoff.md",
+      "Reason": "Accepted handoff"
+    },
+    {
+      "Source": "glossary.md",
+      "Target": "attachments/drafts/glossary.md",
+      "Reason": "Settled FileTag and Change names"
+    },
+    {
+      "Source": "../../findings/quality-debt.md",
+      "Target": "attachments/drafts/findings/quality-debt.md",
+      "Reason": "Why the flat pockets are dirty"
+    },
+    {
+      "Source": "../../findings/coverage-gaps.md",
+      "Target": "attachments/drafts/findings/coverage-gaps.md",
+      "Reason": "How to thicken without dumping Pending"
+    },
+    {
+      "Source": "../../findings/authoring-standard.md",
+      "Target": "attachments/drafts/findings/authoring-standard.md",
+      "Reason": "Hand-write rules for subagents"
+    },
+    {
+      "Source": "../../findings/extended-names.md",
+      "Target": "attachments/drafts/findings/extended-names.md",
+      "Reason": "Observation Pascal mapping"
+    },
+    {
+      "Source": "../../findings/target-layout.md",
+      "Target": "attachments/drafts/findings/target-layout.md",
+      "Reason": "TArray destination tree"
+    },
+    {
+      "Source": "../../findings/per-type-trees.md",
+      "Target": "attachments/drafts/findings/per-type-trees.md",
+      "Reason": "Other eight type-shaped trees"
+    },
+    {
+      "Source": "../../findings/per-type-index.md",
+      "Target": "attachments/drafts/findings/per-type-index.md",
+      "Reason": "Quality order and shared rules"
+    },
+    {
+      "Source": "../../findings/fail-siblings.md",
+      "Target": "attachments/drafts/findings/fail-siblings.md",
+      "Reason": "Bind Throw polarity"
+    },
+    {
+      "Source": "../../findings/coverage-wave.md",
+      "Target": "attachments/drafts/findings/coverage-wave.md",
+      "Reason": "Named coverage begins"
+    },
+    {
+      "Source": "../../log.md#r4",
+      "Target": "attachments/talks/talk-20260917-174000-type-directories.md",
+      "Reason": "One Change, type directories, no inter-type edges"
+    },
+    {
+      "Source": "../../log.md#r5",
+      "Target": "attachments/talks/talk-20260917-174200-observation-names.md",
+      "Reason": "Lengthened Pascal leaves without type prefix"
+    },
+    {
+      "Source": "../../log.md#r6",
+      "Target": "attachments/talks/talk-20260917-174400-type-shaped-trees.md",
+      "Reason": "Same principle, trees follow each bind surface"
+    },
+    {
+      "Source": "../../findings/extended-names.md",
+      "Target": "attachments/knowledges/container-observation-filetags.md",
+      "Reason": "Reusable FileTag grain for container authors"
+    }
+  ],
+  "createdAt": "2026-09-17T09:46:00.7749510Z"
+}

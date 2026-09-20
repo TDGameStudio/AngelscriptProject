@@ -1,0 +1,2 @@
+kind: completed
+reason: Lookup GetModule and per-file asCModule shells at Register are proven. Compile factory stays absent. ClassGen UserData remains out of scope. Knowledge stays change-local.

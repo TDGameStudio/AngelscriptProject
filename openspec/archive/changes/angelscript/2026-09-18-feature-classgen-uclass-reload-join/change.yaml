@@ -1,0 +1,14 @@
+api_version: openspec.dev/v1
+kind: change
+metadata:
+  uid: change_5e0bd603-ac81-40c3-8b97-fce42ef0d965
+  id: angelscript/feature-classgen-uclass-reload-join
+  title: Join UCLASS reload to ProcessEvent
+workflow: angelscript
+created_at: 2026-09-18T06:51:56Z
+goal: Prove SoftReload method-body and transient Blueprint child ProcessEvent, then FullReload add-property and failed-reload keep, using inline UCLASS source without the Language corpus.
+archived_at: 2026-09-18T07:31:59Z
+archive_schema: closure-v1
+closure:
+  kind: completed
+  reason: Preprocessor-backed CompileModules SoftReload updates GetVersion ProcessEvent on the live UCLASS and a transient Blueprint child. FullReload adds Extra and stays callable. Failed reload keeps ProcessEvent 1. Knowledge stays change-local.

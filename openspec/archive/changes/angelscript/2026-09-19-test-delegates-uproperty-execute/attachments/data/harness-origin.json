@@ -1,0 +1,37 @@
+{
+  "schema": 2,
+  "changeId": "angelscript/test-delegates-uproperty-execute",
+  "origin": "Draft",
+  "draftId": "angelscript/delegates-property-coverage",
+  "scope": "uproperty-execute",
+  "reason": null,
+  "approvalRound": "R1",
+  "expectedExports": [
+    {
+      "Source": "design.md",
+      "Target": "attachments/drafts/design.md",
+      "Reason": "Accepted scoped design"
+    },
+    {
+      "Source": "handoff.md",
+      "Target": "attachments/drafts/handoff.md",
+      "Reason": "Accepted handoff"
+    },
+    {
+      "Source": "glossary.md",
+      "Target": "attachments/drafts/glossary.md",
+      "Reason": "Settled Change and test names"
+    },
+    {
+      "Source": "../../findings/current-coverage.md",
+      "Target": "attachments/drafts/findings/current-coverage.md",
+      "Reason": "What already passed and the layout gap"
+    },
+    {
+      "Source": "../../log.md#r1",
+      "Target": "attachments/talks/talk-20260918-171800-coverage-boundary.md",
+      "Reason": "R1 Q1–Q3 product, surface, thickness"
+    }
+  ],
+  "createdAt": "2026-09-18T17:22:47.8274675Z"
+}

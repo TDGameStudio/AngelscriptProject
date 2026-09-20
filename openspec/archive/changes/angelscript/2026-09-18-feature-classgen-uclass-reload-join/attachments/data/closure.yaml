@@ -1,0 +1,2 @@
+kind: completed
+reason: Preprocessor-backed CompileModules SoftReload updates GetVersion ProcessEvent on the live UCLASS and a transient Blueprint child. FullReload adds Extra and stays callable. Failed reload keeps ProcessEvent 1. Knowledge stays change-local.

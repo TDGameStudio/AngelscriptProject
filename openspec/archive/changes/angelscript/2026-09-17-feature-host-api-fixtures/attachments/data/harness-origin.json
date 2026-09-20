@@ -1,0 +1,52 @@
+{
+  "schema": 2,
+  "changeId": "angelscript/feature-host-api-fixtures",
+  "origin": "Draft",
+  "draftId": "angelscript/language-fixture-quality",
+  "scope": "container-home",
+  "reason": null,
+  "approvalRound": "R29",
+  "expectedExports": [
+    {
+      "Source": "design.md",
+      "Target": "attachments/drafts/design.md",
+      "Reason": "Accepted scoped design"
+    },
+    {
+      "Source": "handoff.md",
+      "Target": "attachments/drafts/handoff.md",
+      "Reason": "Accepted handoff"
+    },
+    {
+      "Source": "glossary.md",
+      "Target": "attachments/drafts/glossary.md",
+      "Reason": "Settled names"
+    },
+    {
+      "Source": "../../findings/bindings-intake.md",
+      "Target": "attachments/drafts/findings/bindings-intake.md",
+      "Reason": "Bindings and Containers census"
+    },
+    {
+      "Source": "../../findings/host-destinations.md",
+      "Target": "attachments/drafts/findings/host-destinations.md",
+      "Reason": "Split-root destinations"
+    },
+    {
+      "Source": "../../findings/two-changes.md",
+      "Target": "attachments/drafts/findings/two-changes.md",
+      "Reason": "Sibling Change boundaries"
+    },
+    {
+      "Source": "../../log.md#r29",
+      "Target": "attachments/talks/talk-20260917-164800-host-api-scope.md",
+      "Reason": "Approve third Change, ID, and split roots"
+    },
+    {
+      "Source": "../../findings/bindings-intake.md",
+      "Target": "attachments/knowledges/host-api-two-source-merge.md",
+      "Reason": "Two container piles must merge"
+    }
+  ],
+  "createdAt": "2026-09-17T08:22:10.2606456Z"
+}

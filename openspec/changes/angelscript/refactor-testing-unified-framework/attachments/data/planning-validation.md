@@ -100,3 +100,12 @@ was run for this documentation delivery. No implementation changed, and the
 future framework commands target files that owning tasks will create. The Skill
 format validator was not used to claim a Skill update because none was made.
 Current specifications were not synchronized merely to make planning pass.
+
+## 2026-09-14 TestCode-ownership addendum
+
+The applied replan `replan-20260914-123500-testcode-ownership` updates coverage
+so checked-in TestCode originals, v1 fixture protocol, byte-shard, aggregate
+release and overlapping `AngelscriptTestCode` / `TestCode/Generated` files are
+no longer claimed here. Resume remains `1.1` for this planning-only Change;
+product implementation of structured registration proceeds on the successor
+Change. Record: `attachments/replans/replan-20260914-123500-testcode-ownership.md`.
