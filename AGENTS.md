@@ -32,8 +32,8 @@ This repository develops and validates `Plugins/Angelscript` as a reusable Unrea
 ## AngelScript reconstruction baseline
 
 - The preserved legacy AngelScript runtime and old test corpus are intentionally dormant while the language stack is reconstructed; retained source is reference material, not a supported config-restorable path.
-- New C++ Automation tests live under `Plugins/Angelscript/Source/AngelscriptTest/NewVersion/` and use the public identity `Angelscript.UnitTest.<Area>.<Scenario>`.
-- Treat `WITH_ANGELSCRIPT_UNITTESTS` as the disabled legacy gate and `WITH_ANGELSCRIPT_TESTS` as the enabled replacement gate. Route detailed startup and test behavior to `openspec/specs/angelscript/` and legacy-source isolation mechanics to `.agents/skills/angelscript-test-guide/references/legacy-source-isolation.md`.
+- New C++ Automation tests live under `Plugins/Angelscript/Source/AngelscriptTest/{NativeEngine,Bindings,Framework,FrameworkTests,Baseline}/`. NativeEngine identities are `Angelscript.UnitTest.NativeEngine.<Layer>.<Class>.<Method>`; Bindings, Framework, and Baseline keep their existing prefixes. `NewVersion` is not a source root or identity segment.
+- Treat `WITH_ANGELSCRIPT_UNITTESTS` as the disabled legacy gate and `WITH_ANGELSCRIPT_TESTS` as the enabled replacement gate. Route detailed startup and test behavior to `openspec/specs/angelscript/` and legacy-source isolation mechanics to `.agents/skills/angelscript-test/references/legacy-source-isolation.md`.
 
 ## Execution and Git boundaries
 
