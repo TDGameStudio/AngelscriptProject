@@ -25,7 +25,7 @@ New-Item -ItemType Directory -Path $runRoot -Force | Out-Null
 
 if ([string]::IsNullOrWhiteSpace($ReleaseArchive)) {
     $ReleaseArchive = Join-Path $repositoryRoot `
-        'Plugins\Angelscript\Standalone\out\build\win64-msvc\package\Release\as-standalone-win64.zip'
+        'Plugins\Angelscript\AngelscriptLSP\out\build\win64-msvc\package\Release\as-standalone-win64.zip'
 }
 $ReleaseArchive = [System.IO.Path]::GetFullPath($ReleaseArchive)
 if (-not (Test-Path -LiteralPath $ReleaseArchive -PathType Leaf)) {
