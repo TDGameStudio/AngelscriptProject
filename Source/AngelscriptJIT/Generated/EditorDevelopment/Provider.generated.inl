@@ -144,7 +144,7 @@ FAngelscriptJITProviderView GetGeneratedAngelscriptJITProviderView()
 	static thread_local const TCHAR* GDiagnosticFallbackChain[2];
 	GDiagnosticFallbackChain[0] = TEXT("typed-ast");
 	GDiagnosticFallbackChain[1] = TEXT("bytecode");
-	static thread_local FAngelscriptJITProviderTypedSemanticFunctionDiagnostic GDiagnosticSemanticFunctions[20];
+	static thread_local FAngelscriptJITProviderCanonicalFunctionDiagnostic GDiagnosticSemanticFunctions[20];
 	GDiagnosticSemanticFunctions[0] = {};
 	GDiagnosticSemanticFunctions[0].FunctionKey = {FAngelscriptHash256{FBlake3Hash(FWideStringView(TEXT("beb370979382d9574b5996c6d8b34141260f267800c1ada8e7013b667b4a6066")))}};
 	GDiagnosticSemanticFunctions[0].Role = TEXT("NonRoot");
@@ -153,7 +153,7 @@ FAngelscriptJITProviderView GetGeneratedAngelscriptJITProviderView()
 	GDiagnosticSemanticFunctions[0].InvocationKind = TEXT("Global");
 	GDiagnosticSemanticFunctions[0].ReceiverKind = TEXT("None");
 	GDiagnosticSemanticFunctions[0].ReceiverParameterIndex = -1;
-	GDiagnosticSemanticFunctions[0].HIRState = TEXT("Verified");
+	GDiagnosticSemanticFunctions[0].CanonicalASTState = TEXT("Verified");
 	GDiagnosticSemanticFunctions[0].CleanupPlanState = TEXT("VerifiedEmpty");
 	GDiagnosticSemanticFunctions[0].bHasSuspendState = 0;
 	GDiagnosticSemanticFunctions[0].bHasExceptionCleanup = 0;
@@ -171,7 +171,7 @@ FAngelscriptJITProviderView GetGeneratedAngelscriptJITProviderView()
 	GDiagnosticSemanticFunctions[1].InvocationKind = TEXT("Global");
 	GDiagnosticSemanticFunctions[1].ReceiverKind = TEXT("None");
 	GDiagnosticSemanticFunctions[1].ReceiverParameterIndex = -1;
-	GDiagnosticSemanticFunctions[1].HIRState = TEXT("Missing");
+	GDiagnosticSemanticFunctions[1].CanonicalASTState = TEXT("Missing");
 	GDiagnosticSemanticFunctions[1].CleanupPlanState = TEXT("Unverified");
 	GDiagnosticSemanticFunctions[1].bHasSuspendState = 0;
 	GDiagnosticSemanticFunctions[1].bHasExceptionCleanup = 0;
@@ -189,7 +189,7 @@ FAngelscriptJITProviderView GetGeneratedAngelscriptJITProviderView()
 	GDiagnosticSemanticFunctions[2].InvocationKind = TEXT("Global");
 	GDiagnosticSemanticFunctions[2].ReceiverKind = TEXT("None");
 	GDiagnosticSemanticFunctions[2].ReceiverParameterIndex = -1;
-	GDiagnosticSemanticFunctions[2].HIRState = TEXT("Missing");
+	GDiagnosticSemanticFunctions[2].CanonicalASTState = TEXT("Missing");
 	GDiagnosticSemanticFunctions[2].CleanupPlanState = TEXT("Unverified");
 	GDiagnosticSemanticFunctions[2].bHasSuspendState = 0;
 	GDiagnosticSemanticFunctions[2].bHasExceptionCleanup = 0;
@@ -207,7 +207,7 @@ FAngelscriptJITProviderView GetGeneratedAngelscriptJITProviderView()
 	GDiagnosticSemanticFunctions[3].InvocationKind = TEXT("InstanceMethod");
 	GDiagnosticSemanticFunctions[3].ReceiverKind = TEXT("NativeObjectThis");
 	GDiagnosticSemanticFunctions[3].ReceiverParameterIndex = -1;
-	GDiagnosticSemanticFunctions[3].HIRState = TEXT("Verified");
+	GDiagnosticSemanticFunctions[3].CanonicalASTState = TEXT("Verified");
 	GDiagnosticSemanticFunctions[3].CleanupPlanState = TEXT("VerifiedEmpty");
 	GDiagnosticSemanticFunctions[3].bHasSuspendState = 0;
 	GDiagnosticSemanticFunctions[3].bHasExceptionCleanup = 0;
@@ -225,7 +225,7 @@ FAngelscriptJITProviderView GetGeneratedAngelscriptJITProviderView()
 	GDiagnosticSemanticFunctions[4].InvocationKind = TEXT("Global");
 	GDiagnosticSemanticFunctions[4].ReceiverKind = TEXT("None");
 	GDiagnosticSemanticFunctions[4].ReceiverParameterIndex = -1;
-	GDiagnosticSemanticFunctions[4].HIRState = TEXT("Missing");
+	GDiagnosticSemanticFunctions[4].CanonicalASTState = TEXT("Missing");
 	GDiagnosticSemanticFunctions[4].CleanupPlanState = TEXT("Unverified");
 	GDiagnosticSemanticFunctions[4].bHasSuspendState = 0;
 	GDiagnosticSemanticFunctions[4].bHasExceptionCleanup = 0;
@@ -243,7 +243,7 @@ FAngelscriptJITProviderView GetGeneratedAngelscriptJITProviderView()
 	GDiagnosticSemanticFunctions[5].InvocationKind = TEXT("Global");
 	GDiagnosticSemanticFunctions[5].ReceiverKind = TEXT("None");
 	GDiagnosticSemanticFunctions[5].ReceiverParameterIndex = -1;
-	GDiagnosticSemanticFunctions[5].HIRState = TEXT("Verified");
+	GDiagnosticSemanticFunctions[5].CanonicalASTState = TEXT("Verified");
 	GDiagnosticSemanticFunctions[5].CleanupPlanState = TEXT("VerifiedEmpty");
 	GDiagnosticSemanticFunctions[5].bHasSuspendState = 0;
 	GDiagnosticSemanticFunctions[5].bHasExceptionCleanup = 0;
@@ -261,7 +261,7 @@ FAngelscriptJITProviderView GetGeneratedAngelscriptJITProviderView()
 	GDiagnosticSemanticFunctions[6].InvocationKind = TEXT("Global");
 	GDiagnosticSemanticFunctions[6].ReceiverKind = TEXT("None");
 	GDiagnosticSemanticFunctions[6].ReceiverParameterIndex = -1;
-	GDiagnosticSemanticFunctions[6].HIRState = TEXT("Missing");
+	GDiagnosticSemanticFunctions[6].CanonicalASTState = TEXT("Missing");
 	GDiagnosticSemanticFunctions[6].CleanupPlanState = TEXT("Unverified");
 	GDiagnosticSemanticFunctions[6].bHasSuspendState = 0;
 	GDiagnosticSemanticFunctions[6].bHasExceptionCleanup = 0;
@@ -279,7 +279,7 @@ FAngelscriptJITProviderView GetGeneratedAngelscriptJITProviderView()
 	GDiagnosticSemanticFunctions[7].InvocationKind = TEXT("Global");
 	GDiagnosticSemanticFunctions[7].ReceiverKind = TEXT("None");
 	GDiagnosticSemanticFunctions[7].ReceiverParameterIndex = -1;
-	GDiagnosticSemanticFunctions[7].HIRState = TEXT("Missing");
+	GDiagnosticSemanticFunctions[7].CanonicalASTState = TEXT("Missing");
 	GDiagnosticSemanticFunctions[7].CleanupPlanState = TEXT("Unverified");
 	GDiagnosticSemanticFunctions[7].bHasSuspendState = 0;
 	GDiagnosticSemanticFunctions[7].bHasExceptionCleanup = 0;
@@ -297,7 +297,7 @@ FAngelscriptJITProviderView GetGeneratedAngelscriptJITProviderView()
 	GDiagnosticSemanticFunctions[8].InvocationKind = TEXT("Global");
 	GDiagnosticSemanticFunctions[8].ReceiverKind = TEXT("None");
 	GDiagnosticSemanticFunctions[8].ReceiverParameterIndex = -1;
-	GDiagnosticSemanticFunctions[8].HIRState = TEXT("Missing");
+	GDiagnosticSemanticFunctions[8].CanonicalASTState = TEXT("Missing");
 	GDiagnosticSemanticFunctions[8].CleanupPlanState = TEXT("Unverified");
 	GDiagnosticSemanticFunctions[8].bHasSuspendState = 0;
 	GDiagnosticSemanticFunctions[8].bHasExceptionCleanup = 0;
@@ -315,7 +315,7 @@ FAngelscriptJITProviderView GetGeneratedAngelscriptJITProviderView()
 	GDiagnosticSemanticFunctions[9].InvocationKind = TEXT("Global");
 	GDiagnosticSemanticFunctions[9].ReceiverKind = TEXT("None");
 	GDiagnosticSemanticFunctions[9].ReceiverParameterIndex = -1;
-	GDiagnosticSemanticFunctions[9].HIRState = TEXT("Missing");
+	GDiagnosticSemanticFunctions[9].CanonicalASTState = TEXT("Missing");
 	GDiagnosticSemanticFunctions[9].CleanupPlanState = TEXT("Unverified");
 	GDiagnosticSemanticFunctions[9].bHasSuspendState = 0;
 	GDiagnosticSemanticFunctions[9].bHasExceptionCleanup = 0;
@@ -333,7 +333,7 @@ FAngelscriptJITProviderView GetGeneratedAngelscriptJITProviderView()
 	GDiagnosticSemanticFunctions[10].InvocationKind = TEXT("Global");
 	GDiagnosticSemanticFunctions[10].ReceiverKind = TEXT("None");
 	GDiagnosticSemanticFunctions[10].ReceiverParameterIndex = -1;
-	GDiagnosticSemanticFunctions[10].HIRState = TEXT("Missing");
+	GDiagnosticSemanticFunctions[10].CanonicalASTState = TEXT("Missing");
 	GDiagnosticSemanticFunctions[10].CleanupPlanState = TEXT("Unverified");
 	GDiagnosticSemanticFunctions[10].bHasSuspendState = 0;
 	GDiagnosticSemanticFunctions[10].bHasExceptionCleanup = 0;
@@ -351,7 +351,7 @@ FAngelscriptJITProviderView GetGeneratedAngelscriptJITProviderView()
 	GDiagnosticSemanticFunctions[11].InvocationKind = TEXT("Global");
 	GDiagnosticSemanticFunctions[11].ReceiverKind = TEXT("None");
 	GDiagnosticSemanticFunctions[11].ReceiverParameterIndex = -1;
-	GDiagnosticSemanticFunctions[11].HIRState = TEXT("Missing");
+	GDiagnosticSemanticFunctions[11].CanonicalASTState = TEXT("Missing");
 	GDiagnosticSemanticFunctions[11].CleanupPlanState = TEXT("Unverified");
 	GDiagnosticSemanticFunctions[11].bHasSuspendState = 0;
 	GDiagnosticSemanticFunctions[11].bHasExceptionCleanup = 0;
@@ -369,7 +369,7 @@ FAngelscriptJITProviderView GetGeneratedAngelscriptJITProviderView()
 	GDiagnosticSemanticFunctions[12].InvocationKind = TEXT("Global");
 	GDiagnosticSemanticFunctions[12].ReceiverKind = TEXT("None");
 	GDiagnosticSemanticFunctions[12].ReceiverParameterIndex = -1;
-	GDiagnosticSemanticFunctions[12].HIRState = TEXT("Missing");
+	GDiagnosticSemanticFunctions[12].CanonicalASTState = TEXT("Missing");
 	GDiagnosticSemanticFunctions[12].CleanupPlanState = TEXT("Unverified");
 	GDiagnosticSemanticFunctions[12].bHasSuspendState = 0;
 	GDiagnosticSemanticFunctions[12].bHasExceptionCleanup = 0;
@@ -387,7 +387,7 @@ FAngelscriptJITProviderView GetGeneratedAngelscriptJITProviderView()
 	GDiagnosticSemanticFunctions[13].InvocationKind = TEXT("Global");
 	GDiagnosticSemanticFunctions[13].ReceiverKind = TEXT("None");
 	GDiagnosticSemanticFunctions[13].ReceiverParameterIndex = -1;
-	GDiagnosticSemanticFunctions[13].HIRState = TEXT("Missing");
+	GDiagnosticSemanticFunctions[13].CanonicalASTState = TEXT("Missing");
 	GDiagnosticSemanticFunctions[13].CleanupPlanState = TEXT("Unverified");
 	GDiagnosticSemanticFunctions[13].bHasSuspendState = 0;
 	GDiagnosticSemanticFunctions[13].bHasExceptionCleanup = 0;
@@ -405,7 +405,7 @@ FAngelscriptJITProviderView GetGeneratedAngelscriptJITProviderView()
 	GDiagnosticSemanticFunctions[14].InvocationKind = TEXT("Global");
 	GDiagnosticSemanticFunctions[14].ReceiverKind = TEXT("None");
 	GDiagnosticSemanticFunctions[14].ReceiverParameterIndex = -1;
-	GDiagnosticSemanticFunctions[14].HIRState = TEXT("Missing");
+	GDiagnosticSemanticFunctions[14].CanonicalASTState = TEXT("Missing");
 	GDiagnosticSemanticFunctions[14].CleanupPlanState = TEXT("Unverified");
 	GDiagnosticSemanticFunctions[14].bHasSuspendState = 0;
 	GDiagnosticSemanticFunctions[14].bHasExceptionCleanup = 0;
@@ -423,7 +423,7 @@ FAngelscriptJITProviderView GetGeneratedAngelscriptJITProviderView()
 	GDiagnosticSemanticFunctions[15].InvocationKind = TEXT("InstanceMethod");
 	GDiagnosticSemanticFunctions[15].ReceiverKind = TEXT("NativeObjectThis");
 	GDiagnosticSemanticFunctions[15].ReceiverParameterIndex = -1;
-	GDiagnosticSemanticFunctions[15].HIRState = TEXT("Verified");
+	GDiagnosticSemanticFunctions[15].CanonicalASTState = TEXT("Verified");
 	GDiagnosticSemanticFunctions[15].CleanupPlanState = TEXT("VerifiedEmpty");
 	GDiagnosticSemanticFunctions[15].bHasSuspendState = 0;
 	GDiagnosticSemanticFunctions[15].bHasExceptionCleanup = 0;
@@ -441,7 +441,7 @@ FAngelscriptJITProviderView GetGeneratedAngelscriptJITProviderView()
 	GDiagnosticSemanticFunctions[16].InvocationKind = TEXT("Global");
 	GDiagnosticSemanticFunctions[16].ReceiverKind = TEXT("None");
 	GDiagnosticSemanticFunctions[16].ReceiverParameterIndex = -1;
-	GDiagnosticSemanticFunctions[16].HIRState = TEXT("Verified");
+	GDiagnosticSemanticFunctions[16].CanonicalASTState = TEXT("Verified");
 	GDiagnosticSemanticFunctions[16].CleanupPlanState = TEXT("VerifiedEmpty");
 	GDiagnosticSemanticFunctions[16].bHasSuspendState = 0;
 	GDiagnosticSemanticFunctions[16].bHasExceptionCleanup = 0;
@@ -459,7 +459,7 @@ FAngelscriptJITProviderView GetGeneratedAngelscriptJITProviderView()
 	GDiagnosticSemanticFunctions[17].InvocationKind = TEXT("Global");
 	GDiagnosticSemanticFunctions[17].ReceiverKind = TEXT("None");
 	GDiagnosticSemanticFunctions[17].ReceiverParameterIndex = -1;
-	GDiagnosticSemanticFunctions[17].HIRState = TEXT("Verified");
+	GDiagnosticSemanticFunctions[17].CanonicalASTState = TEXT("Verified");
 	GDiagnosticSemanticFunctions[17].CleanupPlanState = TEXT("VerifiedEmpty");
 	GDiagnosticSemanticFunctions[17].bHasSuspendState = 0;
 	GDiagnosticSemanticFunctions[17].bHasExceptionCleanup = 0;
@@ -477,14 +477,14 @@ FAngelscriptJITProviderView GetGeneratedAngelscriptJITProviderView()
 	GDiagnosticSemanticFunctions[18].InvocationKind = TEXT("Global");
 	GDiagnosticSemanticFunctions[18].ReceiverKind = TEXT("None");
 	GDiagnosticSemanticFunctions[18].ReceiverParameterIndex = -1;
-	GDiagnosticSemanticFunctions[18].HIRState = TEXT("Missing");
+	GDiagnosticSemanticFunctions[18].CanonicalASTState = TEXT("Missing");
 	GDiagnosticSemanticFunctions[18].CleanupPlanState = TEXT("Unverified");
 	GDiagnosticSemanticFunctions[18].bHasSuspendState = 0;
 	GDiagnosticSemanticFunctions[18].bHasExceptionCleanup = 0;
 	GDiagnosticSemanticFunctions[18].bCleanupPlanCoversAllTransfers = 0;
 	GDiagnosticSemanticFunctions[18].ComponentIndex = -1;
 	GDiagnosticSemanticFunctions[18].bRecursiveComponent = 0;
-	GDiagnosticSemanticFunctions[18].EligibilityReason = TEXT("MissingTypedHIR");
+	GDiagnosticSemanticFunctions[18].EligibilityReason = TEXT("MissingCanonicalAST");
 	GDiagnosticSemanticFunctions[18].EligibilityDetail = TEXT("No same-compilation verified typed HIR is available.");
 	GDiagnosticSemanticFunctions[18].EligibilitySource = {sizeof(FAngelscriptJITProviderDiagnosticSource), TEXT(""), 0, 0};
 	GDiagnosticSemanticFunctions[19] = {};
@@ -495,7 +495,7 @@ FAngelscriptJITProviderView GetGeneratedAngelscriptJITProviderView()
 	GDiagnosticSemanticFunctions[19].InvocationKind = TEXT("Global");
 	GDiagnosticSemanticFunctions[19].ReceiverKind = TEXT("None");
 	GDiagnosticSemanticFunctions[19].ReceiverParameterIndex = -1;
-	GDiagnosticSemanticFunctions[19].HIRState = TEXT("Verified");
+	GDiagnosticSemanticFunctions[19].CanonicalASTState = TEXT("Verified");
 	GDiagnosticSemanticFunctions[19].CleanupPlanState = TEXT("VerifiedEmpty");
 	GDiagnosticSemanticFunctions[19].bHasSuspendState = 0;
 	GDiagnosticSemanticFunctions[19].bHasExceptionCleanup = 0;
@@ -1265,9 +1265,9 @@ FAngelscriptJITProviderView GetGeneratedAngelscriptJITProviderView()
 	GDiagnosticBackendAttempts[36] = {};
 	GDiagnosticBackendAttempts[36].BackendId = TEXT("typed-ast");
 	GDiagnosticBackendAttempts[36].Disposition = TEXT("Unsupported");
-	GDiagnosticBackendAttempts[36].Detail = TEXT("MissingTypedHIR: No same-compilation verified typed HIR is available.");
+	GDiagnosticBackendAttempts[36].Detail = TEXT("MissingCanonicalAST: No same-compilation verified Canonical AST is available.");
 	GDiagnosticBackendAttempts[36].Flags = static_cast<EAngelscriptJITProviderDiagnosticAttemptFlags>(3);
-	GDiagnosticBackendAttempts[36].FallbackReason = TEXT("MissingTypedHIR");
+	GDiagnosticBackendAttempts[36].FallbackReason = TEXT("MissingCanonicalAST");
 	GDiagnosticBackendAttempts[36].TypedDetail = TEXT("No same-compilation verified typed HIR is available.");
 	GDiagnosticBackendAttempts[36].ProcessedSource = {sizeof(FAngelscriptJITProviderDiagnosticSource), TEXT(""), 0, 0};
 	GDiagnosticBackendAttempts[36].PrimarySemanticFunctionIndex = 18;
@@ -1492,7 +1492,7 @@ FAngelscriptJITProviderView GetGeneratedAngelscriptJITProviderView()
 	GProviderDiagnostics.DiagnosticDigest = FAngelscriptHash256{FBlake3Hash(FWideStringView(TEXT("a208d3ff44aa315c38e2af3d26a4a30d856946a25ddb6410833376754fd9eaf4")))};
 	GProviderDiagnostics.RequestKind = TEXT("StaticJITArtifact");
 	GProviderDiagnostics.RequestedBackendId = TEXT("typed-ast");
-	GProviderDiagnostics.CaptureState = TEXT("VerifiedTypedHIR");
+	GProviderDiagnostics.CaptureState = TEXT("VerifiedCanonicalAST");
 	GProviderDiagnostics.FallbackChain = GDiagnosticFallbackChain;
 	GProviderDiagnostics.FallbackChainCount = 2;
 	GProviderDiagnostics.SourceCompilePassCount = 1;
@@ -1504,7 +1504,7 @@ FAngelscriptJITProviderView GetGeneratedAngelscriptJITProviderView()
 	GProviderDiagnostics.CompiledDependencyCount = 54;
 	GProviderDiagnostics.CompiledExternalNativeCallCount = 30;
 	GProviderDiagnostics.EmitModuleCount = 37;
-	GProviderDiagnostics.bHasVerifiedTypedHIR = 1;
+	GProviderDiagnostics.bHasVerifiedCanonicalAST = 1;
 	GProviderDiagnostics.TaskError = TEXT("");
 	GProviderDiagnostics.Functions = GDiagnosticFunctions;
 	GProviderDiagnostics.FunctionCount = 20;
