@@ -130,8 +130,102 @@ def preview(context, operation, parameters, historical=False):
                  goal='' if historical and draft else parameters.get('Goal', ''),
                  reason='' if draft else parameters.get('Reason', ''), candidates=parameters.get('Candidates', {}),
                  baselines=parameters.get('ExpectedHashes', {}))
+    if parameters.get('GitPlan'):
+        basis.update(git_plan=parameters['GitPlan'], workspace=context['WorkspaceRoot'], records=context['OpenSpecRoot'])
     return dict(HandoffRevision=fingerprint(basis), DraftRevision=fingerprint(draft) if draft else None,
                 Operation=operation, ChangeId=target, Draft=draft, Ready=True)
+
+
+def validate_creation_plan(context, parameters):
+    """Validate the complete future record without publishing a canonical identity."""
+    import shutil
+    import subprocess
+    import tempfile
+    from replans import native
+
+    change = parameters['ChangeId']
+    candidates = parameters.get('Candidates', {})
+    if not {'proposal.md', 'design.md', 'tasks.md'} <= candidates.keys():
+        raise ValueError('Complete creation requires proposal.md, design.md and tasks.md candidates')
+    draft = draft_inputs(context, parameters['DraftId'], parameters['Scope'], change) if parameters.get('DraftId') else None
+    exports = draft['ExpectedExports'] if draft else []
+    targets = {entry['Target'] for entry in exports if entry['Preservation'] == 'translated-text'}
+    if not targets <= candidates.keys():
+        raise ValueError('Prepare all accepted English text exports in Candidates before the Create Gate')
+    for name, body in candidates.items():
+        allowed = name in ('proposal.md', 'design.md', 'tasks.md', 'attachments/data/planning-validation.md') or name in targets or re.fullmatch(r'specs/[a-z0-9/-]+\.md', name)
+        if not allowed or '..' in name.split('/') or not isinstance(body, str) or len(body.encode('utf8')) > 1_000_000:
+            raise ValueError('Unsafe or incomplete planning candidate: ' + name)
+    design = candidates['design.md']
+    calls = re.search(r'^## Call chains\s*\n(.*?)(?=^## |\Z)', design, re.M | re.S)
+    if not calls or not (re.search(r'(?im)^none\s*[-—:]\s*\S+', calls[1]) or
+                            (re.search(r'(?:->|→)', calls[1]) and re.search(r'(?im)^Measured at:.*\b[0-9a-f]{7,40}\b', calls[1]) and re.search(r'(?i)dirty\s*:', calls[1]))):
+        raise ValueError('Complete creation needs an evidenced Call chains section')
+    plan = parameters.get('GitPlan', {})
+    if set(plan) - {'RepositoryScopes', 'CommitMessage', 'PreserveOutsideStaged'} or plan.get('RepositoryScopes') != {'.': ['openspec/changes/' + change]} or not str(plan.get('CommitMessage', '')).strip():
+        raise ValueError('Create GitPlan must select exactly the new Change directory and an explicit CommitMessage')
+    def git(*args):
+        return subprocess.run(['git', '-C', context['OpenSpecRoot'], *args], capture_output=True, text=True, check=True).stdout.strip()
+    binding = dict(RepositoryScopes=plan['RepositoryScopes'], CommitMessage=plan['CommitMessage'], PreserveOutsideStaged=True,
+                   BaselineHead=git('rev-parse', 'HEAD'), Branch=git('symbolic-ref', '--short', 'HEAD'), RecordRoot=context['OpenSpecRoot'])
+    scratch = local_path(context['WorkspaceRoot'], 'Saved/AgentTemp/create-plan')
+    scratch.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix='candidate-', dir=scratch) as folder:
+        stage = Path(folder)
+        (stage / 'openspec/changes').mkdir(parents=True)
+        openspec = local_path(context['OpenSpecRoot'], 'openspec')
+        for name in ('project.yaml', 'config.yaml', 'domains', 'workflows', 'specs'):
+            source = local_path(openspec, name)
+            target = stage / 'openspec' / name
+            if source.is_dir():
+                for child in source.rglob('*'):
+                    local_path(openspec, child.relative_to(openspec).as_posix())
+                shutil.copytree(source, target)
+            elif source.is_file():
+                target.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(source, target)
+        native(context, ['change', 'create', change, '--title', parameters['Title'], '--goal', parameters['Goal'], '--json'], stage)
+        record = stage / 'openspec/changes' / change
+        for name, body in candidates.items():
+            path = local_path(record, name)
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(body, encoding='utf8')
+        # Seed and design checks after creation must not discover a dependency
+        # that the full, read-only Gate preview never validated. Stage the exact
+        # binary exports too, so legitimate translated Markdown can link to them.
+        for entry in exports:
+            if entry['Preservation'] == 'bytes':
+                data = (Path(draft['Path']) / entry['Source']).read_bytes()
+                if digest(data) != entry['Sha256']:
+                    raise ValueError('Binary export changed during candidate preflight')
+                target = local_path(record, entry['Target'])
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_bytes(data)
+        generated = {'attachments/INDEX.md', 'attachments/data/harness-origin.json'}
+        for name, body in candidates.items():
+            if name != 'design.md' and not (name.startswith('attachments/') and name.endswith('.md')):
+                continue  # Match the public seed/plan link-closure boundary.
+            for link in re.findall(r'\]\(([^)]+)\)', body):
+                if re.match(r'^(?:https?:|mailto:|#)', link):
+                    continue
+                if re.search(r'openspec[/\\]drafts[/\\]', link):
+                    raise ValueError('Candidate link depends on ignored draft content: ' + link)
+                target = (record / name).parent / link.split('#', 1)[0]
+                try:
+                    relative = target.resolve().relative_to(record.resolve()).as_posix()
+                except ValueError:
+                    raise ValueError('Candidate link escapes the Change: ' + link) from None
+                target = local_path(record, relative)
+                if relative not in generated and not target.is_file():
+                    raise ValueError('Candidate local dependency is missing: ' + link)
+        native(context, ['validate', change, '--type', 'change', '--strict', '--json'], stage)
+        task_plan = native(context, ['instructions', 'apply', '--change', change, '--json'], stage)
+        if not task_plan.get('tasks') or task_plan.get('taskIssues'):
+            raise ValueError('The complete candidate must project a valid non-empty TaskPlan')
+    return dict(Validated=True, TaskCount=len(task_plan['tasks']), GitPlan=binding,
+                CandidateHashes={name: digest(body.encode('utf8')) for name, body in candidates.items()},
+                BinaryExports=[dict(Target=item['Target'], Source=str(Path(draft['Path']) / item['Source']), Sha256=item['Sha256'])
+                               for item in exports if item['Preservation'] == 'bytes'])
 
 
 def consume_gate(context, operation, parameters, prepared=None):
@@ -226,6 +320,29 @@ def validate_arrangements(context, change, data):
     validate_handoff_arrangement(context, change, execution['answer'], execution['source'], arrangement)
 
 
+def planning_commit_status(context, change):
+    """Runtime recovery is separate from the immutable accepted planning record."""
+    import subprocess
+    root = local_path(context['OpenSpecRoot'], 'openspec/changes/' + change)
+    marker_path = root / 'attachments/data/harness-origin.json'
+    if not marker_path.exists() or not json.loads(marker_path.read_text('utf-8-sig')).get('completePlanning'):
+        return dict(stage='historical', pending=False)
+    owner = str(Path(context['OpenSpecRoot']).absolute()).rstrip('\\/').lower()
+    state = local_path(context['OpenSpecRoot'], 'Saved/Harness/ChangeCreates/' + digest((owner + '|' + change).encode()) + '.json')
+    if state.exists():
+        intent = json.loads(state.read_text('utf-8-sig'))
+        if intent.get('changeId') != change or intent.get('marker', {}).get('gate', {}).get('handoff_id') != json.loads(marker_path.read_text('utf-8-sig'))['gate']['handoff_id']:
+            raise ValueError('Planning recovery identity differs')
+        plan = intent.get('planning', {})
+        return dict(stage=plan.get('stage', 'recovery-required'), pending=plan.get('stage') != 'complete', commit=plan.get('commit'))
+    # A fresh checkout has no ignored runtime journal. The committed origin is
+    # durable proof that this mandatory planning boundary was persisted.
+    committed = subprocess.run(['git', '-C', context['OpenSpecRoot'], 'show', 'HEAD:' + marker_path.relative_to(context['OpenSpecRoot']).as_posix()], capture_output=True)
+    if committed.returncode or committed.stdout != marker_path.read_bytes():
+        return dict(stage='recovery-required', pending=True)
+    return dict(stage='complete', pending=False)
+
+
 def get_handoff_status(context, change):
     from discussions import active_change, read_record
     from replans import decode_applied
@@ -281,7 +398,9 @@ def main():
     context, parameters = payload['context'], payload.get('parameters', {})
     context.setdefault('OpenSpecRoot', context['WorkspaceRoot'])
     action = sys.argv[1]
-    if action == 'draft-check':
+    if action == 'create-plan':
+        result = validate_creation_plan(context, parameters)
+    elif action == 'draft-check':
         result = draft_inputs(context, parameters['DraftId'], parameters['Scope'], parameters['ChangeId'])
         result['DraftRevision'] = fingerprint(result)
     elif action in ('create-preview', 'create-preview-legacy'):

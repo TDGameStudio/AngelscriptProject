@@ -21,8 +21,10 @@
     > Boundaries: Hooks remain arbitrary programs; Harness restores repository refs and indexes that it owns and reports but never overwrites worktree, process, network, or repository-external hook side effects.
 
 #### Scenario: Accept scope-local hook changes
+- **GIVEN** an explicitly authorized legacy scoped call without an expected content revision
 - **WHEN** a pre-commit hook formats and stages only an effective-scope path and a commit-message hook edits the message
 - **THEN** the exact scoped commit succeeds with the hook-produced scoped content and message while outside index state remains equivalent
+- **BUT** a lifecycle call bound to an expected candidate rejects selected-content rewriting rather than silently changing the approved bytes
 
 #### Scenario: Preserve outside staged content explicitly
 - **GIVEN** the exact selected workspace contains intentionally staged work outside the requested repository/path scopes

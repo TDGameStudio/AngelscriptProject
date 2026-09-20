@@ -2,10 +2,11 @@
 #requires -PSEdition Core
 
 [CmdletBinding()]
-param()
+param([string]$ActiveChange='')
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+if ($ActiveChange -and $ActiveChange -cnotmatch '^[a-z0-9-]+/[a-z0-9-]+$') { throw 'ActiveChange must be an exact canonical domain/change ID.' }
 
 function Assert-True {
     param([bool]$Condition, [string]$Message)
@@ -545,6 +546,26 @@ foreach ($token in @(
 }
 # Gate, queue and feedback behavior is proved by the route fixtures, not a
 # requirement to duplicate their policy paragraphs in the short entry router.
+# Check discoverability of the focused lifecycle guidance. This checks links,
+# not whether a model explains well or an actual host rendered its popup.
+foreach ($relative in @(
+    '.agents/skills/harness/references/handoff-gate.md',
+    '.agents/skills/harness/references/closure.md',
+    '.agents/skills/harness/references/evolution.md',
+    '.agents/skills/explaining-work/SKILL.md',
+    '.agents/skills/explaining-work/references/improvement.md',
+    '.agents/skills/openspec/references/knowledge.md',
+    '.agents/skills/grill/references/hosts.md',
+    '.agents/skills/grill/references/rounds.md'
+)) {
+    $source=Join-Path $projectRoot $relative
+    $body=Get-Content -LiteralPath $source -Raw
+    foreach ($link in [regex]::Matches($body,'\]\((?<path>[^)]+\.md)(?:#[^)]*)?\)')) {
+        $target=$link.Groups['path'].Value
+        if ($target -match '^[a-z]+://') { continue }
+        Assert-True (Test-Path -LiteralPath (Join-Path (Split-Path $source) $target) -PathType Leaf) "Lifecycle guidance link is missing: $relative -> $target"
+    }
+}
 Assert-True (-not $harnessSkill.Contains('Codex hooks are optional')) 'Harness entry must not describe Codex project hooks as optional adapters'
 Assert-Contains $harnessSkill '\[[^\]]+\]\(references/verification\.md\)' 'Harness entry routes verification decisions to the canonical focused reference'
 Assert-True (-not $harnessSkill.Contains('Run the core gates through one public test entry:')) 'Harness entry does not present every aggregate profile as a routine gate'
@@ -1155,7 +1176,12 @@ finally {
     }
 }
 
-$activeImplementationIssues = @(Test-ActiveImplementationIssueGate -ActiveChangesRoot (Join-Path $projectRoot 'openspec\changes') -TrackedRepositoryRoot $projectRoot)
+$activeAuditRoot=Join-Path $projectRoot 'openspec\changes'
+if ($ActiveChange) {
+    $activeAuditRoot=Join-Path $activeAuditRoot $ActiveChange
+    Assert-True (Test-Path -LiteralPath (Join-Path $activeAuditRoot 'change.yaml') -PathType Leaf) 'Selected active Change must exist; missing records are not a passing audit'
+}
+$activeImplementationIssues = @(Test-ActiveImplementationIssueGate -ActiveChangesRoot $activeAuditRoot -TrackedRepositoryRoot $projectRoot)
 Assert-Equal 0 $activeImplementationIssues.Count ("Active implementation issue gate failed:`n{0}" -f ($activeImplementationIssues -join [Environment]::NewLine))
 
 $reviewIssues = @(Test-ReviewClosureGate -ReviewRoot (Join-Path $changeRoot 'attachments\reviews'))

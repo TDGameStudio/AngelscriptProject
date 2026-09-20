@@ -12,9 +12,10 @@ function G($root, $arguments) {
     if ($LASTEXITCODE) { throw ($out -join "`n") }
     return ($out -join "`n")
 }
+. (Join-Path $PSScriptRoot 'HistoricalChangeFixture.ps1')
 function W($path, $body) { [void][IO.Directory]::CreateDirectory([IO.Path]::GetDirectoryName($path)); [IO.File]::WriteAllText($path, $body) }
 function Invoke-FixtureHarness($context, $command, $parameters=@{}, $arguments=@()) {
-    $result = Invoke-Harness -Context $context -Command $command -Parameters $parameters -ArgumentList $arguments
+    $result = if ($command -eq 'harness.change.create') { Invoke-HistoricalFixtureCreate -Context $context -Parameters $parameters } else { Invoke-Harness -Context $context -Command $command -Parameters $parameters -ArgumentList $arguments }
     if ($result.status -ne 'Succeeded') { throw "$command : $($result.error.message)" }
     return $result.data
 }
@@ -116,6 +117,33 @@ next
     Check ($live.progress.total -eq 2 -and $live.progress.complete -eq 1 -and $live.ready -eq 1) 'TaskPlan progress is read from canonical records'
     $owned = Join-Path $replica.WorkspaceRoot 'Plugins/Foo/owned.txt'
     $initialOwner = Invoke-FixtureHarness $replica harness.queue.claim @{SessionId='fixture-session'}
+    # Only process discovery is external; keep actual queue ownership and mutation real.
+    $queueModule = Get-Module -All ChangeQueue | Select-Object -First 1
+    & $queueModule {
+        $script:TakeoverProcesses = $null
+        function script:Invoke-Harness {
+            param($Command, $Context, $Parameters=@{}, $ArgumentList=@())
+            if ($Command -eq 'ue.process.list') { return [pscustomobject]@{status='Succeeded';data=$script:TakeoverProcesses} }
+            return Harness\Invoke-Harness -Command $Command -Context $Context -Parameters $Parameters -ArgumentList $ArgumentList
+        }
+    }
+    try {
+        $emptyTakeover = Invoke-Harness -Context $replica -Command harness.queue.takeover -Parameters @{SessionId='fixture-session';PreviousControllerStopped=$true}
+        Check ($emptyTakeover.status -eq 'Succeeded') 'confirmed takeover accepts successful empty process discovery'
+        $initialOwner = $emptyTakeover.data
+        foreach ($process in @(
+            [pscustomobject]@{WorkspaceMatch=$true;CommandLine='UnrealEditor Fixture.uproject'},
+            [pscustomobject]@{WorkspaceMatch=$false;CommandLine=''}
+        )) {
+            & $queueModule { param($value) $script:TakeoverProcesses=@($value) } $process
+            $deniedTakeover = Invoke-Harness -Context $replica -Command harness.queue.takeover -Parameters @{SessionId='other-session';PreviousControllerStopped=$true}
+            Check ($deniedTakeover.status -eq 'Failed' -and $deniedTakeover.error.message -match 'Active or unidentified') 'active or uninspectable process still blocks takeover'
+            $stillOwned = Invoke-FixtureHarness $replica harness.queue.status
+            Check ($stillOwned.controller.sessionId -eq 'fixture-session') 'blocked takeover preserves actual controller ownership'
+        }
+    } finally {
+        & $queueModule { Remove-Item Function:Invoke-Harness -ErrorAction SilentlyContinue; Remove-Variable TakeoverProcesses -Scope Script -ErrorAction SilentlyContinue }
+    }
     Invoke-FixtureHarness $replica harness.queue.checkpoint @{Token=$initialOwner.controller.token} | Out-Null
     $initialFooHead = G (Join-Path $replica.WorkspaceRoot 'Plugins/Foo') @('rev-parse','HEAD')
     W $owned 'plugin result'

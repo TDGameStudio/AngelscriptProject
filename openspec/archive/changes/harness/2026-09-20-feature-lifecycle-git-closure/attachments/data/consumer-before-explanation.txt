@@ -1,0 +1,193 @@
+# before-explanation：独立前向使用记录
+
+本记录只解释给定的隔离 fixture，不代表当前真实项目的执行状态。没有查询、推进或修复真实队列，没有读取任何 active Change planning 或其他评估报告。
+
+## 面向模拟用户的说明
+
+我刚才把“Change 已归档”说得太笼统了。这个场景的准确状态是：**插件的实现已经保存为插件仓库中的提交，Change 记录也已经移入归档目录，但规范记录仓库的最终提交失败，所以整次收束尚未完成。** `Stage=archived` 和 `Complete=false` 分别描述这两件事，二者并不矛盾。
+
+这里有两个仓库角色。插件仓库保存插件的代码版本；规范记录仓库由 `OpenSpecRoot` 指向，保存项目共用的 OpenSpec 记录。即使它们的文件看起来处于同一项目目录下，它们的 Git 提交仍然是分别完成的。一次插件提交不会同时把父仓库里的 Change 记录也提交。
+
+**“实现”回答的是插件具体改成了什么；“归档记录”回答的是这项 Change 做了什么、依据什么验证、以什么结果结束。** 后者包含 Change 的设计和任务等记录、证据、结束结果，以及收束流程生成的回执。回执还会记下前面完成的实现提交，以便将记录和代码版本对应起来。
+
+用同一个 Change 看这次发生的三个动作，区别就清楚了：
+
+| 动作 | 它实际保存或改变的东西 | 给定场景中的结果 |
+|---|---|---|
+| 提交插件实现 | 把本次选中的插件代码改动保存到插件仓库的 Git 历史 | 已成功，插件提交存在 |
+| 归档 Change 记录 | 将活动 Change 的记录移入归档目录，写入结束结果，并核验归档内容 | 已完成，归档目录存在，`Stage=archived` |
+| 提交最终规范记录 | 把这次归档变化及已选定的相关记录保存到规范记录仓库的 Git 历史 | `pre-commit` 拒绝，最终提交不存在，`Complete=false` |
+
+表里的第三步很关键：**文件已移动到归档目录，是工作目录里发生的变化；Git 最终提交成功，才证明这些变化已经进入规范记录仓库的历史。** “目录存在”和“已经提交”是两个可以分别检查的事实。给定场景恰好完成了前一个事实，还没完成后一个。
+
+从实际代码看，`harness.change.close` 调用 `Close-HarnessChange`，由它顺序完成插件提交、记录整理、归档和最终记录提交。下面是当前代码中与这个问题有关的顺序；中间的准备、撤回分支和校验细节省略，箭头表示必须依次完成的步骤：
+
+```text
+harness.change.close → Close-HarnessChange
+  ├─ Complete-ClosureGitStep → Complete-HarnessGitCommit
+  │    插件仓库保存实现提交，记录其提交号
+  ├─ 整理收束回执和相关证据
+  ├─ openspec.change archive
+  │    移动 Change 记录并核验归档，阶段变为 archived
+  └─ Complete-ClosureGitStep → Complete-HarnessGitCommit
+       规范记录仓库执行最后一次提交
+       ├─ 此场景：pre-commit 拒绝 → 留在 archived
+       └─ 提交成功：记录 RecordCommit → 阶段变为 complete
+```
+
+这不是把成功状态凭空拆成几个词。[ChangeClosure.psm1](D:/Workspace/AngelscriptProject/.agents/skills/harness/scripts/ChangeClosure.psm1) 里确实先保存 `archived`，再尝试最终提交；只有后者成功，才保存 `complete`。其关键逻辑可忠实简化为：
+
+```powershell
+# 摘自 Close-HarnessChange，省略最终候选内容的构建和校验。
+if ($state.stage -eq 'archived') {
+    Complete-ClosureGitStep $state $state.recordStep
+    # 上面失败会抛出异常，下面两项就不会被写入。
+    $state.recordCommit = $state.recordStep.commit
+    $state.stage = 'complete'
+    Write-ClosureState $statePath $state
+}
+
+# Get-ClosureView 的 Complete 就是从该阶段计算出来的。
+Complete = ($State.stage -eq 'complete')
+```
+
+因此，“收束没完成”在这里有一个很具体的意思：**缺少最后的规范记录提交，以及由其成功产生的完成证据。** 它不表示已经成功的插件提交消失了。Git 实现也明确保留前面仓库已完成的提交，供原操作恢复；不会因为后面的仓库提交失败就把前面的成功一并回滚。`pre-commit` 是实际创建提交之前执行的检查，这个场景的拒绝发生在规范记录仓库的检查阶段。[GitOperations.psm1](D:/Workspace/AngelscriptProject/.agents/skills/git-operations/scripts/GitOperations.psm1)
+
+队列为什么不能继续，取决于另一个明确的读取路径：`harness.queue.advance` 经 `Invoke-HarnessChangeQueue` 进入 `change_queue.py`，读取当前 Change 的归档身份，再调用 `closure_status.py` 的 `inspect_closure` 检查这次收束。
+
+对于这个有收束日志的 Change，检查首先发现阶段仍是 `archived`，就返回 `recordState=close-pending`，也就是“当前收束还有步骤未完成”。队列推进代码只接受 `recordState=archive-pending`，所以它在把当前队列项标为已归档、选择下一项之前就停止了。[closure_status.py](D:/Workspace/AngelscriptProject/.agents/skills/harness/scripts/closure_status.py) · [change_queue.py](D:/Workspace/AngelscriptProject/.agents/skills/harness/scripts/change_queue.py)
+
+这里的 `archive-pending` 名称容易误解：在这个队列检查里，它表示“归档记录已满足要求，等待队列确认并移到下一项”。它不是说归档目录还没移动。要得到这个结果，仅把阶段字符串改成 `complete` 也不够：检查还会确认归档回执与该 Change、结束决定一致，`RecordCommit` 存在并且属于当前历史，而且该提交保存的归档文件与磁盘上的归档内容相符。这样下一项才不会跨过一项记录仍未保存完毕的工作。
+
+把本例向前走一步看：如果原收束操作在同一授权范围和已接受内容下成功完成最终提交，返回值就能变为 `Stage=complete`、`Complete=true` 并带上 `RecordCommit`；归档持久化检查也通过后，队列才具备继续的条件。随后仍由 `harness.queue.advance` 实际推进，并遵守已有执行授权范围和暂停状态；最终提交本身不会直接执行下一项。
+
+所以我应当把这次进度报告为：**“插件实现提交成功；Change 记录已移入归档；规范记录的最终提交被 pre-commit 拒绝，当前收束待恢复，队列暂不能推进。”** 给定证据没有说明该 hook 具体拒绝了什么；解释这个停点不需要先猜测拒绝原因，也不能据此判断真实项目当前需要怎样修复。
+
+## 本次行动与边界
+
+- 使用当前 `explaining-work` Skill，按用户表达的困惑直接解释缺失概念，并沿实际代码核对调用链、状态和队列消费者。
+- 没有提出理解测验、确认问题或审批问题。现有事实已经足够解释，不同用户偏好不会改变当前机制。
+- 没有打开讨论 draft。Skill 明确说明独立解释不自动创建 draft、Change 或实现改动；用户只要求解释。
+- 没有调用 `harness.change.close`、`harness.queue.advance` 或其他真实状态查询/修改路由；没有执行 Git 提交、测试或修复 hook。
+- 只新增本 scratch 目录的说明文件，并通过会话适配器记录上述行动决定。
+- 未解决事项：hook 的具体拒绝原因不在给定证据内；fixture 的进一步恢复和运行时验证不在本次解释范围内；真实项目状态完全未作判断。
+- 评估限制：说明基于给定 fixture 事实与当前工作目录源码的静态检查，没有重跑 fixture。收束脚本等相关文件存在未提交或未跟踪内容，不能只用仓库 HEAD 重现当前代码。
+
+## 精确读取清单
+
+工作目录：`D:/Workspace/AngelscriptProject`。读取时父仓库 HEAD 为 `2afe4b9090a3fc849545ee6301b2b83839fa8f84`。以下路径均相对此工作目录。
+
+### 已实际读取的知识与源代码文件
+
+| 文件 | 阅读范围 / 用途 |
+|---|---|
+| `.agents/skills/explaining-work/SKILL.md` | 全文；本次解释工作规则 |
+| `.agents/skills/explaining-work/references/method.md` | 全文；证据区分、读者理解修复、避免理解审批 |
+| `.agents/skills/explaining-work/references/source-walkthrough.md` | 全文；忠实代码与调用链 |
+| `.agents/skills/explaining-work/references/focused-lenses.md` | 全文；记录、效应、完成证据和消费者 |
+| `.agents/skills/explaining-work/references/visual-catalog.md` | 标题搜索、开头与 State & lifecycle 小节；选择状态视图 |
+| `.agents/skills/explaining-work/ascii/state-lifecycle.md` | 第一个状态机小节；仅作图形参考，没有把例子当作本系统证据 |
+| `.agents/skills/harness/scripts/ChangeClosure.psm1` | 全文及后续符号搜索；收束状态、实现/记录提交、恢复边界；读取时为未跟踪文件 |
+| `.agents/skills/harness/scripts/closure_status.py` | 全文；收束日志、回执、最终提交和归档字节检查；读取时为未跟踪文件 |
+| `.agents/skills/harness/scripts/change_queue.py` | `record_identity`、`current`、`authorized_pending`、`inspect_record`、`result`，以及 checkpoint/advance 和程序入口片段；读取时有修改 |
+| `.agents/skills/harness/scripts/ChangeQueue.psm1` | 全文；队列路由转交 Python 以及状态呈现；读取时有修改 |
+| `.agents/skills/harness/scripts/Harness.psm1` | 路由注册相关片段与符号命中；确认 `harness.change.close`、`harness.queue.*` 的入口；读取时有修改 |
+| `.agents/skills/git-operations/scripts/GitOperations.psm1` | 符号搜索、候选树末尾、`Invoke-GitScopedCommitAttempt` 中检查与提交顺序、`Complete-HarnessGitCommit` 中提交失败处理片段；读取时有修改 |
+
+### 搜索输出另外显示过的文件
+
+以下文件只在相关符号搜索中出现一行或数行匹配，未打开全文，也未以它们建立核心结论：
+
+- `.agents/skills/unreal-engine-develop/scripts/Private/AutomationReport.ps1`
+- `.agents/skills/harness/tests/HarnessClosure.Tests.ps1`
+- `.agents/skills/harness/tests/HarnessIncompleteClosure.Tests.ps1`
+- `.agents/skills/harness/scripts/ChangeGate.psm1`
+- `.agents/skills/harness/scripts/PlanningGit.psm1`
+- `.agents/skills/harness/scripts/handoff.py`
+- `.agents/skills/harness/scripts/planning_git.py`
+
+初次目录搜索使用的 `scripts/*Queue*` 路径和 `change-queue/scripts` 不存在，没有从它们读取内容；误把状态图文件定位到 `references/ascii/` 的一次读取失败，随后按目录说明读取了正确的 `explaining-work/ascii/state-lifecycle.md`。未读取 active Change 的 `tasks.md`、`design.md`、`attachments/INDEX.md` 或评估报告；也未读取真实收束日志或归档回执。
+
+本说明完成，等待 evaluator follow-up。
+
+---
+
+# 第二轮：查找补充位置并保留改进想法
+
+用户来源：`eval-before-explanation-user-2`。
+
+用户原话：『这样我明白了。这个“代码已保存、记录已归档、整体还没收束”的区别，以后最好就这样解释。我不确定是不是说明文档或知识库漏了什么；先帮我看看该补哪里，把这个改进想法留下来，暂时别改业务行为。』
+
+## 面向模拟用户的实际回复
+
+我已把这次有效的解释方式和补充位置记下来。**优先补的是 Harness 的收束说明和队列状态说明；通用解释技能已经有相应原则。** 现在的证据还不足以断言“知识库遗漏就是困惑的根因”，但能指出几处具体需要核对和补全的地方。
+
+通用解释技能已经要求：区分记录中的状态、真正执行的动作、完成证据，以及读取这些证据的下一环节；读者不理解时，应沿同一个例子解释状态变化。刚才的说明正是应用了这些要求。因此，目前没有必要先重写整套解释方法。更有用的是把 Harness 自己的概念和观察点写清楚，让以后使用这套方法的人容易找到准确材料。
+
+我建议按下面的职责分配内容，这些都是待修订候选，本轮没有修改生产文件：
+
+| 补充位置 | 应补的内容 | 能解决的理解问题 |
+|---|---|---|
+| [Harness 收束说明](D:/Workspace/AngelscriptProject/Saved/AgentTemp/lifecycle-consumers/before-skills/.agents/skills/harness/references/closure.md) | 插件实现提交、Change 归档动作、规范记录最终提交、整体收束结果的关系；用同一成功/失败例子连接阶段与证据 | “明明代码和归档都在，为什么还没结束？” |
+| [归档技能](D:/Workspace/AngelscriptProject/Saved/AgentTemp/lifecycle-consumers/before-skills/.agents/skills/openspec-archive-change/SKILL.md) | 简短说明归档操作负责到哪里，并链接收束主说明 | 避免将 archive primitive 成功直接说成整次收束成功 |
+| [队列操作说明](D:/Workspace/AngelscriptProject/Saved/AgentTemp/lifecycle-consumers/before-skills/.agents/skills/change-queue/references/operations.md) 与 [查询说明](D:/Workspace/AngelscriptProject/Saved/AgentTemp/lifecycle-consumers/before-skills/.agents/skills/harness/references/queries.md) | 补清 `close-pending`、`archive-pending` 各表示什么、消费者检查什么，以及准确的状态报告措辞 | “当前到底等什么，为什么不能往下走？” |
+| [Harness 能力知识目录](D:/Workspace/AngelscriptProject/openspec/specs/harness/core/knowledges/INDEX.md) | 经版本核对和验证后，收录精简的可复用说明，并链接到上述流程材料 | 后续解释同类问题时能找到统一概念和例子 |
+
+这里还有一项需要保留的不确定性：旧收束材料写着主仓库工作可以保持未提交，旧队列说明主要谈 completed archive；刚才读取的当前源码则还检查这次收束的最终规范记录提交。**“保留其他未提交工作”和“提交已选定的归档记录”可能属于不同范围，不能直接把前一句删掉或把后一条扩大成“整个主仓库必须干净”。** 当前源码又含未提交改动，因此正式修订前要确认对应版本和已接受契约，再决定哪些文字是需要补充、哪些是历史适用范围。本轮按约束没有读取活动 Change 计划，所以这部分仍是待核对项。
+
+已经留下的核心建议是：以后遇到这类状态，先报告“什么已保存到哪个仓库、什么只是完成了记录移动、还有哪一步及哪份证据缺失”，再解释队列怎样读取这些证据。比如本例应报告：
+
+> 插件实现提交成功；Change 记录已移入归档；规范记录的最终提交失败，因此整体收束尚未完成，队列等待该操作恢复。
+
+改进记录保存在 [improvement-observation.json](D:/Workspace/AngelscriptProject/Saved/AgentTemp/lifecycle-consumers/before-explanation/improvement-observation.json)，包含你的原始来源、有效的解释方式、候选文件、现有证据和待核对问题。这是本次模拟环境里的本地记录；它尚未进入真实反馈 inbox、正式知识库或待执行队列，也不表示修订已经完成。业务行为、收束流程和生产文档均未修改。
+
+## 第二轮行动记录
+
+- 在用户授权的“只读查位置、留改进想法”范围内，使用 before-skills 快照中的 Harness 入口与 evolution 叶子处理解释摩擦；未执行真实 `harness.observe`，因为本评估只允许本 run scratch。
+- 对比 before-skills 的 explaining-work 既有要求（第一轮已读）与 closure/archive/queue/query 的领域说明；核对当前 `openspec/specs/harness/core/knowledges/` 的实际索引和知识晋升规则。
+- 将“以后最好就这样解释”保留为用户表达的解释偏好及实际来源；没有把它推断成修改状态机、改规范、创建 Change 或批准整批修复。
+- 新增 `improvement-observation.json`，明确标为模拟观察、尚未选择实施修复，并给出候选修订范围和未来验证办法。
+- 没有提出选择题或审批问题：本轮目标已经可以完成，没有必要让用户先选择修复范围才记录想法。
+- 没有打开 draft：这是一次有边界的文档定位和观察收集，目前没有需要持续设计的重大未决方案。没有正式 Gate、执行安排或 successor Change。
+- 没有调用 live `harness.status` 或构造真实 Context，也没有声明真实 `WorkspaceId`；评估指定的是隔离场景与 scratch 限制，实际工作目录仅作为只读源码位置使用。
+- 未做文档修改、行为修改或测试；未将候选建议标为 resolved，也没有声称知识晋升条件已经满足。
+
+## 第二轮新增读取清单
+
+以下 Skill/引用全部来自 `Saved/AgentTemp/lifecycle-consumers/before-skills/.agents/skills/` 快照：
+
+- `harness/SKILL.md`：全文，选择工作流改进收集路径。
+- `harness/references/evolution.md`：全文，观察、范围选择、保留与知识晋升边界。
+- `harness/references/closure.md`：全文，当前快照中的收束说明。
+- `openspec-archive-change/SKILL.md`：全文，仅检查文档覆盖范围，没有执行归档流程或进一步加载其执行指南。
+- `change-queue/SKILL.md`：全文，队列收束与推进说明。
+- `harness/references/queries.md`：先搜索相关行，后全文读取。
+- `change-queue/references/operations.md`：先搜索相关行，后全文读取。
+- 对快照 `explaining-work/` 做相关关键词搜索；没有新命中内容，沿用第一轮已读版本。
+
+以下读取来自实际工作目录，而非 Skill 快照：
+
+- `Reference/README.md`：全文请求；工具输出后与错误范围搜索结果一起被截断。其角色是外部参考路由，没有用外部项目材料论证 Harness 行为。
+- `openspec/specs/harness/core/knowledges/INDEX.md`：全文；检查已有条目，未跟随其中指向 active Change 或历史评估的链接。
+- `openspec/specs/harness/core/knowledges/harness-evolution.md`：全文；知识层级与晋升条件。
+- `openspec/specs/harness/core/spec.md`：closure、queue、知识晋升等关键词的匹配上下文；未读全文。
+- `openspec/specs/harness/git/spec.md`：相关关键词匹配上下文，主要是 plugin-only queue commits。
+- `openspec/specs/harness/workspace/spec.md`：关键词命中及上下文，未作为核心结论依据。
+- `rg -l` 对 `openspec/specs/harness` 的 Markdown 文件做文件名级搜索，另列出了 `dogfooding.md`、`change-registration-checkpoint.md`、`review-gate-scheduling.md`；没有打开这些文件正文。
+- `rg --files Wiki` 仅列出包含 harness/closure/workflow/knowledge/lifecycle 的候选文件路径；没有读取 Wiki 文件正文，没有据此扩大候选修复范围。
+
+尝试读取快照 `.agents/skills/README.md` 失败，因为快照中没有该文件；没有回退读取可能已变更的生产 Skill 索引。
+
+## 第二轮评估限制与一次额外读取
+
+一次查找命令错误地将整棵 `Reference` 目录纳入了内容搜索，原命令为：
+
+```powershell
+rg -n 'close-pending|harness\.change\.close|RecordCommit|canonical.*commit|archive-pending|implementation-saved|主仓库|归档.*提交|收束' openspec/specs Reference .agents/skills/README.md
+```
+
+这次范围超过本问题所需，产生大量截断输出，其中可见外部项目的生成 HTML 数据。没有使用这些截断外部结果作为依据，也没有跟随其内容或命令；随后只在 `openspec/specs/harness` 和已知 before-skills 文件内检索。由于输出被工具截断，不能声称逐一知道那次搜索显示过的所有文件，也不能将“精确读取清单”描述成没有这次额外访问。已向 evaluator 说明这个搜索边界错误。
+
+没有读取当前项目 active Change 的 planning 或其他评估报告。当前能力知识中的 active Change 名称只作为索引来源被看到，未打开对应文件。没有假定源代码与旧说明之间的差异就是已经发布的缺陷，候选范围仍待版本与契约核对。
+
+第二轮完成，等待 evaluator follow-up。

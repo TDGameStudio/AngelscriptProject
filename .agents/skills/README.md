@@ -9,17 +9,17 @@
 ## Discussion methods
 
 - [brainstorming](brainstorming/SKILL.md): automatic substantial-topic drafts with key decisions in CONTEXT, optional research/attachments and independently scoped designs. Old drafts stay readable; no transcript dual-writing by default.
-- [explaining-work](explaining-work/SKILL.md): architecture, relevant classes, caller/callee chains, key logic, lifecycle and data, using faithful simplified annotated code and the preserved ASCII methods from visual-explain. Usable on its own and before Grill questions.
-- [grill](grill/SKILL.md): explained decision rounds; after each user answer re-display the current relevant architecture and terms. Only user-led convergence opens the handoff Gate; always offer more names when naming is the question.
+- [explaining-work](explaining-work/SKILL.md): source/spec/knowledge-grounded architecture, caller/callee chains, lifecycle and data. Its improvement loop handles unclear explanations, retains sourced topic-draft feedback and distinguishes factual knowledge from behavior choices.
+- [grill](grill/SKILL.md): continuing explained rounds, including side questions and missing forms. Re-display the current relevant view and actually submit the next ready choice. Only user-led convergence opens handoff; use an eligible popup for real Gates and preserve pending answers.
 - [evolution](harness/references/evolution.md): automatically collect friction, present a batch, implement the user-selected scope and record proof. Update notices are small versioned summaries, not background services.
 
 ## Change lifecycle
 
-- [create](openspec-create-change/SKILL.md) presents and creates one exact approved handoff, exports self-contained accepted design/evidence, verifies its seed, and records the post-handoff arrangement.
-- [update](openspec-update-change/SKILL.md) uses a linked draft to reconsider invalid accepted truth, previews candidate hashes and applies the approved Replan transaction. It does not edit implementation.
+- [create](openspec-create-change/SKILL.md) explains complete planning candidates and exact Git scope before Create, validates/persists the approved formal records, then asks the separate draft/execution arrangement.
+- [update](openspec-update-change/SKILL.md) uses a linked draft to reconsider invalid accepted truth, explains/previews candidates and commits approved Replan records. It does not checkpoint unfinished implementation.
 - [change-queue](change-queue/SKILL.md) owns every Change's execution, including a single-item adapter. Authorization binds the ordered UID range; appended work is not implicitly authorized.
 - [apply](openspec-apply-change/SKILL.md) ensures planning artifacts then implements native Ready tasks with exact proof. Direct authorized work can remain outside OpenSpec entirely.
-- [verify](openspec-verify-change/SKILL.md), [sync](openspec-sync-specs/SKILL.md), [archive](openspec-archive-change/SKILL.md) retain verification, durable spec merge and explicit closure. A requested Review uses [code-review](code-review/SKILL.md); normal completion creates no Review.
+- [verify](openspec-verify-change/SKILL.md), [sync](openspec-sync-specs/SKILL.md), [archive](openspec-archive-change/SKILL.md) retain verification, durable spec merge and explained `harness.change.close`. The final popup covers exact local commits and archive; partial closure blocks queue advancement. A requested Review uses [code-review](code-review/SKILL.md); normal completion creates no Review.
 - [openspec](openspec/SKILL.md) owns portable CLI help, deterministic primitives and maintenance; focused record/schema references live below it. New Change IDs use `<domain>/<type>-<scope>-<outcome>`; archives are immutable.
 - Durable Scenario Cards retain useful prose, lists, examples and tables in each clause-owned detail block per [specs](openspec/references/specs.md). Do not flatten records to achieve a line quota. Tasks retain Outcome, Interfaces, Cases, Files and exact Verification, plus their real evidence.
 

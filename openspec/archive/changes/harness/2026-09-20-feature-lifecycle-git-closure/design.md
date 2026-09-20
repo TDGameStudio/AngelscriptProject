@@ -6,7 +6,17 @@ Harness owns workspace identity, lifecycle decisions and execution. Brainstormin
 
 ## Call chains
 
-Measured at: 7e1bc05a0810ba6a967b9e237981c09931dc622f; dirty: no changes in inspected Harness, Git, workflow Skills or harness specifications at preparation; unrelated project/plugin work is excluded.
+Preparation measured at: 7e1bc05a0810ba6a967b9e237981c09931dc622f; dirty: no changes in inspected Harness, Git, workflow Skills or harness specifications at preparation. The following Current/Proposed comparison preserves that accepted preparation snapshot.
+
+Measured at: 2afe4b9090a3fc849545ee6301b2b83839fa8f84; dirty: this Change's Harness/Git modules, owning Skills/tests, AGENTS and harness/core + harness/git specifications/knowledge. Exact paths and source hashes are retained in final verification evidence. Unrelated Reference/scratch/image files and plugin changes are excluded.
+
+Implemented creation: New-HarnessChange -> handoff.validate_creation_plan -> read-only complete candidate/link/Git preflight -> consume_gate -> owned native creation -> seed/plan/strict verification -> Complete-HarnessCreatedPlan -> Complete-HarnessGitCommit -> separate handoff arrangement.
+
+Implemented Replan: Invoke-HarnessReplan -> replans.validate_candidate + planning_git -> exact planning journal/application -> Complete-HarnessReplanGit -> normal scoped Git commit -> separate arrangement. Implementation files remain outside that planning commit.
+
+Implemented close: Close-HarnessChange -> terminal + strict + exact Git previews -> actual close Gate -> Complete-ClosureGitStep -> optional verified Complete-ClosureWithdrawal -> source checkpoint and indexed receipt/evaluation -> guarded native archive -> exact archived-item validation -> canonical record commit -> closure_status.inspect_closure -> change_queue/execution closing or advanceable state. Withdrawal checks use closure_withdrawal.py with a named baseline and explicit carryover.
+
+Implemented feedback: Add-HarnessObservation -> Add-HarnessDraftFeedback -> existing topic README/CONTEXT/scoped design; Get-HarnessFeedbackInbox combines that view with historical read-only observations, and scoped triage updates the active owner. explaining-work reads source/spec/owning INDEX/entry, explains and captures the actual signal, then returns to the original work.
 
 Current creation: user convergence -> Harness -> New-HarnessChange -> Invoke-HarnessChangeCreateCore -> handoff.preview/consume_gate -> native create -> origin and followup -> seed export/verify -> execution arrangement -> Ensure plan -> task.status.
 

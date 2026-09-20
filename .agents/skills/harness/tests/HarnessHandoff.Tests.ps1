@@ -3,6 +3,7 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $projectRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../../../..'))
 Import-Module (Join-Path $projectRoot '.agents/skills/harness/scripts/Harness.psd1') -Force
+. (Join-Path $PSScriptRoot 'HistoricalChangeFixture.ps1')
 function Check($condition, $message) { if (-not $condition) { throw $message } }
 function Write-Fixture($path, $text) { [void][IO.Directory]::CreateDirectory([IO.Path]::GetDirectoryName($path)); [IO.File]::WriteAllText($path, $text) }
 $fixture = Join-Path ([IO.Path]::GetTempPath()) ('harness-handoff-' + [guid]::NewGuid().ToString('N'))
@@ -29,12 +30,12 @@ try {
     foreach ($field in @('Title','Goal')) {
         $exact = $params.Clone(); $exact.ChangeId = 'harness/improve-bound-' + $field.ToLowerInvariant()
         Write-Fixture (Join-Path $selected 'handoff.md') ($originalHandoff.Replace($params.ChangeId, $exact.ChangeId))
-        $shown = Invoke-Harness harness.change.create -Context $context -Parameters ($exact + @{PlanOnly=$true})
+        $shown = Invoke-HistoricalFixtureCreate -Context $context -Parameters ($exact + @{PlanOnly=$true})
         Check ($shown.status -eq 'Succeeded') "$field preview failed"
         $metadataGate = @{ConvergenceSource='message:ready';DecisionSource='message:create';Decision='create';TargetChange=$exact.ChangeId;HandoffRevision=$shown.data.HandoffRevision}
         $changed = $exact.Clone(); $changed[$field] = 'Export local data to a remote service'
-        $changedPreview = Invoke-Harness harness.change.create -Context $context -Parameters ($changed + @{PlanOnly=$true})
-        $rejected = Invoke-Harness harness.change.create -Context $context -Parameters ($changed + @{Gate=$metadataGate})
+        $changedPreview = Invoke-HistoricalFixtureCreate -Context $context -Parameters ($changed + @{PlanOnly=$true})
+        $rejected = Invoke-HistoricalFixtureCreate -Context $context -Parameters ($changed + @{Gate=$metadataGate})
         $nativeRoot = Join-Path $fixture ('openspec/changes/' + $exact.ChangeId)
         $intentFolder = Join-Path $fixture 'Saved/Harness/ChangeCreates'
         $hasIntent = [IO.Directory]::Exists($intentFolder) -and [IO.Directory]::GetFiles($intentFolder, '*.json').Length -gt 0
@@ -42,9 +43,9 @@ try {
             $metadataFailures += "$field changed without invalidating the exact Gate before native creation"
             continue
         }
-        $acceptedExact = Invoke-Harness harness.change.create -Context $context -Parameters ($exact + @{Gate=$metadataGate})
+        $acceptedExact = Invoke-HistoricalFixtureCreate -Context $context -Parameters ($exact + @{Gate=$metadataGate})
         Check ($acceptedExact.status -eq 'Succeeded') "$field exact approved retry failed"
-        $retriedExact = Invoke-Harness harness.change.create -Context $context -Parameters $exact
+        $retriedExact = Invoke-HistoricalFixtureCreate -Context $context -Parameters $exact
         Check ($retriedExact.status -eq 'Succeeded' -and $retriedExact.data.Resumed) "$field consumed exact retry failed"
     }
     Write-Fixture (Join-Path $selected 'handoff.md') $originalHandoff
@@ -53,9 +54,9 @@ try {
     # original request and original digest, even though new approvals bind metadata.
     $historicalParams = $params.Clone(); $historicalParams.ChangeId = 'historical/improve-draft-recovery'
     Write-Fixture (Join-Path $selected 'handoff.md') ($originalHandoff.Replace($params.ChangeId, $historicalParams.ChangeId))
-    $historicalPreview = Invoke-Harness harness.change.create -Context $context -Parameters ($historicalParams + @{PlanOnly=$true})
+    $historicalPreview = Invoke-HistoricalFixtureCreate -Context $context -Parameters ($historicalParams + @{PlanOnly=$true})
     $historicalGate = @{ConvergenceSource='message:ready';DecisionSource='message:create';Decision='create';TargetChange=$historicalParams.ChangeId;HandoffRevision=$historicalPreview.data.HandoffRevision}
-    $nativeFailure = Invoke-Harness harness.change.create -Context $context -Parameters ($historicalParams + @{Gate=$historicalGate})
+    $nativeFailure = Invoke-HistoricalFixtureCreate -Context $context -Parameters ($historicalParams + @{Gate=$historicalGate})
     Check ($nativeFailure.status -eq 'Failed' -and $nativeFailure.error.message -match 'OpenSpec change create failed') 'historical retry fixture did not reach its missing-domain native prerequisite'
     $historicalIntentPath = [IO.Directory]::GetFiles((Join-Path $fixture 'Saved/Harness/ChangeCreates'), '*.json')[0]
     $historicalIntent = Get-Content -LiteralPath $historicalIntentPath -Raw | ConvertFrom-Json -AsHashtable
@@ -74,26 +75,26 @@ try {
     Write-Fixture $historicalIntentPath ($historicalIntent | ConvertTo-Json -Depth 30)
     $historicalDomain = Invoke-Harness openspec.domain -Context $context -ArgumentList @('create','historical','--title','Historical','--json')
     Check ($historicalDomain.status -eq 'Succeeded') 'historical retry domain setup failed'
-    $historicalRetry = Invoke-Harness harness.change.create -Context $context -Parameters $historicalParams
+    $historicalRetry = Invoke-HistoricalFixtureCreate -Context $context -Parameters $historicalParams
     if ($historicalRetry.status -ne 'Succeeded') { throw $historicalRetry.error.message }
     Check ($historicalRetry.data.HandoffId -eq $historicalIntent.marker.gate.handoff_id) 'historical exact retry replaced consumed authority'
     Write-Fixture (Join-Path $selected 'handoff.md') $originalHandoff
-    $preview = Invoke-Harness harness.change.create -Context $context -Parameters ($params + @{PlanOnly=$true})
+    $preview = Invoke-HistoricalFixtureCreate -Context $context -Parameters ($params + @{PlanOnly=$true})
     if ($preview.status -ne 'Succeeded') { throw $preview.error.message }
     Check (-not (Test-Path (Join-Path $fixture 'openspec/changes/harness/improve-modern-handoff'))) 'PlanOnly created formal records'
     $checked = Invoke-Harness harness.draft.check -Context $context -Parameters @{DraftId='harness/modern';Scope='selected';ChangeId=$params.ChangeId}
     Check ($checked.data.DraftRevision -eq $preview.data.DraftRevision) 'draft.check and create preview disagree about draft content'
     Check ($checked.data.DraftRevision -ne $preview.data.HandoffRevision) 'draft-only revision masquerades as the full Create request'
-    $missing = Invoke-Harness harness.change.create -Context $context -Parameters $params
+    $missing = Invoke-HistoricalFixtureCreate -Context $context -Parameters $params
     Check ($missing.status -eq 'Failed') 'missing user Gate was accepted'
     $gate = @{ConvergenceSource='message:ready';DecisionSource='message:create';Decision='create';TargetChange=$params.ChangeId;HandoffRevision=$preview.data.HandoffRevision}
     $emptySource = $gate.Clone(); $emptySource.DecisionSource=''
-    Check ((Invoke-Harness harness.change.create -Context $context -Parameters ($params + @{Gate=$emptySource})).status -eq 'Failed') 'empty actual answer source was accepted'
+    Check ((Invoke-HistoricalFixtureCreate -Context $context -Parameters ($params + @{Gate=$emptySource})).status -eq 'Failed') 'empty actual answer source was accepted'
     Add-Content -LiteralPath (Join-Path $selected 'design.md') -Value 'A changed boundary'
-    Check ((Invoke-Harness harness.change.create -Context $context -Parameters ($params + @{Gate=$gate})).status -eq 'Failed') 'stale design Gate was accepted'
-    $updated = Invoke-Harness harness.change.create -Context $context -Parameters ($params + @{PlanOnly=$true})
+    Check ((Invoke-HistoricalFixtureCreate -Context $context -Parameters ($params + @{Gate=$gate})).status -eq 'Failed') 'stale design Gate was accepted'
+    $updated = Invoke-HistoricalFixtureCreate -Context $context -Parameters ($params + @{PlanOnly=$true})
     $gate.HandoffRevision = $updated.data.HandoffRevision
-    $created = Invoke-Harness harness.change.create -Context $context -Parameters ($params + @{Gate=$gate})
+    $created = Invoke-HistoricalFixtureCreate -Context $context -Parameters ($params + @{Gate=$gate})
     if ($created.status -ne 'Succeeded') { throw $created.error.message }
     $changeRoot = $created.data.Path
     $origin = Get-Content -LiteralPath (Join-Path $changeRoot 'attachments/data/harness-origin.json') -Raw | ConvertFrom-Json
@@ -132,7 +133,7 @@ try {
     if ($changedAfterArchive.status -ne 'Failed') { $binaryFailures += 'changed binary bytes passed after source archive' }
     if ($evolvedSource.status -ne 'Succeeded' -or $correctAfterArchive.status -ne 'Succeeded') { $binaryFailures += 'accepted binary or translated Markdown depends on the live draft' }
     Check ($binaryFailures.Count -eq 0) ($binaryFailures -join '; ')
-    $resumed = Invoke-Harness harness.change.create -Context $context -Parameters $params
+    $resumed = Invoke-HistoricalFixtureCreate -Context $context -Parameters $params
     Check ($resumed.status -eq 'Succeeded' -and $resumed.data.Resumed) 'consumed Gate incorrectly requires unavailable draft on resume'
     Check ([IO.File]::ReadAllText($followup) -eq $originalFollowup) 'creation resume rewrote delivered follow-up state'
     # Preserve the pre-v2 scoped handoff contract without migrating its records.
@@ -184,9 +185,9 @@ try {
     }
     Write-Fixture (Join-Path $legacyScope 'handoff.md') $legacyHandoff
     $legacyCreate = $legacyParams + @{Title='Legacy';Goal='Preserve legacy contracts';Origin='Draft';SessionId='fixture-legacy'}
-    $legacyPreview = Invoke-Harness harness.change.create -Context $context -Parameters ($legacyCreate + @{PlanOnly=$true})
+    $legacyPreview = Invoke-HistoricalFixtureCreate -Context $context -Parameters ($legacyCreate + @{PlanOnly=$true})
     $legacyGate = @{ConvergenceSource='message:legacy-ready';DecisionSource='message:legacy-create';Decision='create';TargetChange=$legacyParams.ChangeId;HandoffRevision=$legacyPreview.data.HandoffRevision}
-    $legacyCreated = Invoke-Harness harness.change.create -Context $context -Parameters ($legacyCreate + @{Gate=$legacyGate})
+    $legacyCreated = Invoke-HistoricalFixtureCreate -Context $context -Parameters ($legacyCreate + @{Gate=$legacyGate})
     if ($legacyCreated.status -ne 'Succeeded') { throw $legacyCreated.error.message }
     $legacyChange = $legacyCreated.data.Path
     Write-Fixture (Join-Path $legacyChange 'attachments/drafts/design.md') '# Design'

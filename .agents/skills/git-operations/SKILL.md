@@ -17,8 +17,9 @@ Safety invariants:
 
 - Commits require an exact `WorkspaceRoot` and exact repository/path scopes.
 - Replicas expose only their editable plugin repositories; snapshots and the project root are not Git commit targets.
-- Queue closure uses `PluginsOnly` and `PreserveOutsideStaged` in primary and replica workspaces; parent commits stay user-directed.
+- Lifecycle Create/Replan commits accepted formal planning under their exact Gates. Final `harness.change.close` composes plugin and canonical parent commits from its explained selection, preserving outside staging. Replica plugin results and primary canonical records retain their separate roots; parent paths/gitlinks are selected explicitly, never inferred from queue authority.
 - Exact scoped commits run normal hooks against an isolated candidate index.
+  - Lifecycle selections use the WhatIf `PlanRevision` as `ExpectedPlanRevision`; explicit `RepositoryPatches` select attributable hunks inside mixed files. Changed baseline/content/intent or a hook rewriting approved bytes rejects that exact candidate and requires a fresh preview.
   - A hook cannot widen the accepted commit or pollute the live index; a failed candidate restores the affected repository ref/index boundary when its compare-and-swap still owns the attempted ref.
 - Hooks are arbitrary programs: report exact residual worktree paths and external effects, but never overwrite them while claiming rollback.
 - `AllChanges` requires explicit intent, an exact registered linked worktree, and a preview of included non-ignored paths.

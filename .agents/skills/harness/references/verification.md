@@ -36,6 +36,10 @@ An explicit user-authorized delayed-first-run exception remains bounded to its s
 
 For material instruction changes, use a realistic independent consumer exercise before and after editing, with the same raw request and artifacts. Judge task boundaries, ordering and evidence decisions; a structural/link test alone cannot prove an agent follows prose. Record compensated old-policy behavior honestly rather than manufacturing a failing baseline.
 
+Lifecycle Git verification uses real isolated parent/plugin repositories, actual normal hooks, shared-file selections and interrupted stages. A simulated conversation host can retain actual question payloads and source choices, but cannot prove that a real popup rendered, a user understood or a prompt became statistically more reliable. Knowledge-only factual additions need source/current-contract/example checks and observable later reuse, not a fabricated behavior failure.
+
+`Protocol.Tests.ps1 -ActiveChange <exact-id>` scopes its active material-issue audit to the selected Change; default invocation audits every active issue. All other structural and historical fixture checks still run. If unrelated baseline records fail the default command, retain that failure and its baseline evidence; do not call the repository-wide audit green or repair unrelated records merely to pass it.
+
 ## Record evidence
 
 Use ordinary Task Card text or final evidence to record the exact commands, outcomes, scope, and tests actually run. Name each intentionally omitted heavier test and its reason when that makes the bounded scope auditable. This rationale is Markdown evidence; it does not add a parser field or change `record-v1`, `requirements-v1`, or the portable OpenSpec CLI.

@@ -41,6 +41,8 @@ Harness enforces this project policy for `harness.change.create` and `change mov
 
 Old draft log/findings/glossary and scoped README layouts remain readable without migration. New drafts have no full conversation dual-writing requirement; explicit optional recording owns its separate transcript. Draft archive is a safe directory move after the user's choice, not an assertion that unresolved work was completed.
 
+New Create binds complete planning candidates, exports and the formal-record GitPlan; Replan similarly saves its accepted formal revision without checkpointing implementation. Pending planning persistence blocks execution before the separate arrangement. Feedback uses ordinary topic README/CONTEXT/design records with source and disposition; Harness upgrade is a topic, not a new draft type or tracked ledger.
+
 Every newly marked Change keeps `attachments/data/harness-origin.json`. Draft-backed Changes pass `harness.change.seed.verify` after indexed, self-contained English export and before Ensure plan; Harness also checks the seed when `openspec.instructions` requests a planning artifact. Every new Change has a root `design.md` with `## Call chains`: actual caller-to-callee paths and `Measured at` (revision plus dirty paths) for code, or `none` with a reason for a non-code change. `harness.change.plan.verify`, `task.status`, and `openspec.instructions apply` enforce this on marked Changes. The exact pre-gate active IDs in `harness/scripts/legacy-change-plan-exemptions.json` retain their accepted contract; an unmarked new ID cannot claim grandfathering. The workflow's optional design artifact remains optional for those legacy IDs.
 
 ## Change attachments
@@ -99,3 +101,5 @@ closure:
 ```
 
 `completed` requires all tasks and close gates. `abandoned` and `superseded` require a reason plus a disposition for every incomplete task. Archives created before 0.7 without `closure` are audited as legacy completed records.
+
+Harness owns the actual version-bound `harness.change.close` decision, exact selected Git stages and ignored operation recovery state. Its indexed closure receipt records provenance and implementation/checkpoint results; the native manifest remains the schema above. Canonical archive content must enter Git before new queue closure is complete. A directory already moved while the final commit is pending remains recoverable; do not append that final commit's SHA into its own immutable archived content. Push, integration and workspace removal retain separate authority.

@@ -25,10 +25,10 @@
   - Status: current
 
 - [Harness Evolution](harness-evolution.md)
-  - Summary: Map the live harness surface once, keep raw observations ignored, promote one compact evaluated insight, and load durable knowledge progressively.
+  - Summary: Map the live Harness surface once; retain feedback in topic drafts, distinguish factual knowledge from repair evidence, and verify later explanation reuse.
   - Serves: Harness dogfooding feedback and progressive harness knowledge promotion.
-  - Source: `openspec/archive/changes/harness/2026-09-03-refactor-skill-system/attachments/knowledges/harness-evolution.md` plus active Change `harness/refactor-unified-workspace-core` workflow evaluation.
-  - Status: current; admission is part of the active Change's verification and completed closure gate
+  - Source: historical `refactor-skill-system` evolution attachment and `refactor-unified-workspace-core` evaluation; Change `harness/feature-lifecycle-git-closure`, tasks 2.1–2.4 and its indexed lifecycle consumer audit establish the topic-draft and explanation extension.
+  - Status: current; factual guidance is checked against the owning Skills/source and scoped contract validation, with limited consumer evidence rather than a reliability rate
 
 - [Explicit Review Intake and Direct Closure](review-gate-scheduling.md)
   - Summary: Diagnose discovered problems directly, replan only when planning truth fails, archive verified work without Review ceremony, and gate only explicitly requested Reviews.

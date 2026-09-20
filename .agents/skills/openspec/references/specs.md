@@ -109,6 +109,8 @@ an immutable Source only after lineage and payload integrity checks succeed.
 
 Do not disguise implementation steps as behavior, copy command output into a Scenario Card, or use a spec as a second task list. Promote only the durable conclusion from one-off evidence.
 
+Understanding feedback does not automatically require a spec delta. Explain current source and the accepted contract, then distinguish ambiguous intended behavior from missing explanatory knowledge or missed retrieval. An intended behavior choice returns through explained Grill and applicable Create/Replan authority; a verified factual explanation belongs in the owning capability knowledge under [knowledge admission](knowledge.md). Do not silently change the contract to make an explanation easier.
+
 ## Delta authoring and synchronization
 
 Change-local delta specs use the established `ADDED`, `MODIFIED`, `REMOVED`, and `RENAMED` Requirement sections:

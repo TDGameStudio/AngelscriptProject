@@ -90,11 +90,61 @@ def replan_status(context, change):
             state = json.loads(path.read_text('utf8'))
             if not state.get('released') and (state.get('change') == change or state.get('scope') == 'Queue') and state.get('pendingInputs'):
                 inputs.append(state['sessionId'])
-    from handoff import get_handoff_status
+    from handoff import get_handoff_status, planning_commit_status
     handoff = get_handoff_status(context, change)
-    return dict(recoveryNeeded=pending, applied=[p.stem for p in sorted((root / 'attachments/replans').glob('*.md'))], handoff=handoff,
+    planning = planning_commit_status(context, change)
+    pending |= planning['pending']
+    from planning_git import status as git_status
+    replanned = [git_status(context, identity, decode_applied(p)) for p in sorted((root / 'attachments/replans').glob('*.md')) if 'planning_schema:' in p.read_text('utf-8-sig')]
+    pending |= any(item['pending'] for item in replanned)
+    return dict(recoveryNeeded=pending, planning=planning, replanCommits=replanned, applied=[p.stem for p in sorted((root / 'attachments/replans').glob('*.md'))], handoff=handoff,
                 discussions=discussions, recordingSessions=recording, pendingInputSessions=inputs,
                 executionAllowed=not pending and not inputs and discussions['executionAllowed'] and not handoff['pending'] and not handoff['issues'])
+
+def validate_candidate(context, parameters, root, candidates, validator=None):
+    change = parameters['Change']
+    before_tasks = (root / 'tasks.md').read_text('utf-8-sig')
+    after_tasks = candidates.get('tasks.md', before_tasks)
+    for pattern in (r'^## \[[ xX]\] ([0-9]+\.[0-9]+)\b', r'^## \[[xX]\] ([0-9]+\.[0-9]+)\b'):
+        if not set(re.findall(pattern, before_tasks, re.M)) <= set(re.findall(pattern, after_tasks, re.M)):
+            raise ValueError('Task IDs and completed tasks must be preserved')
+    scratch = local_path(context['WorkspaceRoot'], 'Saved/AgentTemp/replan')
+    scratch.mkdir(parents=True, exist_ok=True)
+    before_plan = after_plan = None
+    with tempfile.TemporaryDirectory(prefix='candidate-', dir=scratch) as staging:
+        stage = Path(staging)
+        openspec = Path(context['OpenSpecRoot']) / 'openspec'
+        for name in ('project.yaml', 'config.yaml', 'domains', 'workflows', 'specs'):
+            source = local_path(openspec, name)
+            destination = stage / 'openspec' / name
+            if source.is_dir():
+                for child in source.rglob('*'):
+                    local_path(openspec, str(child.relative_to(openspec)))
+                shutil.copytree(source, destination)
+            elif source.is_file():
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(source, destination)
+        stage_change = stage / 'openspec/changes' / change
+        for child in root.rglob('*'):
+            local_path(root, str(child.relative_to(root)))
+        shutil.copytree(root, stage_change)
+        if not validator:
+            try:
+                before_plan = native(context, ['instructions', 'apply', '--change', change, '--json'], stage)
+            except ValueError:
+                pass  # An invalid old graph may itself be the reason for Replan.
+        for name, body in candidates.items():
+            write_text(local_path(stage_change, name), body)
+        if validator:
+            validator(stage)
+        else:
+            native(context, ['validate', change, '--type', 'change', '--strict', '--json'], stage)
+            plan = native(context, ['instructions', 'apply', '--change', change, '--json'], stage)
+            after_plan = plan
+            if parameters.get('ResumeTask') and not any(t['id'] == parameters['ResumeTask'] for t in plan.get('tasks', [])):
+                raise ValueError('Resume task does not exist in candidate TaskPlan')
+    return before_plan, after_plan
+
 
 def apply_replan(context, parameters, validator=None):
     change = parameters['Change']
@@ -102,6 +152,9 @@ def apply_replan(context, parameters, validator=None):
     replan_id = parameters.get('ReplanId', '')
     if not re.fullmatch(r'replan-\d{8}-\d{6}-[a-z0-9-]+', replan_id):
         raise ValueError('Exact replan-YYYYMMDD-HHmmss-theme ID required')
+    target = local_path(root, 'attachments/replans/' + replan_id + '.md')
+    if parameters.get('RequireGitPlan') and not parameters.get('GitPlan') and (not target.exists() or decode_applied(target).get('planning_schema')):
+        raise ValueError('A new Replan requires its exact formal-record GitPlan before the Gate')
     candidates, hashes = parameters.get('Candidates', {}), parameters.get('ExpectedHashes', {})
     if not candidates or 'tasks.md' not in hashes:
         raise ValueError('Candidates and baseline tasks.md hash required')
@@ -113,8 +166,21 @@ def apply_replan(context, parameters, validator=None):
             raise ValueError('Each candidate needs its baseline hash and bounded text')
     from handoff import preview, consume_gate, followup_record
     if parameters.get('PlanOnly'):
+        if parameters.get('GitPlan'):
+            from planning_git import prepare
+            prepared_parameters = {**parameters, 'GitPlan': prepare(context, parameters, root, identity)}
+            for name, expected in hashes.items():
+                if current_hash(local_path(root, name)) != expected:
+                    raise ValueError('Planning baseline changed: ' + name)
+            validate_candidate(context, parameters, root, candidates, validator)
+            result = preview(context, 'replan', prepared_parameters)
+            result['GitPlan'] = prepared_parameters['GitPlan']
+            return result
         return preview(context, 'replan', parameters)
-    requested_hash = digest(json.dumps({'talk': parameters['TalkId'], 'candidates': candidates, 'hashes': hashes}, sort_keys=True).encode())
+    request = {'talk': parameters['TalkId'], 'candidates': candidates, 'hashes': hashes}
+    if parameters.get('GitPlan'):
+        request['git_plan'] = parameters['GitPlan']
+    requested_hash = digest(json.dumps(request, sort_keys=True).encode())
     target = local_path(root, 'attachments/replans/' + replan_id + '.md')
     talk_path = record_path(context, change, parameters['TalkId'])
     journal = journal_path(context, identity)
@@ -128,6 +194,11 @@ def apply_replan(context, parameters, validator=None):
             applied = decode_applied(target)
             if applied.get('request_sha256') != requested_hash:
                 raise ValueError('Immutable Replan ID already represents another request')
+            gate = parameters.get('Gate')
+            if gate and applied.get('handoff'):
+                for requested, recorded in [('DecisionSource', 'decision_source'), ('ConvergenceSource', 'convergence_source'), ('HandoffRevision', 'revision'), ('Decision', 'decision'), ('TargetChange', 'target_change')]:
+                    if gate.get(requested) != applied['handoff'].get(recorded):
+                        raise ValueError('Retry cannot replace the already consumed Replan Gate')
             return applied
         discussion, original = read_record(talk_path)
         if not discussion or discussion['workspace_id'] != context['WorkspaceId']:
@@ -136,6 +207,9 @@ def apply_replan(context, parameters, validator=None):
             raise ValueError('Replan requires the current settled discussion revision')
         if discussion.get('purpose') == 'handoff-followup':
             raise ValueError('Replan cannot consume a handoff follow-up discussion')
+        if parameters.get('GitPlan'):
+            from planning_git import prepare
+            parameters = {**parameters, 'GitPlan': prepare(context, parameters, root, identity)}
         prepared = preview(context, 'replan', parameters)
         receipt = consume_gate(context, 'replan', parameters, prepared)
         followup = followup_record(context, change, parameters.get('SessionId'), receipt)
@@ -156,41 +230,7 @@ def apply_replan(context, parameters, validator=None):
         after_done = set(re.findall(r'^## \[[xX]\] ([0-9]+\.[0-9]+)\b', after_tasks, re.M))
         if not old_ids <= new_ids or not done <= after_done:
             raise ValueError('Task IDs and completed tasks must be preserved')
-        scratch = local_path(context['WorkspaceRoot'], 'Saved/AgentTemp/replan')
-        scratch.mkdir(parents=True, exist_ok=True)
-        before_plan = after_plan = None
-        with tempfile.TemporaryDirectory(prefix='candidate-', dir=scratch) as staging:
-            stage = Path(staging)
-            openspec = Path(context['OpenSpecRoot']) / 'openspec'
-            for name in ('project.yaml', 'config.yaml', 'domains', 'workflows', 'specs'):
-                source = local_path(openspec, name)
-                destination = stage / 'openspec' / name
-                if source.is_dir():
-                    for child in source.rglob('*'):
-                        local_path(openspec, str(child.relative_to(openspec)))
-                    shutil.copytree(source, destination)
-                elif source.is_file():
-                    destination.parent.mkdir(parents=True, exist_ok=True)
-                    shutil.copy2(source, destination)
-            stage_change = stage / 'openspec/changes' / change
-            for child in root.rglob('*'):
-                local_path(root, str(child.relative_to(root)))
-            shutil.copytree(root, stage_change)
-            if not validator:
-                try:
-                    before_plan = native(context, ['instructions', 'apply', '--change', change, '--json'], stage)
-                except ValueError:
-                    pass  # An invalid old graph may itself be the reason for Replan.
-            for name, body in candidates.items():
-                write_text(local_path(stage_change, name), body)
-            if validator:
-                validator(stage)
-            else:
-                native(context, ['validate', change, '--type', 'change', '--strict', '--json'], stage)
-                plan = native(context, ['instructions', 'apply', '--change', change, '--json'], stage)
-                after_plan = plan
-                if parameters.get('ResumeTask') and not any(t['id'] == parameters['ResumeTask'] for t in plan.get('tasks', [])):
-                    raise ValueError('Resume task does not exist in candidate TaskPlan')
+        before_plan, after_plan = validate_candidate(context, parameters, root, candidates, validator)
         # Check again after the potentially long validation call.
         if preview(context, 'replan', parameters)['HandoffRevision'] != prepared['HandoffRevision']:
             raise ValueError('Gate design revision changed during validation')
@@ -202,6 +242,9 @@ def apply_replan(context, parameters, validator=None):
         commit = subprocess.run(['git', '-C', context['OpenSpecRoot'], 'rev-parse', 'HEAD'], capture_output=True, text=True, check=True).stdout.strip()
         if commit != base_commit:
             raise ValueError('Planning baseline commit changed during validation')
+        for name, expected in parameters.get('GitPlan', {}).get('ExistingInputs', {}).items():
+            if current_hash(local_path(root, name)) != expected:
+                raise ValueError('Planning provenance changed during validation: ' + name)
         changed_paths = [str(local_path(root, name)) for name in candidates]
         status_snapshot = subprocess.run(['git', '-C', context['OpenSpecRoot'], 'status', '--short', '--', *changed_paths], capture_output=True, text=True, check=True).stdout.strip()
         diff_snapshot = subprocess.run(['git', '-C', context['OpenSpecRoot'], 'diff', '--stat', '--', *changed_paths], capture_output=True, text=True, check=True).stdout.strip()
@@ -216,6 +259,8 @@ def apply_replan(context, parameters, validator=None):
                        base_tasks_sha256=hashes['tasks.md'], result_tasks_sha256=digest(after_tasks.encode('utf8')) if 'tasks.md' in candidates else hashes['tasks.md'],
                        created_at=now(), resume_task=parameters.get('ResumeTask', discussion['resume_task']), request_sha256=requested_hash,
                        task_changes=task_changes, edge_changes=edge_changes, handoff_schema=1, handoff=receipt)
+        if parameters.get('GitPlan'):
+            applied.update(planning_schema=1, git_plan=parameters['GitPlan'])
         text = '---\n' + '\n'.join(k + ': ' + json.dumps(v) for k, v in applied.items()) + '\n---\n\n'
         text += '## Trigger and Evidence\n\n- Source: ../talks/' + talk_path.name + '\n\n## Decision\n\n- ' + discussion['summary'] + '\n\n'
         text += '## Impact\n\n' + '\n'.join('- Artifact ~: ' + name for name in candidates) + '\n'
@@ -247,6 +292,9 @@ def apply_replan(context, parameters, validator=None):
                   'attachments/replans/' + target.name: text}
         transaction = dict(change=change, replan_id=replan_id, writes=[dict(path=name, before=local_path(root, name).read_bytes().hex() if local_path(root, name).exists() else None,
                             after=body.encode('utf8').hex()) for name, body in writes.items()])
+        if parameters.get('GitPlan'):
+            from planning_git import save_operation
+            save_operation(context, root, identity, applied, writes)
         journal.parent.mkdir(parents=True, exist_ok=True)
         save_state(journal, transaction)
         try:

@@ -3,6 +3,7 @@
 ## Select by intent
 
 - Use the [Harness entry](../SKILL.md) for the two loops and Gate authority. A direct edit, explanation or tool request goes straight to its leaf when scope is already clear.
+- During active Grill, route an answer with a side question back to the whole discussion. Understanding feedback uses explaining-work's [improvement loop](../../explaining-work/references/improvement.md), with its existing topic owner and original return point.
 - Use `Get-HarnessCommand` for the authoritative executable inventory; it returns route descriptions/dispatch metadata. Read the matching leaf for parameter contracts. Do not maintain a second exhaustive command list.
 
 | Intent | Owner | Surface |
@@ -21,7 +22,7 @@
 | Workspace identity/configuration/explicit lifecycle | [workspace-lifecycle](../../workspace-lifecycle/SKILL.md) | `workspace.*` |
 | Exact commit/integrate/explicit push | [git-operations](../../git-operations/SKILL.md) | `git.*` |
 | Portable record primitive/package maintenance | [openspec](../../openspec/SKILL.md) | `openspec.*`, `openspec.maintenance.status` |
-| Complete verification/spec sync/archive | Respective `openspec-*` leaf and [closure](closure.md) | Native validation, `harness.specs.read/write`, terminal gate |
+| Complete verification/spec sync/archive | Respective `openspec-*` leaf and [closure](closure.md) | Native validation, `harness.specs.read/write`, exact explained `harness.change.close` |
 | Explicit fixed-snapshot Review | [code-review](../../code-review/SKILL.md) and [review intake](review.md) | No routine automatic Review |
 | Unexpected failure / behavior implementation | [systematic-debugging](../../systematic-debugging/SKILL.md) / [TDD](../../test-driven-development/SKILL.md) | Task-local diagnosis / grouped RED-GREEN |
 

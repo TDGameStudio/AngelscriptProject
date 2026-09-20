@@ -1,6 +1,6 @@
 {
-  "revision": "2026-09-19-archive-attachment-integrity-v1",
-  "published_at": "2026-09-19",
-  "summary": "Before archive, Harness now verifies that every attachment is indexed exactly once and INDEX stays within 120 lines, including ordinary evidence, knowledge and any closure file stored under attachments. The existing terminal boundary rejects defects before moving the Change. Inline-code, bare-path and Markdown-link bullets, plus first-column inline-code table entries, are accepted consistently with Protocol. This adds no user Gate or ordinary-status directory scan. Seven navigation defects across five existing archives were repaired without changing tasks, closure or evidence. Read-only guidance now uses change list for active Changes and reserves status for an exact Change. The preceding feedback-storage, isolated performance-probe and external-UBT admission fixes remain in place.",
-  "affected_skills": ["harness", "openspec"]
+  "revision": "2026-09-20-lifecycle-git-closure-v1",
+  "published_at": "2026-09-20",
+  "summary": "Create now previews complete planning and persists its exact formal Git scope; Replan persists formal records without checkpointing unfinished code. An explained final close decision binds selected local commits and archive, with recoverable partial stages and truthful abandoned/superseded disposition. Queues wait for canonical Git persistence. Grill guidance retains the whole discussion and invokes an eligible selectable Gate after explanation; simulated consumer evidence does not guarantee UI rendering or prompt reliability. New feedback uses existing topic drafts, and explaining-work distinguishes method/specification/knowledge/retrieval improvements with source-grounded factual knowledge admission and later reuse. Existing normal hooks, unrelated staged work, archive integrity, historical records and separate push/integration/removal authority remain in force.",
+  "affected_skills": ["harness", "git-operations", "change-queue", "brainstorming", "grill", "explaining-work", "openspec", "openspec-create-change", "openspec-update-change", "openspec-apply-change", "openspec-archive-change"]
 }

@@ -31,6 +31,23 @@ class Execution(unittest.TestCase):
         self.assertEqual('unbound', execute(self.context, 'status', {'SessionId': 'session-a'})['state'])
         self.assertEqual({}, hook(self.context, {'session_id': 'session-a', 'hook_event_name': 'Stop'}))
 
+    def test_archive_without_final_close_commit_remains_recoverable_not_advancing(self):
+        self.start()
+        root = self.root / 'openspec/changes' / self.change
+        target = self.root / 'openspec/archive/changes' / (self.change.split('/')[0] + '/2026-09-20-' + self.change.split('/')[1])
+        target.parent.mkdir(parents=True, exist_ok=True)
+        root.rename(target)
+        manifest = target / 'change.yaml'
+        manifest.write_text(manifest.read_text('utf8') + 'closure:\n  kind: completed\n', 'utf8')
+        receipt = target / 'attachments/data/harness-closure.json'
+        receipt.parent.mkdir(parents=True, exist_ok=True)
+        receipt.write_text(json.dumps(dict(schema=1, uid='fixture-1', kind='completed', revision='a' * 64,
+            gate=dict(Decision='close', TargetChange=self.change, HandoffRevision='a' * 64, DecisionSource='fixture:close'))), 'utf8')
+        state = execute(self.context, 'status', {'SessionId': 'session-a'})
+        self.assertEqual('closing', state['phase'])
+        self.assertEqual('running', state['state'])
+        self.assertFalse(state['implementationAllowed'])
+
     def test_authorized_unfinished_work_continues_but_repeated_no_progress_is_reported(self):
         self.assertEqual('running', self.start().get('state'))
         payload = dict(session_id='session-a', hook_event_name='Stop', permission_mode='default')

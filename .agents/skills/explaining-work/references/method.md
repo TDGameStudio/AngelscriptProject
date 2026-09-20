@@ -2,6 +2,7 @@
 
 - Identify the concrete thing the user wants to understand: a function, responsibility, data representation, transition, workflow or proposed change. Connect it to the problem it solves and its consumers.
 - Inspect owning source and nearby entry points before drawing conclusions. Follow relevant references outward to establish boundaries, then use exact symbols and paths to resolve details.
+- Read the relevant current specification and owning capability's `knowledges/INDEX.md`, then the matching entry. An absent entry is a possible knowledge gap; an existing unread entry is a retrieval gap. Neither changes source truth. Narrow searches to the owning capability before expanding to external reference material.
 - Reuse current evidence rather than repeatedly surveying the repository. Expand when an unanswered causal link or conflicting evidence requires it.
 - Distinguish code facts, runtime observations, documentation, historical notes and inference. Prefer the requested version's actual source when historical articles or snippets disagree.
 - Separate a step's demonstrated effect from the historical reason someone chose it. Source can establish how a guard protects state; a design record may establish the original trade-off. Without that record, present a plausible rationale as analysis, not the author's documented intent.
@@ -32,13 +33,14 @@
 - Keep current reality and accepted future design distinct. Do not redraw an accepted proposal as already implemented.
 - Update key conclusions and provenance in the existing context/design record. Do not require the visible explanation to be copied verbatim into a draft.
 
-## Repair a missing connection for the reader
+## Improve a missing connection for the reader
 
 - When the user says the explanation is unclear, identify the missing distinction from their words and the current example. Investigate discoverable facts yourself; ask a focused clarification only if different interpretations would materially change the explanation.
 - Give the confusing term an observable meaning: the actual field, object, event, branch or result that represents it. For example, distinguish recording a cancellation request from a worker receiving it and from evidence that the operation ended; use only the states present in the subject.
 - Walk the same small input or object through the relevant transitions. Show a contrasting outcome when it reveals the distinction, then reconnect the example to the complete relevant architecture and real names. A smaller example must not silently replace the user's system with a different design.
 - Correct a false premise using source or observations. The user chooses desired behavior, not what the current code already does. Keep a remaining preference separate from an unresolved fact.
 - Use the [worked example](worked-example.md) when a concrete model helps. Avoid a compulsory comprehension quiz or another approval step; during Grill return to its actual pending choice after explaining.
+- Follow [the improvement loop](improvement.md) to retain the actual signal, classify the owner from evidence, and distinguish factual supplementation from a desired behavior change. Do not require a code regression for a factual article or mark a question resolved just because it was archived.
 
 ## Explain a prepared Create or Replan
 

@@ -2,7 +2,7 @@
 
 - Read this reference whenever preparing the first handoff Gate for a new Change or an existing Change's Replan, including a formal direct-origin operation. It owns the visible explanation and question; [discussion operations](discussions.md) owns the receipt and mutation protocol.
 - Enter only after the user initiates convergence. During ordinary Grill, keep explaining and asking consequential questions without proposing creation/application. An explicit bounded direct edit does not manufacture this Gate.
-- Prepare the real selected design and handoff or complete Replan candidates, inspect their evidence, and obtain the read-only preview. Present the same material and target that produced its `HandoffRevision`; resolve discrepancies before asking.
+- Prepare the complete proposal/design/tasks/applicable spec candidates, required exports and explicit GitPlan for a new Create, or the complete changed Replan candidates and baseline hashes. Validate them in the read-only preview. Present the same material, repository selection and target that produced its `HandoffRevision`; resolve discrepancies before asking.
 - Treat this as a full explanation for an intelligent reader who has never seen this system. Do not assume that earlier discussion, technical experience, a class name or a familiar acronym makes the mechanism understood. Explain patiently without childish language or talking down to the user.
 - A short overview may orient the reader, but cannot replace the complete account below. No word, paragraph, diagram or question quota justifies dropping relevant detail. Completeness means every material relationship and consequence needed for this decision, not an unrelated repository dump.
 
@@ -35,7 +35,7 @@
 
 - Compare meaningful alternatives against the same concrete criteria and example. State why the selected approach fits, its costs and disadvantages, what useful properties it gives up, and evidence or changed conditions that would favor another option. Preserve consequential rejected decisions without replaying the transcript.
 - Distinguish user-confirmed decisions, engineering assumptions, recommendations and unresolved matters. Investigate discoverable facts. A necessary unanswered user-owned choice returns to explained Grill; do not hide it as future work inside an apparently ready Gate.
-- Describe the bounded implementation sequence and dependencies at the level available now. For Create, explain the intended work and proof without pretending Ensure plan's final Task DAG already exists. For Replan, show the actual candidate task/artifact changes.
+- Describe the actual candidate Task DAG, bounded outcomes, dependencies and proving commands before Create. Ensure plan later verifies these committed artifacts and retains historical-plan compatibility; it does not defer new planning until after this Gate. For Replan, show the actual candidate task/artifact changes and retained completed IDs.
 - Explain how success will be demonstrated: expected observable behavior, concrete cases and suitable proving commands when determined, evidence already obtained, and checks still to run. Explain why a test proves the claimed behavior and any important limit. Never report proposed checks as passed.
 - Cover real migration/rollout/recovery needs, compatibility effects and material risks when relevant. Do not invent a migration, exhaustive suite or risk ceremony for an unaffected area.
 - Use [explaining-work](../../explaining-work/SKILL.md) for source investigation, causal explanation, code walkthroughs and visuals. A reader should be able to explain why this change exists, how it works and what accepting it permits without opening a separate file.
@@ -46,6 +46,13 @@
 - Compare the accepted plan, actual work already completed and proposed revised plan as distinct states. Show preserved implementation/completed tasks, changed/new task outcomes and edges, affected artifacts, and proof that remains valid versus proof that must be repeated.
 - Explain what is paused, what this application writes, where execution can resume and how it affects the already authorized queue. The Replan Gate does not itself restart execution; the later arrangement chooses continuation.
 - Keep the accepted planning records intact until the exact Replan is approved and applied. Use the same presented candidate/baseline map in the mutation; a material change requires a fresh preview, explanation and answer.
+- Show that Replan commits only the accepted formal records and provenance. Existing implementation remains as-is for continued work; dissatisfaction or Replan does not authorize an incomplete-code checkpoint, withdrawal or abandonment.
+
+## Explain the exact Git boundary
+
+- Show each selected repository/branch, baseline, paths and meaningful hunks, plus excluded live/staged work. Explain what the proposed commit contains and why each part belongs to this scope. Mixed files require an explicit selected patch; a directory inventory alone is insufficient.
+- Create/Replan save the complete accepted formal planning before the arrangement Gate, including a visible commit message/intent. Their Git failure is planning-applied/commit-pending and blocks execution; the exact retry preserves the original decision and UID/applied record.
+- Planning approval does not approve future implementation commits. Explain that the final close normally contains those results and its specific Gate; no default per-task commit or extra old-code checkpoint is implied.
 
 ## Show the handoff boundary and then actually ask
 
@@ -56,6 +63,7 @@
 - Respect [host interaction](../../grill/references/hosts.md): a clarification-only tool cannot collect approval. If a form fails or is unavailable, deliver the complete actionable question through the permitted visible fallback. A promise to ask, unsent payload or tool acceptance without an answer is not a decision.
 - Actual approval binds its source to this presented target/revision. Silence, cancelled forms, past convergence, “I understand” or agreement with one explanation is insufficient. A free-text request to change the design returns to discussion rather than being coerced into approval.
 - Continue discussion when selected: re-explain the resulting relevant architecture after each answer and ask the next ready substantive question without requiring “continue”. Park only when actually selected; preserve the return position.
+- When the user says an explanation is incomplete, use [explaining-work](../../explaining-work/SKILL.md)'s improvement loop to distinguish missing explanation, unclear spec, missing knowledge, missed retrieval or an unproven cause. Capture the sourced question in the existing topic draft, improve the current account and return to this Gate. A material candidate change invalidates its old decision; a clearer explanation alone does not invent new authority.
 
 ## Keep records light and authority exact
 

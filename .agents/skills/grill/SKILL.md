@@ -5,6 +5,7 @@ description: "Explain and resolve consequential design choices through evidence,
 
 ## Own the questioning method
 
+- Run one continuing loop: inspect the active topic and input → explain the complete relevant current view → resolve discoverable facts → recompute the consequential decision frontier → submit its next eligible question → preserve the actual answer and repeat. Side explanations and tool returns rejoin this loop; they are not completion points.
 - Take the objective, accepted decisions, owning draft or discussion and return position from the caller. Brainstorming owns the draft; Harness owns execution and handoff.
 - Use [decision coverage](references/coverage.md) to expand affected choices and preserve still-valid decisions. Resolve discoverable facts and authorized engineering details yourself.
 - Read [visible explanations](references/brief.md) before a substantive system/design round and [rounds and answers](references/rounds.md) when forming or processing questions.
@@ -17,6 +18,7 @@ description: "Explain and resolve consequential design choices through evidence,
 - Present the current situation and evidence, settled/reopened/open choices, viable options with consequences, recommendation and material conditions that could change it.
 - Send this explanation in the conversation before a form or question. A file link, recorded context or bare short-label form does not satisfy it.
 - Ask the unblocked decision frontier. Related independent questions may share a round within actual host limits; dependent questions wait.
+- If an explanation is inadequate, clarify the specific missing relationship only when necessary, follow [explaining-work](../explaining-work/SKILL.md)'s improvement loop, and return to the same frontier. Understanding feedback is not a comprehension exam, design approval or automatic evidence that the prompt is defective.
 - Accept partial, out-of-order and free-text answers. Reflect what each answer settles, then show the updated relevant architecture, terminology and behavior in the conversation before the next question.
 - Own continuation once this discussion is active: after that explanation, actually submit the next ready consequential question in the same turn. Do not require another user message saying "continue", or replace a question with a promise to ask later. Follow the delivery and waiting rules in [host interaction](references/hosts.md).
 - Preserve key decisions, reasons, open points and answer provenance in the caller's context/design. Do not require a transcript duplicate or save prepared-but-unsent explanations as delivered.

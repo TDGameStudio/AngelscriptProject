@@ -25,8 +25,10 @@ This capability defines exact-workspace Git inspection and commits, reviewed loc
     > Boundaries: Hooks remain arbitrary programs; Harness restores repository refs and indexes that it owns and reports but never overwrites worktree, process, network, or repository-external hook side effects.
 
 #### Scenario: Accept scope-local hook changes
+- **GIVEN** an explicitly authorized legacy scoped call without an expected content revision
 - **WHEN** a pre-commit hook formats and stages only an effective-scope path and a commit-message hook edits the message
 - **THEN** the exact scoped commit succeeds with the hook-produced scoped content and message while outside index state remains equivalent
+- **BUT** a lifecycle call bound to an expected candidate rejects selected-content rewriting rather than silently changing the approved bytes
 
 #### Scenario: Preserve outside staged content explicitly
 - **GIVEN** the exact selected workspace contains intentionally staged work outside the requested repository/path scopes
@@ -99,6 +101,20 @@ This capability defines exact-workspace Git inspection and commits, reviewed loc
 #### Scenario: Authorize all changes explicitly
 - **WHEN** a caller selects all-change intent for one exact WorkspaceRoot
 - **THEN** the preview lists every included non-ignored repository/path before commit, rejects unrelated pre-staged content, and does not expose outside-staged preservation
+
+#### Scenario: Lifecycle commit consumes the displayed candidate
+
+- **GIVEN** an exact lifecycle Git preview with selected content and relevant repository identity
+- **WHEN** its commit executes
+- **THEN** Git verifies the expected preview identity and commits only the approved selection through normal hooks
+- **AND** changed selected bytes or relevant baseline reject mutation, while unrelated dirty paths and staged hunks are preserved
+
+#### Scenario: Select one attributable edit in a shared file
+
+- **GIVEN** a file containing owned and unrelated edits with a proven explicit patch for the owned change
+- **WHEN** the shown patch selection commits
+- **THEN** the commit contains only that patch and the other edit remains outside it
+- **BUT** inability to prove or apply the separation blocks the operation rather than admitting the whole file
 
 ### Requirement: Explicit previewable local integration
 
@@ -187,12 +203,21 @@ The Git operations module SHALL expose only Harness-named context, result, and h
 
 ### Requirement: Plugin-only queue commits
 
-Queue closure SHALL use exact owned plugin scopes with PluginsOnly and PreserveOutsideStaged. In primary workspaces PluginsOnly MUST leave the parent HEAD and unrelated staged entries unchanged; in replicas the root and fixed snapshots MUST NOT become Git commit or publication targets. Per-plugin baseline/result commits SHALL identify executed source instead of a fabricated replica root HEAD. Legacy linked-worktree integration remains a separate explicitly authorized operation with its existing expected-source-HEAD contract.
+The plugin stage of queue closure SHALL use exact owned editable-plugin scopes with PluginsOnly and PreserveOutsideStaged. In a primary workspace the plugin stage leaves parent HEAD and unrelated staged entries unchanged; a separately shown stage of the same close decision saves canonical records and authorized gitlinks in the primary repository. In replicas the root and fixed snapshots MUST NOT become Git commit or publication targets. Per-plugin baseline/result commits identify executed source. Integration and push remain separately authorized operations.
 
 #### Scenario: Commit an edited replica plugin
+
 - **WHEN** verified owned paths in a registered editable plugin are committed
-- **THEN** the commit belongs only to that plugin repository, other staged paths remain intact and the parent HEAD does not change
+- **THEN** the commit belongs only to that plugin repository and other staged paths remain intact
+- **AND** canonical records are saved through their actual primary context rather than a fabricated replica root repository
 
 #### Scenario: Reject root publication from a replica
+
 - **WHEN** a replica caller supplies the root repository key for git.push
 - **THEN** Harness rejects that target before Git can fall back to the primary repository
+
+#### Scenario: Complete the canonical-record stage
+
+- **GIVEN** an approved close plan with plugin and primary stages
+- **WHEN** plugin results and archive evidence are ready
+- **THEN** only the shown primary records and authorized gitlinks are committed, and partial primary failure remains visible and recoverable

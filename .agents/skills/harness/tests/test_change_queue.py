@@ -92,6 +92,38 @@ class ChangeQueueTests(unittest.TestCase):
         paused = self.call('release', Token=token)
         self.assertEqual('paused', paused['state'])
 
+    def test_new_archive_requires_its_canonical_commit_before_advance(self):
+        self.populate()
+        token = self.call('claim', SessionId='first')['controller']['token']
+        active = self.root / 'openspec/changes/fixture/feature-a'
+        target = self.root / 'openspec/archive/changes/fixture/2026-09-17-feature-a'
+        target.parent.mkdir(parents=True)
+        active.rename(target)
+        manifest = target / 'change.yaml'
+        manifest.write_text(manifest.read_text('utf8') + 'closure:\n  kind: completed\n', 'utf8')
+        receipt = target / 'attachments/data/harness-closure.json'
+        receipt.parent.mkdir(parents=True, exist_ok=True)
+        receipt.write_text(json.dumps(dict(schema=1, uid='change_feature-a', kind='completed', revision='a' * 64,
+            gate=dict(Decision='close', TargetChange='fixture/feature-a', HandoffRevision='a' * 64, DecisionSource='fixture:close'))), 'utf8')
+        before = (self.root / 'Saved/Harness/ChangeQueue/queue.json').read_bytes()
+        self.assertEqual('close-pending', self.call('status')['recordState'])
+        with self.assertRaisesRegex(ValueError, 'commit'):
+            self.call('advance', Token=token)
+        self.assertEqual(before, (self.root / 'Saved/Harness/ChangeQueue/queue.json').read_bytes())
+
+    def test_malformed_new_close_receipt_is_not_historical_archive_authority(self):
+        self.populate()
+        active = self.root / 'openspec/changes/fixture/feature-a'
+        target = self.root / 'openspec/archive/changes/fixture/2026-09-17-feature-a'
+        target.parent.mkdir(parents=True)
+        active.rename(target)
+        manifest = target / 'change.yaml'
+        manifest.write_text(manifest.read_text('utf8') + 'closure:\n  kind: completed\n', 'utf8')
+        receipt = target / 'attachments/data/harness-closure.json'
+        receipt.parent.mkdir(parents=True, exist_ok=True)
+        receipt.write_text('{broken', 'utf8')
+        self.assertEqual('record-blocked', self.call('status')['recordState'])
+
     def test_owner_checkpoint_indexes_execution_evidence(self):
         self.populate()
         token = self.call('claim', SessionId='first')['controller']['token']

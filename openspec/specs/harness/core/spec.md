@@ -209,6 +209,14 @@ Harness MUST own one discussion/execution double loop with independently callabl
 - **WHEN** the user approves the concrete Create or Replan and application succeeds
 - **THEN** the agent asks draft disposition and execution arrangement, applies actual choices, and only then returns to authorized execution
 
+#### Scenario: A side question retains the whole discussion
+
+- **GIVEN** a design discussion with unresolved earlier choices
+- **WHEN** the user asks a local question or corrects a detail
+- **THEN** the agent addresses that message, re-explains the complete relevant current design, and resumes the whole topic's ready questions or discoverable investigation
+- **AND** after listed choices are exhausted it examines relevant counterexamples, failure recovery and boundaries before concluding that useful work is exhausted
+- **BUT** it does not manufacture questions, change the objective or infer user convergence
+
 ### Requirement: Change-owned discussion and applied planning
 
 Change-owned planning talks MUST remain indexed under attachments/talks with concise impact, provenance, questions and return state. Candidate design discussion MAY use a linked local draft without copying full conversation into both owners. The grill- prefix denotes interactive origin and talk- technical analysis, not lifecycle state. Open, settled, closed and superseded states preserve prior decisions. Explicit optional transcript frames preserve original wording; historical schema-less talks remain readable without migration. Only successfully applied planning updates create immutable applied Replans.
@@ -724,14 +732,14 @@ All maintained OpenSpec source documentation, Skills, command references, projec
 
 ### Requirement: Harness dogfooding feedback
 
-Harness SHALL expose cheap visible feedback without expanding authorized scope automatically. harness.status MUST return installation/workspace identity plus a small updates.json revision/published_at/summary/affected_skills notice. Missing or corrupt notice MUST appear as a nonfatal issue. The agent shows the notice once per conversation revision at entry/resume; no watcher, seen database or directory hashing is required.
+Harness SHALL expose the existing small updates notice and retain actual sources for workflow friction and explanation-improvement signals in canonical topic drafts. New upgrade findings MUST use the existing README/CONTEXT/design/research structure without a parallel Saved raw-observation, triage or inbox ledger. Historical observations remain readable and are not automatically migrated or deleted. Queries MUST remain read-only. Source capture, scope selection, handoff and verified improvement MUST remain distinct facts. An understanding signal with an unproven cause MUST remain a question or hypothesis rather than a proven Skill defect.
 
 #### Scenario: Collect and group observations
 
-- **WHEN** evidence reveals recurring workflow friction or a concrete explanation/tool defect
-- **THEN** harness.observe appends bounded versioned raw JSON with actual SourceRef and optional DedupKey/OwnerDraftId under ignored Saved/Harness/Observations
-- **AND** the human-readable INBOX is derived from raw occurrences and triage dispositions; mutations may regenerate it while queries never write
-- **BUT** ordinary compilation failures, expected RED and cancellation are not inherently workflow defects
+- **WHEN** concrete sourced workflow friction or an explanation-improvement question is captured
+- **THEN** harness.observe writes the bounded finding and actual sources into its canonical topic draft, reusing its known owner and scope
+- **AND** grouped queries remain read-only and no new Saved observation, triage or inbox ledger is created
+- **BUT** ordinary compilation failures, expected RED, unfamiliarity and cancellation are not inherently workflow defects
 
 #### Scenario: Confirm a batch before improvement
 
@@ -743,35 +751,65 @@ Harness SHALL expose cheap visible feedback without expanding authorized scope a
 
 - **GIVEN** performance measurements may query an explicitly selected real Change
 - **WHEN** the benchmark measures the observation write route
-- **THEN** it writes raw observations and the derived inbox only in an isolated fixture workspace, leaving the selected project's observations and triage unchanged
-- **AND** the measured route still writes and validates its real artifacts; isolation does not replace the measurement with a no-op
+- **THEN** it writes and validates the real draft artifact only in an isolated fixture root, leaving the selected project's feedback unchanged
+- **AND** isolation does not replace the measurement with a no-op
 
 #### Scenario: Reconcile historical feedback with exact evidence
 
-- **GIVEN** the user authorizes a batch containing old observations without triage records
-- **WHEN** the agent checks each observation's source and the exact linked issue, task and final closure evidence
-- **THEN** it distinguishes current findings from historically completed corrections and synthetic measurements before reporting actionable work
-- **AND** historical completion is recorded through selected-to-resolved triage with existing evidence and an explicit reconciliation result, without claiming a new repair or test run
-- **BUT** rejection from another Change's scope does not establish a repair, and raw records and immutable archives remain unchanged
+- **GIVEN** the user authorizes a batch containing historical observations
+- **WHEN** the agent checks each actual source and exact linked issue, task and final evidence
+- **THEN** it distinguishes unresolved questions, historically completed corrections and synthetic measurements, retaining new treatment in an active owning topic
+- **AND** selected-to-resolved reconciliation cites existing evidence and identifies itself without claiming a new repair or test run
+- **BUT** rejection from another scope does not establish repair, and historical raw records and immutable archives remain unchanged
 
 #### Scenario: Explain local feedback retention
 
-- **WHEN** the user asks whether collected feedback survives sessions, cleanup or workspace changes
-- **THEN** the agent explains that raw observations, triage and the inbox are Git-ignored workspace-local files, and that ignored drafts do not provide Git-backed retention either
-- **AND** admitted Change issues retain indexed evidence while verified reusable outcomes belong in maintained Skills, tools, tests or capability knowledge
-- **BUT** an update notice or Git commit does not back up ignored pending feedback, and no global tracked backlog or automatic migration is implied
+- **WHEN** the user asks whether feedback survives sessions, cleanup or clones
+- **THEN** the agent explains that new topic drafts and historical Saved feedback are Git-ignored local records
+- **AND** admitted Change evidence and verified reusable outcomes follow their maintained record/knowledge owners
+- **BUT** an update notice or Git commit does not back up ignored pending questions and no automatic migration is implied
 
 #### Scenario: Preserve an immutable archive
 
-- **WHEN** a new workflow problem is discovered after archive
-- **THEN** it enters the inbox or linked draft without changing the archive or automatically creating a successor Change
-- **AND** any formal repair uses user-led convergence and both handoff Gates; already authorized direct maintenance can proceed in its accepted scope
+- **WHEN** a new workflow question is discovered after archive
+- **THEN** it enters an active topic draft without changing the archive or automatically creating a successor Change
+- **AND** formal repair uses user-led convergence and both handoff Gates; already authorized direct maintenance proceeds within its existing scope
 
 #### Scenario: Retain terminal evidence boundaries
 
 - **WHEN** feedback is explicitly admitted as a material issue of an authorized active Change
 - **THEN** its existing v2 issue lifecycle and exact terminal evaluation apply
 - **BUT** merely collecting an observation neither blocks closure nor starts Review/Replan
+
+#### Scenario: Capture only a topic draft
+
+- **WHEN** concrete sourced workflow friction is captured during execution
+- **THEN** Harness creates or reuses the matching topic draft, retains the diagnostic evidence and returns to the authorized work after processing the feedback's actual impact
+- **BUT** capture does not create a formal Change, append execution scope, modify Skills or itself block unrelated closure
+
+#### Scenario: Batch treatment remains user-directed
+
+- **WHEN** the user initiates a session to process findings across topic drafts
+- **THEN** Harness explains current findings, dispositions and evidence, collects the selected scope and records conclusions in the original owning drafts
+- **AND** archive or handoff does not claim implementation repair, and a pure research or rejected topic need not create a Change
+
+#### Scenario: New feedback and measurements do not create another ledger
+
+- **WHEN** a new observation or isolated performance probe exercises feedback capture
+- **THEN** the new finding exists only in the owning topic draft, and the probe uses an isolated draft root
+- **AND** existing historical Saved data and immutable archives stay unchanged; operational execution/transaction recovery records remain separate from upgrade issues
+
+#### Scenario: Explain local retention honestly
+
+- **WHEN** the user asks how feedback survives sessions or clones
+- **THEN** Harness explains that drafts are ignored local records and accepted design/evidence is exported to a formal Change for Git persistence
+- **BUT** local draft capture alone provides neither remote backup nor an implementation approval
+
+#### Scenario: Preserve visible updates and material issue boundaries
+
+- **WHEN** status or a current-scope material issue is processed
+- **THEN** the existing bounded update notice and source-backed active issue/terminal rules continue to apply
+- **AND** malformed notice is nonfatal, no watcher is introduced, and ordinary expected RED or cancellation is not classified as a Harness defect merely for occurring
 
 ### Requirement: Fail-closed active evolution closure
 
@@ -837,6 +875,25 @@ Reusable harness knowledge MUST be loaded progressively and promoted explicitly.
 #### Scenario: Load capability knowledge progressively
 - **WHEN** a later task needs reusable guidance from a capability
 - **THEN** it reads that capability's knowledge INDEX and loads only the linked current file needed by the task
+
+#### Scenario: Admit verified factual explanatory knowledge
+
+- **GIVEN** clear capability ownership, existing maintenance authority and a reusable factual explanation that does not change accepted behavior
+- **WHEN** its source and relevant contract, relationships, examples and applicability have been checked with any needed minimal observation
+- **THEN** the agent may promptly publish it in the owning capability knowledges directory and update its INDEX with provenance and status
+- **AND** it does not fabricate a code repair or require behavior RED for facts with no behavior change; repair-derived learning retains real implementation and regression proof
+
+#### Scenario: Keep unauthorized or uncertain enrichment in its draft
+
+- **WHEN** a factual claim lacks evidence, the current activity is pre-Change brainstorming, or the proposed update is outside existing authority
+- **THEN** the owning topic draft retains the knowledge candidate, evidence gaps and intended destination without publishing it as current guidance
+- **AND** archive or handoff alone does not promote it or prove the improvement complete
+
+#### Scenario: Reuse admitted knowledge in later explanations
+
+- **WHEN** a later explanation concerns the admitted topic
+- **THEN** the agent reads the owning capability INDEX and relevant current entry, checks applicability and uses that content in the causal explanation
+- **AND** existing suitable knowledge is reused rather than duplicated, and an invalidated entry is updated or superseded with provenance while archived sources remain immutable
 
 ### Requirement: Impact-scoped verification by default
 
@@ -1161,6 +1218,20 @@ Before asking the handoff Gate, the agent MUST follow the dedicated `harness/ref
 - **WHEN** the user requests a formal Change without a draft
 - **THEN** concrete direct HandoffText/reason receives the same exact-version preview and Gate
 
+#### Scenario: Complete first planning is part of the Create decision
+
+- **GIVEN** user-led convergence on a new Change
+- **WHEN** the Create Gate is prepared
+- **THEN** the full proposal, root design, task plan, applicable deltas, verification arrangements and formal-record Git selection are prepared and validated as candidates before canonical creation
+- **AND** acceptance creates and validates that exact planning version and commits its shown formal-record scope before the separate draft/execution arrangement
+- **BUT** a failed stage remains recoverable and cannot be reported as fully persisted
+
+#### Scenario: Replan persists records but not the old implementation
+
+- **WHEN** an exact Replan is accepted and applied
+- **THEN** its formal planning and operation provenance are saved through the shown Git selection
+- **AND** current implementation changes remain for overall closure unless separately authorized, and a later execution arrangement still governs continuation
+
 ### Requirement: Minimal project and plugin source identity
 
 Harness SHALL generate only necessary host engineering files, targets and configuration. Host files SHALL come from the primary current working files with recorded hashes. Plugin baselines SHALL be each source repository's HEAD at creation, excluding uncommitted plugin edits; enabled necessary project-plugin dependencies SHALL be included transitively. Later preparation SHALL use those pinned baselines and MUST NOT silently overwrite source changes. A replica MUST NOT report its control repository HEAD as a project-root HEAD.
@@ -1208,6 +1279,7 @@ Each primary or replica workspace SHALL own an explicit ordered Change queue und
 - **GIVEN** the current workspace has an approved ordered queue A then B
 - **WHEN** the user asks to execute until finished
 - **THEN** the agent claims that queue, completes A through required verification and completed archive, advances to B, ensures missing planning from approved material, and continues until exhaustion or a concrete blocker
+- **AND** the explained exact close decision and all required Git stages must complete before that advancement; incomplete outcomes retain their separately approved truth
 
 #### Scenario: Preserve Task DAG progress during feedback
 - **WHEN** feedback invalidates accepted planning truth
@@ -1222,6 +1294,13 @@ Each primary or replica workspace SHALL own an explicit ordered Change queue und
 - **WHEN** an unclaimed exhausted queue receives new pending Changes
 - **THEN** it reports idle with the new membership and does not claim a controller; an existing requested pause remains paused
 - **AND** removing the last pending member reports exhaustion and counts removal separately from completed archives
+
+#### Scenario: Pending Git closure keeps the current item active
+
+- **GIVEN** a current authorized item whose archive exists but whose required Git or withdrawal stage is incomplete
+- **WHEN** the queue is inspected or resumed
+- **THEN** it reports the partial close state and does not start the next item
+- **AND** exact recovery completes remaining stages once without extending the authorized range
 
 ### Requirement: Queue ownership and recovery
 
@@ -1240,16 +1319,20 @@ Queue membership writes SHALL use revision checks and short recoverable transact
 - **THEN** the executing agent preserves work and releases at a task or closure boundary; duplicate claims do not erase the request and the request itself does not terminate a running process
 
 #### Scenario: Advance after archive interruption
-- **WHEN** a completed archive exists but queue advance was interrupted
-- **THEN** the controller can reconcile that exact archive and advance without repeating finished implementation or counting a different archive
+
+- **WHEN** an exact approved completed, abandoned or superseded closure has fully persisted its required Git stages but queue registration was interrupted
+- **THEN** the controller can register that actual closure kind and advance within its authorized range without repeating completed work
+- **BUT** an archive with pending Git or withdrawal stages cannot advance and does not authorize its replacement
 
 ### Requirement: Shared records and execution evidence
 
 Replica Change, TaskPlan, draft, closure and native OpenSpec operations SHALL use canonical OpenSpecRoot while implementation and runtime files use WorkspaceRoot. Queue checkpoints SHALL retain initial and current host/plugin identities, including content fingerprints for intentionally uncommitted host work. Replan base_commit SHALL identify the canonical record repository and SHALL cite individual affected plugin identities. Shared spec publication SHALL use a short lock and expected content SHA-256, with reread and semantic merge after a stale-write rejection.
 
 #### Scenario: Close verified plugin work without committing the primary
-- **WHEN** queue implementation and verification finish
-- **THEN** exact owned plugin commits preserve unrelated staged content and leave the primary HEAD unchanged, checkpoint actual source identities, synchronize applicable specs, satisfy the terminal gate and complete archive before advance
+
+- **WHEN** the selected plugin stage of an approved close executes
+- **THEN** exact owned plugin commits preserve unrelated staged content and leave primary HEAD unchanged during that stage
+- **AND** source identities, applicable spec synchronization, terminal checks and native archive precede the separately shown canonical-record commit; only its successful persistence permits advancement
 
 #### Scenario: Reject a concurrent stale spec merge
 - **GIVEN** two workspaces read the same canonical spec
@@ -1281,3 +1364,78 @@ Natural-language requests for current task, queue, workspace, lifecycle or build
 #### Scenario: Detect a reused worker process identifier
 - **WHEN** a recorded UE worker PID exists but its start time does not match the recorded worker
 - **THEN** run status reports the orphaned run instead of presenting the unrelated process as active work
+
+### Requirement: Explained lifecycle closure decisions
+
+Harness SHALL present the accepted design, final implementation, deviations, exact proving evidence, durable-spec disposition, owned Git selections and remaining workspace state before consuming an actual version-bound closure decision. One shown decision MAY cover archive and the exact local commits; it MUST NOT imply push, integration or workspace removal. Public archive mutations MUST require the matching decision as well as terminal integrity. A prior explicit decision remains usable only for its exact target, content, range and conditions.
+
+#### Scenario: Insufficient explanation returns to the same decision
+
+- **WHEN** the user requests a clearer explanation at Create, Replan or closure
+- **THEN** the agent enters the explanation-driven improvement loop, resolves an identifiable gap or uses a contextual diagnostic question when the gap is unclear, then re-presents the complete relevant design
+- **AND** it retains the candidate if unchanged or refreshes the preview when material content changes
+- **BUT** understanding, silence and an unsubmitted question are not approval
+
+#### Scenario: Actually submit the selectable Gate
+
+- **GIVEN** a fully explained Create, Replan, arrangement or closure decision and an available popup whose host contract permits that decision
+- **WHEN** Harness asks for the decision
+- **THEN** it invokes that actual selectable form with concrete options and records only the real submitted answer and its source
+- **BUT** prose options, an unsent payload, a preselected option, elapsed time or a pending/cancelled form do not approve the operation
+
+#### Scenario: Respect popup capability and delivery limits
+
+- **WHEN** the host form prohibits approval, is unavailable, fails or is reported invisible
+- **THEN** Harness explains the concrete limit and delivers the actual question through the permitted visible fallback without repeated failed probes
+- **AND** dependent mutation remains pending until an actual answer arrives
+
+#### Scenario: Resume after archive and before canonical commit
+
+- **WHEN** archive validation succeeds but the canonical-record commit fails
+- **THEN** Harness reports archived/commit-pending, preserves immutable records and successful prior commits, and resumes only the remaining approved stages
+- **BUT** archive existence alone is not successful workspace closure
+
+### Requirement: Honest incomplete closure and code disposition
+
+Abandoned and superseded closure SHALL preserve incomplete task dispositions and a shown owned incomplete Git checkpoint without pretending verification passed. Abandoned code SHALL then be withdrawn only through the shown attributable selection with applicable verification and a traceable commit. Superseded work SHALL follow its named replacement's accepted carryover. Mixed ownership, unresolved dependencies or rejecting hooks MUST block the affected operation rather than trigger broad restoration or bypass.
+
+#### Scenario: Abandonment preserves other work
+
+- **GIVEN** an abandoned implementation with unrelated live and staged edits
+- **WHEN** the accepted incomplete checkpoint and withdrawal complete
+- **THEN** the checkpoint remains in Git history, only the abandoned owned code is withdrawn, unrelated edits remain and unfinished tasks keep their real dispositions
+
+#### Scenario: Poor implementation is triaged before disposition
+
+- **WHEN** the user says implementation is poor
+- **THEN** the agent distinguishes an ordinary local correction, invalidated planning that needs Replan and an actual decision to stop or replace the objective
+- **BUT** the feedback alone does not authorize abandonment, deletion or a new Change
+
+### Requirement: Explanation-driven improvement
+
+Understanding feedback SHALL inform a sourced improvement loop across ordinary module explanations and lifecycle Gates. Explaining-work owns source-grounded causal explanation and knowledge lookup; Grill owns necessary contextual clarification and consequential choices; the matching topic draft owns improvement findings and disposition. Reusable explanation-method changes belong to explaining-work, intended behavior belongs to the owning specification, and verified module knowledge belongs to that capability's indexed knowledges directory. Feedback MUST NOT automatically create a Change, authorize unrelated edits, prove a defect or silently terminate the original discussion.
+
+#### Scenario: Explain and continue the user's original work
+
+- **WHEN** the user says an existing module explanation is unclear or requests another explanation
+- **THEN** the agent identifies the understanding goal and original return point, inspects relevant source/specification/knowledge and explains the complete relevant mechanism with a concrete example
+- **AND** it asks Grill questions only for genuine unresolved understanding needs or choices, records the improvement signal in its owning topic draft and resumes the original discussion or work
+- **BUT** an initial question about an unfamiliar module does not itself prove a Skill defect or require a comprehension quiz
+
+#### Scenario: Distinguish method, specification and knowledge gaps
+
+- **WHEN** investigation establishes the reason an explanation is insufficient
+- **THEN** missing narrative connections improve explaining-work, ambiguous intended behavior improves the owning Requirement/Scenario, and missing source-backed mechanisms or examples improve owning capability knowledge
+- **AND** accepted behavior changes return through the actual design/Replan boundary; current implementation alone does not establish the intended contract
+
+#### Scenario: Existing knowledge was not used
+
+- **GIVEN** relevant current knowledge already exists
+- **WHEN** explanation feedback reveals that it was not found or applied
+- **THEN** the agent reuses that content and improves the relevant index or reading path within selected authority instead of creating a duplicate article
+
+#### Scenario: Conflicting evidence and authority remain explicit
+
+- **WHEN** source/specification/knowledge conflict or a proposed improvement exceeds current scope
+- **THEN** the draft retains the sourced question, hypothesis, proposed destination and disposition until evidence and actual scope selection permit improvement
+- **AND** verified reusable results may later enter capability knowledge while the draft keeps the process record; neither becomes a duplicate transcript or parallel issue ledger

@@ -1,0 +1,235 @@
+# 实际用户可见说明
+
+我会先按 Harness 的讨论入口梳理方案，再用 Brainstorming 和 Grill 持续澄清关键选择；先把提交边界、主仓库与插件的关系，以及哪些节点需要你参与讲清楚。
+
+---
+
+你的目标可以先拆成两个相互关联的选择：**什么时候收束一次工作，以及这一次究竟收进哪些改动。** “不积累未提交修改”和“不被每个小任务打断”可以同时满足，但需要先定一个比小任务更大的收束单位。
+
+根据目前给出的事实，现状是手动提交；发布工具没有自动推送，也没有把队列结束与 Git 提交连起来。主仓库和插件分别保存自己的提交历史：
+
+```text
+主仓库
+├─ 主仓库自己的文件改动
+└─ Plugins/Foo 的提交指针 ──→ 插件仓库中的某个提交
+                              └─ 插件文件的改动
+```
+
+例如，某项功能同时修改了主仓库配置和插件代码。插件代码需要先在 `Plugins/Foo` 中形成提交；主仓库随后才能把配置改动和指向这个插件提交的指针一起记录下来。只在主仓库提交，不会把插件目录内尚未提交的代码保存进去。一次工作可以涉及两个 Git 提交，但对你可以只呈现一份整体收束说明。
+
+混杂改动则是另一条边界：同一个目录甚至同一个文件里，可能同时存在本轮工作和其他工作的修改。因此，“收束完成”不能简单等同于“把工作区里所有修改一起提交”。一个候选流程是先确定本轮内容，再分别整理两个仓库的准确范围，展示整体结果，最后按插件、主仓库的依赖关系完成提交。是否允许其他工作的改动继续留在工作区，还需要单独确定。
+
+对于收束时机，有三个有实际用途的方案：
+
+| 收束单位 | 如何运作 | 对你的影响 |
+|---|---|---|
+| 一个完整工作成果 | 一组有关联的小任务全部完成、验证后，统一整理并提交 | 中间不打断；每个可独立交付的成果都有记录 |
+| 一次会话或一批工作 | 一轮工作中先积累，在明确结束这一批时统一处理 | 打断更少；批次过大时，分类和回溯会更费力 |
+| 一次发布 | 到准备发布时再统一整理 | 平时最少打断；未提交改动会保留更久，也可能混入多个成果 |
+
+我倾向于第一种：把“完整工作成果”作为常规收束单位。例如，完成“支持新的打包参数”可以包含实现、测试和文档几个小任务，最后集中处理一次。若你的日常工作本来就以明确的批次推进，而且一批中的内容经常互相依赖，第二种会更贴合使用习惯。是否把这个单位映射到现有任务、队列或某个发布阶段，等选定行为后再确定。
+
+本轮讨论草稿保存在 [after-discussion](/D:/Workspace/AngelscriptProject/Saved/AgentTemp/lifecycle-consumers/after-discussion/README.md)。目前只有目标和现状已确定，提交节点仍是待选方案。
+
+---
+
+模拟用户（eval-after-user-2）：选一批相关工作完成后再检查。顺便你说主仓库里的子模块指针是什么意思？我没懂，你解释下。
+
+---
+
+先把这一点定下来：**一批相关工作完成后，集中检查一次。** 你这次选定的是检查时机；检查之后是否立即提交、提交前是否需要你确认，还没有定。
+
+“子模块指针”可以理解为：**主仓库记录插件应当使用的那个提交编号。** 它记录的是插件版本，不是把插件的所有文件再保存一份。
+
+用一个具体例子看它的变化。下面的 `F1`、`F2` 只是示意编号，真实 Git 提交使用哈希编号：
+
+```text
+起点
+主仓库提交 P1
+├─ 保存主仓库自己的配置、脚本等文件
+└─ 记录 Plugins/Foo 使用插件提交 F1
+
+插件仓库
+└─ 提交 F1：旧版插件代码
+```
+
+接下来，你修改了插件代码，但还没有提交。插件工作目录里已经是新内容，插件的当前提交仍是 `F1`；主仓库原来记录的也是 `F1`。这时即使提交主仓库，也不能把这些尚未提交的插件改动包含进去。
+
+等插件代码形成新提交 `F2`，主仓库便可以把记录从 `F1` 改为 `F2`，再形成主仓库提交 `P2`：
+
+```text
+插件先提交
+插件提交 F1 ──→ 插件提交 F2：保存这批插件代码
+
+主仓库随后提交
+主仓库提交 P2
+├─ 保存这批主仓库文件改动
+└─ 记录 Plugins/Foo 使用插件提交 F2
+```
+
+以后恢复 `P2` 并按它记录的版本检出子模块，就能取到与这批主仓库文件配套的插件代码。反过来，如果只提交了插件 `F2`，却没有更新主仓库的记录，那么主仓库保存的配套版本仍然是 `F1`。这就是为什么一次同时涉及两边的工作，往往需要先提交插件，再提交主仓库中的指针更新。提交只形成本地记录；推送是后续把提交传到远端的另一个动作。
+
+按你刚才的选择，候选流程现在是：
+
+```text
+执行一批相关工作
+  ├─ 主仓库可能有自己的文件改动
+  └─ Plugins/Foo 可能有插件代码改动
+          ↓
+这批工作完成后集中检查
+  ├─ 区分本批内容与其他混杂改动
+  ├─ 检查本批工作的验证结果
+  └─ 展示插件版本与主仓库记录之间的关系
+          ↓
+检查后的提交方式仍待选择
+```
+
+现有工具仍然只有手动提交；上面是我们正在讨论的目标流程。对于检查后的行为，有三种有用的安排：
+
+| 方式 | 具体行为 | 对你的影响 |
+|---|---|---|
+| 展示后集中确认 | 工具整理本批的准确内容和验证结果，你确认一次，再按依赖顺序提交 | 每批一次参与，可以看到将要提交的实际内容 |
+| 整理后手工提交 | 工具只给出检查结果和提交范围，由你操作 Git | 保留手工控制，收束是否完成依赖你后续处理 |
+| 预先约定规则后自动提交 | 规则能够确定本批范围且检查通过时自动提交，遇到归属不明等情况再停下来 | 正常批次少打断，但需要先明确可靠的范围规则和异常边界 |
+
+我倾向于“展示后集中确认”：它把中间小任务的打断合并成每批一次，又能在提交内容已经明确时由你决定。若你希望正常批次完全不需要参与，第三种更符合这个偏好，但混杂修改的归属规则就会成为设计中的关键部分。
+
+### 本轮实际操作（评估记录）
+
+- 更新当前目录的 CONTEXT.md 与 designs/workspace-closure/design.md，保存 eval-after-user-2 的原文与选择边界。
+- 调用 conversation_host.py，实际 note 提交如下，返回 `{"status":"recorded"}`。
+
+```json
+{"run":"after-discussion","type":"note","text":"Actual simulated user input eval-after-user-2: 选一批相关工作完成后再检查。顺便你说主仓库里的子模块指针是什么意思？我没懂，你解释下。 Q1 is resolved only as inspection after a related-work batch; no automatic commit, implementation, or convergence authority inferred. Answered pointer side question with illustrative F1/F2 and P1/P2 state transitions, restored complete relevant candidate workflow, compared three post-inspection behaviors, and continued the same discussion. Saved actual commentary verbatim and updated context/design. No additional source reads this round."}
+```
+
+- 随后调用同一适配器，实际问题提交如下。
+
+```json
+{"run":"after-discussion","type":"question","tool":"request_user_input","purpose":"optional-clarification","questions":[{"question":"Q2：一批相关工作完成并集中检查后，你希望工具通常怎样处理提交？","options":["展示后集中确认（推荐）：看清本批具体内容，一次确认后提交","整理后手工提交：工具给检查结果和范围，由我操作 Git","约定规则后自动提交：符合范围和检查规则时提交，异常才询问"]}]}
+```
+
+- 实际返回 `{"status":"pending","id":"Q3","rendered":"unknown"}`。内容中的稳定选择标识为 Q2；Q3 是适配器分配的请求编号。尚无实际答案，也没有可证明表单已显示的结果。
+
+---
+
+模拟用户（eval-after-user-3）：选每批确认一次。混在一起的改动怎么分，我还没决定；整文件保存和只保存其中一段，到底差在哪？你解释清楚些。还有刚才那个弹窗我没看到。
+
+---
+
+现在确定的流程是：**一批相关工作完成后集中检查，把具体提交内容展示给你，每批确认一次。** 你这条文字已经回答了上一项选择，所以不需要再重复确认。之前工具只返回了“等待回答、显示状态未知”，不能据此认为弹窗已成功显示；这次我会把仍未决定的那一项同时写成可直接用文字回答的选择。
+
+“整文件保存”和“只保存其中一段”的关键差别，是**本次提交是否带上这个文件中的其他修改**。这里的“保存”指保存进 Git 提交；编辑器里的文件保存是另一回事。
+
+假设插件有一个配置文件，下面是简化示例，两处修改互不依赖：
+
+```text
+上一次提交中的内容        当前工作目录中的内容
+Retries = 2               Retries = 3    ← 本批工作：调整重试次数
+Timeout = 10              Timeout = 30   ← 另一批工作：调整超时
+```
+
+两种提交方式会产生不同结果：
+
+| 方式 | 新提交记录的版本 | 提交之后留在工作目录的未提交修改 |
+|---|---|---|
+| 整文件纳入 | `Retries = 3`、`Timeout = 30` | 这两项修改都已提交 |
+| 只纳入本批片段 | `Retries = 3`、`Timeout = 10` | `Timeout = 30` 仍然保留为未提交修改 |
+
+第二种并不是把工作目录里的 `Timeout = 30` 改回去，而是在 Git 的**暂存区**里准备一个只包含本批内容的版本。暂存区就是“下一次提交准备采用的内容”。提交之后，工作目录仍然可以保留两项修改；只是其中一项已经进入历史，另一项还没有。
+
+Git 最终记录的仍是文件版本。“只保存一段”描述的是如何挑选修改，得到的文件版本由旧版内容加上选中的修改组成。因此，片段选择可以把同一文件里的两批工作分开，但前提是它们确实能够独立成立。例如，新代码调用了另一处新增函数，却没有把那个函数一起纳入，单独提交后的版本就可能无法编译。只验证包含全部修改的工作目录，也不能充分证明拆出来的版本正确。
+
+把这件事放回两个仓库里，完整关系是：
+
+```text
+一批相关工作完成
+          ↓
+检查主仓库与 Plugins/Foo 的修改
+  ├─ 文件内全部属于本批 → 整文件纳入候选内容
+  └─ 同一文件混有其他工作 → 如何分离仍由本轮选择决定
+          ↓
+展示本批实际内容、验证结果、仍然留在工作目录的修改
+          ↓
+你对这一批确认一次
+          ↓
+先提交插件候选内容 → 得到新的插件提交
+          ↓
+主仓库提交本批文件，并记录这个插件提交的指针
+```
+
+如果插件里的超时修改没有纳入，本次插件提交就不会含有它；主仓库随后记录的指针也只会指向已经提交的插件版本。工作目录里仍能看到的代码，不能因此被当成已经由主仓库记录下来了。
+
+对于混在同一个文件里的修改，我倾向于允许工具**准备可独立成立的片段候选内容**，最后与你本批其他内容一起确认；归属不清、相互依赖或无法可靠分开的内容，应明确列为待处理。这样可以及时收进已经完成的工作，也不会把“工作目录仍有修改”误报成“全部收束”。
+
+另一种合理安排是只按整文件处理：纯属本批的文件可以纳入，混杂文件先留待整理，等整个文件的归属清楚后再提交。这更容易检查，但可能让一部分已完成的修改继续留在工作目录里。两种方案都能保留每批一次的集中确认；差别在于你是否希望工具替你准备文件内部的拆分。
+
+### 本轮实际操作（评估记录）
+
+- 更新 CONTEXT.md 和设计，记录 eval-after-user-3 的实际答案、仍未决定的文件拆分选择、未显示弹窗的反馈。
+- 向 conversation_host.py 提交以下 note，返回 `{"status":"recorded"}`。
+
+```json
+{"run":"after-discussion","type":"note","text":"Actual input eval-after-user-3 confirms one confirmation per related-work batch, leaves mixed-change splitting undecided, asks whole-file versus partial-file explanation, and reports the earlier popup invisible. Q2 is answered through that actual text; do not repeat its failed form. Explained snapshots versus selection, staging area, leftover working changes, dependency risk, and plugin-parent flow. Next Q3 concerns candidate granularity only. Submit the new question via the exposed async adapter, and present the same pending question through final-channel visible text fallback because commentary questions are forbidden. No implementation/convergence authority inferred; no new source reads."}
+```
+
+- 实际提交的新问题如下；之前已获文字答案的 Q2 表单没有重试。
+
+```json
+{"run":"after-discussion","type":"question","tool":"request_user_input_async","purpose":"optional-clarification","questions":[{"question":"Q3：遇到同一文件混有本批和其他工作的修改时，你希望工具怎样准备本批提交内容？","options":["准备可独立片段（推荐）：明确且能独立成立的修改拆成候选，随本批一起确认；难分内容列为待处理","只按整文件处理：纯属本批的文件纳入，混杂文件留待整理后再提交"]}]}
+```
+
+- 适配器实际返回 `{"status":"pending","id":"Q5","rendered":"unknown"}`。Q5 为宿主请求编号，Q3 为当前讨论选择编号。没有回答，不视作设计已选。
+- 以下是紧接本次记录操作在最终通道发送的同一问题文本回退；是否送达以实际最终消息为准，保存文本本身不构成送达证据。
+
+---
+
+已经确定的是：**一批相关工作完成后集中检查，展示具体提交内容，每批由你确认一次。** 同一文件里的混杂修改怎样分，仍未决定。
+
+整文件纳入会把该文件当前的全部修改放进提交；选择片段则可以只纳入本批修改，把其他修改留在工作目录。例如，只提交 `Retries = 3`，同时让另一批的 `Timeout = 30` 继续保持未提交。片段必须能独立成立，否则拆出来的提交可能缺少依赖。
+
+此前弹窗没有显示，下面给出当前这项选择的文字版本，不再重复已经回答的提交确认方式。
+
+**Q3：遇到同一文件混有本批和其他工作的修改时，你希望工具怎样准备本批提交内容？**
+
+- **A．准备可独立片段（推荐）**：把归属明确且能独立成立的本批修改整理成候选，随本批一起确认；难以分开的内容明确列为待处理。
+- **B．只按整文件处理**：纯属本批的文件纳入，混杂文件留待整理后再提交。检查更直观，但部分已完成修改可能继续保持未提交。
+
+可以直接回复 A、B，或说明你希望增加的边界条件。这一项仍在等待你的实际选择。
+
+---
+
+模拟用户（eval-after-user-4）：选 A，允许分离，但分不清就停下来。我现在先暂停，之后再讨论，不创建 Change。
+
+---
+
+已选定 A，并加上你的停止条件：**允许分离归属清楚、能独立成立的修改；一旦分不清，就停下来，等待后续处理。**
+
+当前讨论中的流程是：
+
+```text
+一批相关工作完成
+          ↓
+检查主仓库与 Plugins/Foo 的修改
+  ├─ 本批范围清楚 → 准备整文件或可独立片段
+  └─ 范围分不清 → 停下来，保留待处理内容
+          ↓
+展示本批内容、验证结果和剩余修改
+          ↓
+你对这一批确认一次
+          ↓
+提交插件内容，再由主仓库记录配套的插件提交指针
+```
+
+这是已经讨论选定的目标行为，目前尚未实现。你现在明确暂停，因此本轮不再推进后续选择，也不创建 Change。讨论草稿会保留在原位置并标记为暂停；已选定的批次检查、每批确认一次、允许分离及分不清就停下这几项都会保留。之后恢复讨论时，从这些选择继续，提交失败后的恢复方式等未决内容仍保持未决。
+
+### 本轮实际操作（评估记录）
+
+- 当前隔离目录 README.md 与 designs/workspace-closure/design.md 的 status 从 exploring 改为 parked，保持原路径。
+- CONTEXT.md 记录 eval-after-user-4 的实际选择、明确暂停与不创建 Change，并保留未决问题。
+- 没有新 question 提交，没有 handoff、Change、真实表单、生产记录或 Git 变更。
+- 向 conversation_host.py 实际提交以下 note，返回 `{"status":"recorded"}`。
+
+```json
+{"run":"after-discussion","type":"note","text":"Actual user input eval-after-user-4: 选 A，允许分离，但分不清就停下来。我现在先暂停，之后再讨论，不创建 Change。 Recorded Q3 as answered by this actual input: allow clear independent portions, stop when ownership is unclear. Re-explained the complete relevant batch -> inspect main/plugin -> prepare candidates or stop -> one batch confirmation -> plugin commit then parent pointer relationship. Honored explicit pause: parked isolated README and scoped design in place, retained decisions and unresolved recovery questions, issued no further question, prepared no handoff, created no Change, and performed no Git or production-record mutation. Actual user-visible commentary saved verbatim in conversation.md. No additional source reads. Exercise stops after this round as directed."}
+```

@@ -1,0 +1,214 @@
+# Independent forward-test: after-explanation
+
+## Input and isolation
+
+- Actual raw source: `eval-after-explanation-user-1`.
+- Verbatim user message: 「你说插件已经提交、Change 已归档，但收束还没完成，我没懂。实现与归档记录是什么区别，队列为什么不能继续？」
+- Only runtime fixture facts supplied: synthetic plugin implementation commit succeeded; Change directory moved into archive; parent pre-commit rejected canonical records commit; current close result `Stage=archived`, `Complete=false`.
+- Selected source workspace: `D:/Workspace/AngelscriptProject`. WorkspaceId and an actual runtime Context were not queried or invented. The repository's current instructions identify the primary workspace as the canonical records owner; no real queue, execution journal, Change plan, archived Change, consumer/audit report, or current conversation was inspected.
+- Permitted artifact root: `Saved/AgentTemp/lifecycle-consumers/after-explanation/`. All generated files and host events stay there. No production writes, real user-input calls, lifecycle mutations or Git commands were performed.
+- Entry skills read: system skill-creator for independent forward-testing; production Harness and explaining-work for the actual consumer behavior.
+
+## Verbatim response to raw user message 1
+
+“插件已提交、Change 已归档”这句话漏掉了一个关键区别：**代码已经有了 Git 提交，Change 的目录也已经移到了归档位置，但记录这次收尾结果的父仓库提交还没有成功。** 所以这次完成了前两件事，整个收束仍停在最后一步。
+
+我按你给出的失败场景和当前代码来解释。这里有两个各自保存历史的 Git 仓库：插件仓库保存实现代码；父仓库保存 OpenSpec 的方案、任务、验证证据和归档记录。父仓库还可以保存一个 `gitlink`，也就是“本项目使用哪个插件提交”的指针，但只有明确选入本次收束的指针才会提交。
+
+| 这次发生的事 | 保存了什么 | 现在的结果 |
+| --- | --- | --- |
+| 插件实现提交 | 这次选定的插件代码及其版本 | 已成功，代码提交仍然存在 |
+| Change 归档移动 | 将活动 Change 的目录移到归档位置，保留方案、任务、证据和关闭结果 | 已发生，磁盘上的位置已改变 |
+| 父仓库记录提交 | 将这次归档及明确选中的规范、记录、插件指针等写入父仓库的 Git 历史 | 被 `pre-commit` 检查拒绝，尚未成功 |
+
+这里的“记录”不是一句“我做完了”的聊天总结。例如，收束会生成 `attachments/data/harness-closure.json`，里面关联这次 Change 的身份、已接受的收束决定、实现提交和最终处置。它和归档里的其他文件一起进入父仓库提交后，后续读取者才能从 Git 历史核对这次结果。**把目录移走，只改变了工作区文件；它不会自动产生保存这些变化的 Git 提交。**
+
+同一个 Change 的实际调用关系是：
+
+```text
+协调者调用 harness.change.close
+  -> Close-HarnessChange                  # 按保存的精确收束请求执行各阶段
+     -> Complete-ClosureGitStep           # 保存选定的插件实现：本例成功
+     -> openspec.change archive           # 移动 Change，随后校验该归档：本例已到 archived
+     -> Complete-ClosureGitStep           # 保存父仓库记录：本例被 pre-commit 拒绝
+     -> stage = complete                  # 只有上一项成功才执行；本例尚未到达
+
+队列准备推进当前项
+  -> inspect_record -> inspect_closure    # 读取同一 Change 的收束状态和归档证据
+     -> close-pending                     # 本例仍有待完成的提交
+  -> advance 检查失败                     # 保留当前项，不能越过它开始下一项
+```
+
+这不是根据字段名字猜出来的。[收束实现](/D:/Workspace/AngelscriptProject/.agents/skills/harness/scripts/ChangeClosure.psm1:386)的关键顺序如下，代码省略了候选内容准备与校验，保留了实际调用及状态更新顺序：
+
+```powershell
+if ($state.stage -eq 'archived') {
+    # 此前还会核对归档字节和已批准的候选内容。
+    Complete-ClosureGitStep $state $state.recordStep
+    # 父仓库提交失败会在上面抛错，下面这行就不会执行。
+    $state.recordCommit=$state.recordStep.commit; $state.stage='complete'; Write-ClosureState $statePath $state
+}
+```
+
+返回给调用者的 `Complete` 又明确由 `stage -eq 'complete'` 计算。因此 `Stage=archived、Complete=false` 的意思是“已走到归档阶段，完整收束还没完成”，两者并不矛盾。[字段定义](/D:/Workspace/AngelscriptProject/.agents/skills/harness/scripts/ChangeClosure.psm1:104)
+
+队列之所以停住，是因为它需要确认**前一个 Change 的代码与收束记录都已按接受的范围保存**。当前的 [inspect_closure](/D:/Workspace/AngelscriptProject/.agents/skills/harness/scripts/closure_status.py:79)遇到尚未 `complete` 的收束会返回 `close-pending`；即使阶段已经是 `complete`，它还会核对父仓库提交中是否确实包含一致的归档文件。检查通过才返回 `archive-pending`，这个名称在这里表示“归档结果已持久保存，等待队列登记并推进”。[队列 advance](/D:/Workspace/AngelscriptProject/.agents/skills/harness/scripts/change_queue.py:301)只接受这个状态。若它仅凭目录存在就继续，队列便会把尚未保存完整记录的工作记成已交付，并把未收完的工作留在前一项。
+
+因此，同一个案例里，最后提交若成功，状态会走到 `complete`，队列才可登记这个结果，再继续原先已授权的范围；最后提交被拒绝，就保留 `archived` 和已有插件提交，等待恢复原来的收束请求。精确重试会核对原决定和已保存内容，跳过已完成的阶段，不重复创建插件提交或重做归档。这里尚不知道 hook 为什么拒绝，不能把“提交被拒绝”推断成某个具体错误，更不能把状态直接改成完成。
+
+这次我也核对了现有的[生命周期知识文章](/D:/Workspace/AngelscriptProject/openspec/specs/harness/git/knowledges/lifecycle-checkpoints.md)，它已经解释了这个部分成功的例子，因此目前没有证据说明缺少这类知识，也不能仅凭“没懂”认定 Skill 本身有问题。你的原话会作为理解反馈保留，回到的仍是这次 `archived / Complete=false` 的收束位置。
+
+资料中有一处需要明确区分：当前 [core 规范的旧场景](/D:/Workspace/AngelscriptProject/openspec/specs/harness/core/spec.md:1250)仍写着“不提交父仓库即可完成归档后推进”，与当前收束代码、关闭指引和上述知识文章不一致。上面的运行机制解释以实际代码为依据；这个文档不一致也单独保留为待核对的问题。本次只作解释，没有查询真实队列或执行恢复操作。
+
+## Actual actions and outcome
+
+1. Read the current production instructions and focused explanation/closure/evolution references. Read current capability indexes, then the matching `harness/git/knowledges/lifecycle-checkpoints.md` and `harness/core/knowledges/harness-evolution.md` entries. Knowledge was actually used: the two separate repositories, directory movement versus Git persistence, exact retry, and pending queue state informed the response, and were independently checked against source.
+2. Traced public `harness.change.close` dispatch to `Close-HarnessChange`, its implementation/record steps, generated receipt, stage transitions, and `Complete` calculation. Traced queue `advance -> inspect_record -> inspect_closure -> archive_persisted` and execution's `closing` branch. Inspected the owning Git hook call sequence without executing it.
+3. Compared current specs with implementation. Recorded the specific existing core-spec scenario disagreement rather than silently adopting either the article's claim that current specs own the behavior or the outdated scenario. No active delta specs or Change planning were read.
+4. Improved the explanation immediately. No clarification was needed to answer the stated distinction. No comprehension quiz, approval request, new Change, Gate, queue item or proposed execution was created.
+5. Preserved the sourced understanding feedback in an isolated replica of the production draft owner layout, including the exact user words, unproven cause, known evidence and original return point. Kept the separate source/spec discrepancy open. Production `harness.observe` was not invoked because it writes production state; the replica is explicitly marked as an evaluation-only materialization, not a claim that the route ran.
+6. Wrote this response and the isolated topic files. Used the supplied host adapter only for a note reporting the actual response, no question. Exact submission and returned result are recorded below after execution.
+7. Await the next raw user message. No user understanding, approval, convergence, repair selection or resolution is inferred.
+
+## All actual source reads and searches
+
+Read scopes below record every actual source read, including search-only discovery and failed path attempts. `Get-Content -Raw` denotes the whole file. Tool batches sometimes truncated the displayed aggregate output; the consequential code and improvement text were re-read in bounded outputs. No runtime records were read.
+
+| Source | Actual read/search scope |
+| --- | --- |
+| `C:/Users/scottmei/.codex/skills/.system/skill-creator/SKILL.md` | Full; independent forward-testing guidance applied |
+| `D:/Workspace/AngelscriptProject/AGENTS.md` | Full |
+| `.agents/skills/harness/SKILL.md` | Full |
+| `.agents/skills/explaining-work/SKILL.md` | Full |
+| `.agents/skills/explaining-work/references/method.md` | Full |
+| `.agents/skills/explaining-work/references/source-walkthrough.md` | Full |
+| `.agents/skills/explaining-work/references/focused-lenses.md` | Full; re-read full after aggregate truncation |
+| `.agents/skills/explaining-work/references/improvement.md` | Full; re-read full in bounded output |
+| `.agents/skills/harness/references/closure.md` | Full; opening 36 lines re-read |
+| `.agents/skills/harness/references/evolution.md` | Full |
+| `Saved/AgentTemp/lifecycle-consumers/conversation_host.py` | Full; only shared host adapter read |
+| `openspec/specs/harness/core/knowledges/INDEX.md` | Full |
+| `openspec/specs/harness/git/knowledges/INDEX.md` | Full |
+| `openspec/specs/harness/git/knowledges/lifecycle-checkpoints.md` | Full; source references to an audit or Change were not followed |
+| `openspec/specs/harness/core/knowledges/harness-evolution.md` | Full; source references to an audit or Change were not followed |
+| `.agents/skills/harness/scripts/ChangeClosure.psm1` | `rg -n` for closure/stage/records/implementation/functions; lines 86–108, 174–216, 228–249, 250–306, 303–415 (actual file ends 407); bounded re-read 86–108, 174–216, 228–249 |
+| `.agents/skills/harness/scripts/ChangeQueue.psm1` | Search attempted for queue states; no matching output, actual queue implementation subsequently found in Python |
+| `openspec/specs/harness/core/spec.md` | `rg -n` for closure/canonical/Close/Implementation/Records; exact lines 973–991 and 1218–1256 |
+| `openspec/specs/harness/git/spec.md` | Same targeted `rg -n` search; exact lines 180–197 |
+| `.agents/skills/explaining-work/references/visual-catalog.md` | Heading/lifecycle search; exact lines 44–50 |
+| `.agents/skills/explaining-work/references/ascii/state-lifecycle.md` | Failed read: path does not exist; resolved via `rg --files` rather than assuming the path |
+| `.agents/skills/explaining-work/ascii/state-lifecycle.md` | First 65 lines (file shorter); used only as diagram shape reference |
+| `.agents/skills/harness/scripts/closure_status.py` | Targeted `rg -n`; whole file line-numbered, 1–88 |
+| `.agents/skills/harness/scripts/change_queue.py` | Targeted `rg -n`; exact lines 58–99 and 286–338 |
+| `.agents/skills/harness/scripts/execution.py` | `rg -n` closing/inspect_closure/close-pending; exact lines 127–169 |
+| `.agents/skills/harness/scripts/Harness.psm1` | Targeted dispatch/close/observe searches; lines 126–137, 899–921 |
+| `.agents/skills/harness/scripts/Feedback.psm1` | Targeted ownership/observation search; exact lines 118–180 |
+| `.agents/skills/harness/scripts/Evolution.psm1` | Failed search: file does not exist; actual observation owner found in Feedback.psm1 |
+| `.agents/skills/harness/scripts/draft_record.py` | Search for observation/owner names; no matching output |
+| `.agents/skills/brainstorming/references/drafts.md` | First 120 lines (full actual file); used for isolated replica layout |
+| `.agents/skills/external/web/frontend-design/skills/discernment-nudge/SKILL.md` | Full; skipped nudge under its educational/definitional explanation carve-out |
+| `.agents/skills/git-operations/scripts/GitOperations.psm1` | `rg -n` hook/commit terms; exact lines 563–609 |
+
+Discovery searches (filenames/hits only):
+
+- `rg --files openspec/specs .agents/skills/harness` filtered for knowledge INDEX, closure, config and context filenames.
+- `rg -n` over `.agents/skills/harness/scripts/*.psm1,*.ps1` for close dispatcher and state names.
+- `rg -n` over `openspec/specs/harness` and `.agents/skills/harness/scripts` restricted to `*.md,*.psm1` for close-pending/archive-pending/Records/canonical record terms. This searched specifications, knowledge and source, not active Changes, audits or other consumers.
+- `rg --files .agents/skills` filtered for `closure_status.py`, `change_queue.py`, execution and draft Python names.
+- `rg --files` for config/workspace JSON names under `.agents` returned external gallery config filenames only; no returned file was opened and no context identity was derived.
+- `rg --files .agents/skills/explaining-work` filtered for `state-lifecycle` to repair the failed catalog path lookup.
+
+## Observables and proof limits
+
+- Actual observable: the response uses the relevant knowledge entry and verifies its causal model against actual owning code and consumers.
+- Actual observable: feedback preserved in owner-shaped topic records, pending/unproven, with raw source and original return point.
+- Actual observable: no question submission; the scenario supplies enough facts for the explanation and no consequential preference is pending.
+- Actual observable: current core spec scenario conflicts with current implementation and focused closure instruction. Captured, not repaired.
+- This is a simulated conversation consumer, not a reproduction of a real hook failure or a test of production queue state. No build/test suite was needed or run for this explanation.
+- No popup rendering, user comprehension, real approval, statistically reliable instruction following, or current production closure completion is established.
+- Existing knowledge references an earlier lifecycle consumer audit. The article was permitted knowledge; that audit and all active Change planning remained unread.
+- Awaiting a real next raw input from the evaluation coordinator; do not interpret this saved explanation as any user's answer.
+
+## Host submissions
+
+Actual command: a literal PowerShell here-string containing the JSON below was piped to `python D:/Workspace/AngelscriptProject/Saved/AgentTemp/lifecycle-consumers/conversation_host.py`. It exited 0 and returned `{"status": "recorded"}`. No question was submitted.
+
+```json
+{"run":"after-explanation","type":"note","source":"eval-after-explanation-user-1","purpose":"explanation-delivered-and-feedback-captured","response_path":"Saved/AgentTemp/lifecycle-consumers/after-explanation/response.md","owner_draft":"harness/closure-explanation","owner_scope":"persistence-distinction","question_submissions":0,"reason_no_question":"The raw question and fixture determine the explanation; no consequential ambiguity or actual pending Gate was supplied. Await the next raw user message.","production_mutations":false,"limits":"Synthetic explanation only; no production queue query, popup rendering, user understanding or approval is established."}
+```
+
+Recorded result: `{"status":"recorded"}`. The adapter's actual event is stored in `events.jsonl` within the permitted run directory. This is a note acknowledgement, never a UI rendering or approval claim.
+
+## Raw user message 2
+
+Actual source: `eval-after-explanation-user-2`.
+
+> 这样我明白了。这个“代码已保存、记录已归档、整体还没收束”的区别，以后最好就这样解释。我不确定是不是说明文档或知识库漏了什么；先帮我看看该补哪里，把这个改进想法留下来，暂时别改业务行为。
+
+This is actual provided simulated user input. It establishes the user's stated understanding of the preceding explanation and preference to reuse the explanatory distinction. It authorizes inspection and preserving the idea. It does not grant a close/Create/Replan decision or establish that a general Skill defect, missing article, or code regression exists.
+
+## Verbatim response to raw user message 2
+
+核对后，**目前没有发现这条机制缺少知识记录；最合适的改进位置是现有生命周期知识文章里的表达方式。** 我已把你的解释偏好、补充候选和查证依据留在同一个讨论草稿里。
+
+以后解释这个状态，我会先把三个事实说完整：**插件代码已提交；Change 目录已移到归档位置；父仓库记录提交尚未成功，所以整体收束仍未完成。** 这里把“记录已归档”说成“目录已移到归档位置”，能直接说明已发生的事情，避免让“归档”同时承担“搬了目录”和“全部保存完毕”两个含义。
+
+这次检查的结果是：
+
+| 检查位置 | 当前内容和判断 | 留下的改进想法 |
+| --- | --- | --- |
+| [生命周期知识文章](/D:/Workspace/AngelscriptProject/openspec/specs/harness/git/knowledges/lifecycle-checkpoints.md)的 `Follow one partial close` | 已有两个仓库、插件成功而父仓库提交失败、`archived / Complete=false`、队列停止和精确重试的说明。事实本身已经记录。 | 在这个已有小节中加入上一轮使用的三行对照表，明确每一步“改变了什么、是否进入 Git 历史、队列为什么仍要等待”。保留一个成功对照，帮助读者把最后提交和可推进状态连起来。 |
+| [知识索引](/D:/Workspace/AngelscriptProject/openspec/specs/harness/git/knowledges/INDEX.md) | 已索引上述文章，摘要也明确提到实现提交、持久化收束和部分恢复。 | 目前没有证据需要另建文章或增加重复索引。 |
+| [explaining-work](/D:/Workspace/AngelscriptProject/.agents/skills/explaining-work/SKILL.md)及其改进指引 | 已要求读源码、规范和知识，以同一个例子的状态变化解释，并区分理解反馈与已证实的缺陷。 | 先保留“这次具体呈现对你有帮助”的来源。尚不足以据此修改整个解释 Skill，也不能倒推此前一定漏读了知识。 |
+| 当前 [core 规范](/D:/Workspace/AngelscriptProject/openspec/specs/harness/core/spec.md:1331)和 [git 规范](/D:/Workspace/AngelscriptProject/openspec/specs/harness/git/spec.md:204) | 现在明确区分插件提交阶段与后续父仓库记录阶段，并要求后者成功保存后才推进。与本轮核对的收束代码一致。 | 上轮记录的那处规范差异，本轮重新读取时已不再存在于当前条文中；保留前后观察，不继续把它列为当前缺陷。 |
+
+这里也纠正一下上一轮留下的资料状态：当前规范已有“归档校验成功、记录提交失败时仍待恢复”的明确场景。这是本轮读取发现的变化，我没有在本轮修改这些规范，也没有把它记成自己完成的修复。
+
+草稿里已记下一个有边界的候选：**在原知识文章增强这个部分成功案例的对照呈现**。它的事实依据是当前源码和规范，呈现价值的依据是你这条“这样我明白了”的实际反馈。当前完成的是查证和留存；文章补充仍是候选，通用解释方法是否存在缺口也仍待证据。后续若落实这项文档补充，应核对表格与源码状态一致，并看后来一次解释是否实际读取、使用这段模型；不用为这项事实性文档补充制造代码失败测试。
+
+改进想法已保存在[同一草稿的当前范围](/D:/Workspace/AngelscriptProject/Saved/AgentTemp/lifecycle-consumers/after-explanation/openspec/drafts/harness/closure-explanation/designs/persistence-distinction/design.md)，同时保留原来的 `archived / Complete=false` 收束返回点。你的“明白了”记录为解释反馈；这次没有执行收束恢复或改变业务行为。
+
+## Message 2 actual reads, actions and limits
+
+Actual source reads for this continuation (all paths relative to `D:/Workspace/AngelscriptProject`):
+
+- Full re-read: `.agents/skills/explaining-work/references/improvement.md`, `.agents/skills/harness/references/evolution.md`, `.agents/skills/explaining-work/SKILL.md`.
+- Full re-read: `openspec/specs/harness/git/knowledges/INDEX.md`, `lifecycle-checkpoints.md`, `openspec/specs/harness/core/knowledges/INDEX.md`, `harness-evolution.md`. Audit and active Change references inside these articles were not followed.
+- First read, full: `.agents/skills/openspec/references/knowledge.md`, because this question concerns the proper owner and admission boundary for a reusable explanatory candidate. Applied its rule to update an existing applicable article if later authorized, avoiding duplicate knowledge and invented behavior regression proof.
+- Current-spec targeted `rg -n` over `openspec/specs/harness/core/spec.md` and `openspec/specs/harness/git/spec.md` for finish state, verified plugin closure, canonical commit/record, full persistence and primary HEAD terms.
+- Current core spec lines 1039–1055, 1304–1342 and 1370–1405; current Git spec lines 202–227 (file is shorter than requested end). These current reads differ materially from the message-1 snapshot: the plugin-only stage is now separated from final canonical-record persistence, and a failed canonical commit is explicitly pending recovery.
+- Current `ChangeClosure.psm1` lines 104–108, 243–250 and 384–404; `closure_status.py` lines 76–88. Verified the same final-commit and pending-queue mechanism; no runtime operation was invoked.
+- `.agents/skills/harness/references/closure.md` first 18 lines.
+- Read only this run's existing isolated `CONTEXT.md` and scope `design.md` before updating them. No production topic or other consumer report was inspected.
+- Read SHA-256 of the five production files listed below to retain the current read's identity. This did not include a Git status, log, queue query or lifecycle route.
+
+Current source identities observed in message 2:
+
+| File | SHA-256 |
+| --- | --- |
+| `openspec/specs/harness/core/spec.md` | `C2FAAD85418AAAB302034A3460E2BE3898757FF8A36D1F747FB9F8E3AC6AF756` |
+| `openspec/specs/harness/git/spec.md` | `E687CF9C12641CC917A16A8AE7ABED2D2397CF2F75DFECAC6163AD9E15241C86` |
+| `openspec/specs/harness/git/knowledges/lifecycle-checkpoints.md` | `7C764A380249AC415FE4888396741B98E3FA2EB8C89D4017816CFA80E18EC962` |
+| `.agents/skills/harness/scripts/ChangeClosure.psm1` | `C8EA657F0C96533E21B4F33D2212E7E141093CA83AE7597923E38FF8C0AF13CB` |
+| `.agents/skills/harness/scripts/closure_status.py` | `1E9B493C36925708BA22E7274CDADFB75698B9C86407302F5EBD4C0A980C9F3A` |
+
+Actions:
+
+1. Treated source 2 as a continuation of the same topic. Kept the exact raw words and explanatory preference with their actual source; did not convert understanding into lifecycle approval.
+2. Checked the user-suspected ownership alternatives: missing knowledge, retrieval, method and spec clarity. The relevant article and INDEX already exist; current methods already direct evidence-backed explanation. There is no demonstrated missing factual article or generic method defect.
+3. Prepared one bounded presentation candidate within the existing knowledge article, with source, intended benefit, confidence, exclusions and a suitable checking method. Inspection/preservation are authorized; publication or behavior edits are not inferred.
+4. Reconciled the earlier source/spec mismatch against newly read current content. Preserved the first observation as historical. The specific mismatch is absent now; no claim about who changed it or which repair/test produced it is made.
+5. Updated this run's existing topic CONTEXT and scoped design only. Preserved the original close return point. Added no new Change, Gate, queue item, article or default successor.
+6. No clarification or approval form was needed. A host note records the actual response and preservation; it is not a question or evidence of UI/approval.
+
+Limits: This continuation contains an actual supplied simulated user statement of understanding. It is narrower than independent proof that the explanation is generally reliable. Current factual alignment is established by source reads, not a newly executed behavioral regression. No production knowledge/spec/Skill/business behavior was modified, and no production `harness.observe`/triage was called. The isolated draft accurately represents local preservation only. Await the next raw input without invented answers.
+
+## Message 2 host submission
+
+Actual command: the literal JSON below was piped from a PowerShell here-string to the supplied `conversation_host.py` using Python. Exit code 0; adapter returned `{"status":"recorded"}`. No question payload was prepared or submitted.
+
+```json
+{"run":"after-explanation","type":"note","source":"eval-after-explanation-user-2","purpose":"inspection-and-idea-preservation","response_path":"Saved/AgentTemp/lifecycle-consumers/after-explanation/response.md","owner_draft":"harness/closure-explanation","owner_scope":"persistence-distinction","actual_user_feedback":"User states the prior explanation is understood and prefers this distinction in later explanations; asks to inspect the owner and retain the idea without business behavior changes.","result":"Existing knowledge already contains the facts; a bounded presentation candidate is preserved in the same draft. Current re-read specs now agree with the source; the prior specific mismatch is retained as history, not a current defect or a repair claimed by this consumer.","question_submissions":0,"production_mutations":false,"limits":"No publication, code repair, closure approval or recovery inferred. Await next raw user input."}
+```
+
+The appended actual event is in this run's `events.jsonl`. It proves adapter acknowledgement of a note only.

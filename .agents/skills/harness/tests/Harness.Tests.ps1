@@ -4,6 +4,7 @@ param()
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
+. (Join-Path $PSScriptRoot 'HistoricalChangeFixture.ps1')
 function Assert-True {
     param([bool]$Condition, [string]$Message)
     if (-not $Condition) {
@@ -395,10 +396,10 @@ goal: Prove semantic naming never rewrites historical archives.
             ChangeId = $changeId; Title = "Semantic fixture $changeId"; Goal = 'Exercise one allowed semantic Change type'
             Origin = 'Direct'; Reason = 'Fixture has no user-owned design decision'; SessionId='semantic-fixture'; HandoffText="Create the exact semantic fixture $changeId to exercise this allowed type."
         }
-        $semanticPreview = Invoke-Harness -Command harness.change.create -Context $taskWorkspaceContext -Parameters ($semanticParameters + @{PlanOnly=$true})
+        $semanticPreview = Invoke-HistoricalFixtureCreate -Context $taskWorkspaceContext -Parameters ($semanticParameters + @{PlanOnly=$true})
         if ($semanticPreview.status -ne 'Succeeded') { throw "Semantic preview: $($semanticPreview.error.message)" }
         Assert-Equal 'Succeeded' $semanticPreview.status 'semantic target supports a read-only concrete handoff preview'
-        $validSemanticChange = Invoke-Harness -Command harness.change.create -Context $taskWorkspaceContext -Parameters ($semanticParameters + @{Gate=@{ConvergenceSource='fixture:ready';DecisionSource='fixture:create';Decision='create';TargetChange=$changeId;HandoffRevision=$semanticPreview.data.HandoffRevision}})
+        $validSemanticChange = Invoke-HistoricalFixtureCreate -Context $taskWorkspaceContext -Parameters ($semanticParameters + @{Gate=@{ConvergenceSource='fixture:ready';DecisionSource='fixture:create';Decision='create';TargetChange=$changeId;HandoffRevision=$semanticPreview.data.HandoffRevision}})
         Assert-Equal 'Succeeded' $validSemanticChange.status "semantic Change type is accepted for '$changeId'"
         $validSemanticLeaf = ($changeId -split '/', 2)[1]
         $validSemanticManifestPath = Join-Path $taskWorkspaceRoot "openspec\changes\fixture\$validSemanticLeaf\change.yaml"
@@ -458,8 +459,8 @@ goal: Prove semantic naming never rewrites historical archives.
         ChangeId = 'fixture/test-task-dag'; Title = 'Task DAG'; Goal = 'Verify Harness task recognition'
         Origin = 'Direct'; Reason = 'Fixture tests a parsed Task DAG'; SessionId='task-fixture'; HandoffText='Create a fixture Change to exercise native task parsing.'
     }
-    $taskPreview = Invoke-Harness -Command harness.change.create -Context $taskWorkspaceContext -Parameters ($taskCreateParameters + @{PlanOnly=$true})
-    $taskWorkspaceChange = Invoke-Harness -Command harness.change.create -Context $taskWorkspaceContext -Parameters ($taskCreateParameters + @{Gate=@{ConvergenceSource='fixture:ready';DecisionSource='fixture:create';Decision='create';TargetChange=$taskCreateParameters.ChangeId;HandoffRevision=$taskPreview.data.HandoffRevision}})
+    $taskPreview = Invoke-HistoricalFixtureCreate -Context $taskWorkspaceContext -Parameters ($taskCreateParameters + @{PlanOnly=$true})
+    $taskWorkspaceChange = Invoke-HistoricalFixtureCreate -Context $taskWorkspaceContext -Parameters ($taskCreateParameters + @{Gate=@{ConvergenceSource='fixture:ready';DecisionSource='fixture:create';Decision='create';TargetChange=$taskCreateParameters.ChangeId;HandoffRevision=$taskPreview.data.HandoffRevision}})
     Assert-Equal 'Succeeded' $taskWorkspaceChange.status 'Task Graph fixture change is created'
     [System.IO.File]::WriteAllText((Join-Path $taskWorkspaceRoot 'openspec\changes\fixture\test-task-dag\design.md'), "## Call chains`n`nnone — fixture Task DAG parsing has no code path.`n")
     $taskWorkspacePath = Join-Path $taskWorkspaceRoot 'openspec\changes\fixture\test-task-dag\tasks.md'
@@ -624,7 +625,7 @@ second
     Copy-Item -LiteralPath (Join-Path $repoRoot '.agents\\skills\\workspace-lifecycle\\scripts\\WorkspaceLifecycle.psd1') -Destination $fixtureModuleDirectory
     Copy-Item -LiteralPath (Join-Path $repoRoot '.agents\\skills\\git-operations\\scripts\\GitOperations.psm1') -Destination $fixtureGitModuleDirectory
     Copy-Item -LiteralPath (Join-Path $repoRoot '.agents\\skills\\git-operations\\scripts\\GitOperations.psd1') -Destination $fixtureGitModuleDirectory
-    [System.IO.File]::WriteAllText((Join-Path $fixtureProject '.gitignore'), ".worktrees/`n.workspaces/`nAgentConfig.ini`nSaved/`n")
+    [System.IO.File]::WriteAllText((Join-Path $fixtureProject '.gitignore'), ".worktrees/`n.workspaces/`nAgentConfig.ini`nSaved/`nopenspec/drafts/`nopenspec/archive/drafts/`n")
     [System.IO.File]::WriteAllText((Join-Path $fixtureProject 'Fixture.uproject'), "{}`n")
     [System.IO.File]::WriteAllText((Join-Path $fixtureProject 'fixture.txt'), "fixture`n")
     [void](Invoke-FixtureGit -Repository $fixtureProject -Arguments @('add', '--', '.'))
@@ -757,27 +758,47 @@ second
     Assert-Equal $fixtureWorkspace $harnessStatus.data.Workspace.WorkspaceRoot 'harness.status stays bound to the selected workspace'
     Assert-True (-not $harnessStatus.data.DetailedScan) 'harness.status never opts into detailed repository scans'
 
+    # Initialize canonical records before exercising feedback's new topic owner.
+    Push-Location $fixtureProject
+    try {
+        $callerLocation = (Get-Location).Path
+        $nativeInit = Invoke-Harness -Command 'openspec.init' -Context $workspaceContext -ArgumentList @(
+            '--project-id', 'harness-workspace-fixture',
+            '--title', 'Harness Workspace Fixture'
+        )
+        Assert-Equal 'Succeeded' $nativeInit.status 'native mutation succeeds in the selected workspace'
+        Assert-Equal $callerLocation (Get-Location).Path 'native mutation restores the caller location'
+        Assert-True (Test-Path -LiteralPath (Join-Path $fixtureWorkspace 'openspec\project.yaml') -PathType Leaf) 'native mutation writes inside WorkspaceRoot'
+        Assert-True (-not (Test-Path -LiteralPath (Join-Path $fixtureProject 'openspec'))) 'native mutation never writes into the primary checkout'
+    }
+    finally { Pop-Location }
+
     $observation = Invoke-Harness -Command 'harness.observe' -Context $workspaceContext -Parameters @{
         Category = 'Timing'
         Summary = 'Fixture status timing remained bounded.'
+        SourceRef = 'fixture:status-timing'
         Change = 'harness/refactor-unified-workspace-core'
         Stage = 'apply'
         DurationMs = 42
     }
     Assert-Equal 0 @(Get-Module UnrealEngineDevelop -All).Count 'non-Unreal routes must not import the Unreal leaf'
-    Assert-Equal 'Succeeded' $observation.status 'harness.observe writes one ignored bounded record'
-    Assert-Equal 2 @($observation.artifacts).Count 'observation and derived inbox paths are exposed as artifacts'
-    Assert-True (Test-Path -LiteralPath $observation.data.Path -PathType Leaf) 'observation file exists below the selected workspace'
-    $observationRecord = Get-Content -LiteralPath $observation.data.Path -Raw | ConvertFrom-Json
-    Assert-Equal 'harness-observation-v1' $observationRecord.schemaVersion 'observation records use a versioned schema'
-    Assert-Equal $fixtureWorkspace $observationRecord.workspaceRoot 'observation records cannot drift to the harness checkout'
-    Assert-Equal 42 $observationRecord.durationMs 'observation preserves an optional timing span'
-    Assert-Equal 0 @((Invoke-FixtureGit -Repository $fixtureWorkspace -Arguments @('status', '--porcelain=v1')) | Where-Object { $_ -like '*Saved/Harness*' }).Count 'ignored observations never enter Git status'
+    if ($observation.status -ne 'Succeeded') { throw ($observation | ConvertTo-Json -Depth 8) }
+    Assert-Equal 'Succeeded' $observation.status 'harness.observe writes one ignored draft record'
+    Assert-Equal 1 @($observation.artifacts).Count 'the owning draft is exposed without a parallel inbox artifact'
+    Assert-True (Test-Path -LiteralPath $observation.data.Path -PathType Leaf) 'owning draft exists'
+    Assert-True ($observation.data.Path.StartsWith($workspaceContext.OpenSpecRoot)) 'feedback stays in the selected canonical record context'
+    $observationRecord = Get-Content -LiteralPath $observation.data.Path -Raw
+    Assert-Match $observationRecord 'Source: "fixture:status-timing"' 'feedback retains its actual source'
+    Assert-Match $observationRecord 'DurationMs: 42' 'feedback preserves an optional timing span'
+    Assert-Equal 0 @((Invoke-FixtureGit -Repository $fixtureWorkspace -Arguments @('status', '--porcelain=v1')) | Where-Object { $_ -like '*openspec/drafts*' }).Count 'ignored topic feedback never enters Git status'
 
     $evolution = Invoke-Harness -Command 'harness.evolution.status' -Context $workspaceContext
     Assert-Equal 'Succeeded' $evolution.status 'harness.evolution.status summarizes ignored evidence'
-    Assert-Equal 1 $evolution.data.ObservationCount 'evolution status counts observation files without replaying bodies'
+    Assert-Equal 0 $evolution.data.ObservationCount 'cheap evolution status retains its historical raw-file count without a draft tree scan'
     Assert-True (-not $evolution.data.RawBodiesLoaded) 'evolution status reports that raw bodies were not loaded'
+    $feedbackView = Invoke-Harness -Command 'harness.evolution.status' -Context $workspaceContext -Parameters @{InboxOnly=$true}
+    Assert-Equal 'Succeeded' $feedbackView.status 'explicit feedback query reads topic findings'
+    Assert-Equal 1 $feedbackView.data.TotalGroups 'explicit feedback query includes the captured topic finding'
 
     $maintenance = Invoke-Harness -Command 'openspec.maintenance.status' -Context $context
     Assert-Equal 'Succeeded' $maintenance.status 'OpenSpec maintenance status is a read-only route'
@@ -801,22 +822,6 @@ second
     $removePreview = Invoke-Harness -Command 'workspace.remove' -Context $createdContext -Parameters @{ WhatIf = $true; DiscardIgnoredFiles = $true }
     Assert-Equal 'Succeeded' $removePreview.status 'workspace.remove is explicitly previewable from the exact linked context'
     Assert-True (-not $removePreview.data.Removed) 'removal preview leaves the worktree registered'
-
-    Push-Location $fixtureProject
-    try {
-        $callerLocation = (Get-Location).Path
-        $nativeInit = Invoke-Harness -Command 'openspec.init' -Context $workspaceContext -ArgumentList @(
-            '--project-id', 'harness-workspace-fixture',
-            '--title', 'Harness Workspace Fixture'
-        )
-        Assert-Equal 'Succeeded' $nativeInit.status 'native mutation succeeds in the selected workspace'
-        Assert-Equal $callerLocation (Get-Location).Path 'native mutation restores the caller location'
-        Assert-True (Test-Path -LiteralPath (Join-Path $fixtureWorkspace 'openspec\\project.yaml') -PathType Leaf) 'native mutation writes inside WorkspaceRoot'
-        Assert-True (-not (Test-Path -LiteralPath (Join-Path $fixtureProject 'openspec'))) 'native mutation never writes into the primary checkout'
-    }
-    finally {
-        Pop-Location
-    }
 
     $focusedEvolutionTest = Join-Path $repoRoot '.agents\skills\harness\tests\HarnessEvolution.Tests.ps1'
     Assert-True (Test-Path -LiteralPath $focusedEvolutionTest -PathType Leaf) 'the exact evolution lifecycle is owned by the dedicated focused fixture'

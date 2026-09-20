@@ -473,7 +473,7 @@ try {
     [void](New-Item -ItemType Directory -Path $evolutionFixtureRoot)
     $evolutionGitInit = @(& git -C $evolutionFixtureRoot init -b main 2>&1)
     Assert-PerformanceCondition ($LASTEXITCODE -eq 0) ("EvolutionStatus fixture git init failed: {0}" -f ($evolutionGitInit -join [Environment]::NewLine))
-    [System.IO.File]::WriteAllText((Join-Path $evolutionFixtureRoot '.gitignore'), "Saved/`nAgentConfig.ini`n", [System.Text.UTF8Encoding]::new($false))
+    [System.IO.File]::WriteAllText((Join-Path $evolutionFixtureRoot '.gitignore'), "Saved/`nAgentConfig.ini`nopenspec/drafts/`nopenspec/archive/drafts/`n", [System.Text.UTF8Encoding]::new($false))
     [System.IO.File]::WriteAllText((Join-Path $evolutionFixtureRoot 'Fixture.uproject'), "{}`n", [System.Text.UTF8Encoding]::new($false))
     $evolutionGitAdd = @(& git -C $evolutionFixtureRoot add .gitignore Fixture.uproject 2>&1)
     Assert-PerformanceCondition ($LASTEXITCODE -eq 0) ("EvolutionStatus fixture git add failed: {0}" -f ($evolutionGitAdd -join [Environment]::NewLine))
@@ -788,19 +788,15 @@ fixture
                 }
                 $timer.Stop()
                 Assert-PerformanceCondition ($observationResult.status -eq 'Succeeded' -and $observationResult.exitCode -eq 0) 'harness.observe failed'
-                $rawArtifacts = @($observationResult.artifacts | Where-Object { [IO.Path]::GetExtension([string]$_) -eq '.json' })
-                $inboxPath = Join-Path $evolutionContext.WorkspaceRoot 'Saved/Harness/Observations/INBOX.md'
-                Assert-PerformanceCondition ($rawArtifacts.Count -eq 1) 'harness.observe did not return exactly one raw JSON artifact'
-                Assert-PerformanceCondition (@($observationResult.artifacts).Count -eq 2 -and @($observationResult.artifacts | Where-Object { $_ -eq $inboxPath }).Count -eq 1) 'harness.observe did not return its current feedback inbox alongside the raw JSON'
-                $observationPath = [string]$rawArtifacts[0]
+                $draftArtifacts = @($observationResult.artifacts | Where-Object { [IO.Path]::GetExtension([string]$_) -eq '.md' })
+                Assert-PerformanceCondition ($draftArtifacts.Count -eq 1) 'harness.observe did not return its owning draft design'
+                $observationPath = [string]$draftArtifacts[0]
                 Assert-PerformanceCondition ([IO.Path]::GetFullPath($observationPath).StartsWith($evolutionFixtureRoot + [IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase)) 'harness.observe escaped the isolated performance fixture'
-                Assert-PerformanceCondition (Test-Path -LiteralPath $observationPath -PathType Leaf) 'harness.observe artifact does not exist'
-                Assert-PerformanceCondition (Test-Path -LiteralPath $inboxPath -PathType Leaf) 'harness.observe feedback inbox does not exist'
-                $observation = Get-Content -LiteralPath $observationPath -Raw | ConvertFrom-Json -ErrorAction Stop
-                Assert-PerformanceCondition ($observation.schemaVersion -eq 'harness-observation-v1') 'harness.observe wrote the wrong schema'
-                Assert-PerformanceCondition ($observation.workspaceRoot -eq $evolutionContext.WorkspaceRoot) 'harness.observe recorded a different workspace root'
-                Assert-PerformanceCondition ($observation.category -eq 'performance-probe') 'harness.observe recorded the wrong category'
-                Assert-PerformanceCondition ([IO.File]::ReadAllText($inboxPath).Contains($observation.runId)) 'harness.observe feedback inbox omits the new observation'
+                Assert-PerformanceCondition ($observationPath.Replace('\','/').Contains('/openspec/drafts/')) 'harness.observe did not use the fixture draft root'
+                Assert-PerformanceCondition (Test-Path -LiteralPath $observationPath -PathType Leaf) 'harness.observe draft does not exist'
+                $observation = [IO.File]::ReadAllText($observationPath)
+                Assert-PerformanceCondition ($observation.Contains($observationResult.data.RunId) -and $observation.Contains('performance-probe')) 'draft omitted its source-backed observation'
+                Assert-PerformanceCondition (-not (Test-Path (Join-Path $evolutionFixtureRoot 'Saved/Harness/Observations'))) 'synthetic capture wrote a parallel feedback ledger'
                 $value = [double]$timer.Elapsed.TotalMilliseconds
                 Add-PerformanceSample -Samples $samples -Scenario 'ObservationWrite' -Phase $phase -Iteration $iteration -Unit 'ms' -Value $value
                 if ($phase -eq 'Measurement') { $scenarioValues.ObservationWrite.Add($value) | Out-Null }

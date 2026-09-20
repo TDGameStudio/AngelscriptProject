@@ -12,6 +12,7 @@ import uuid
 
 sys.path.insert(0, str(Path(__file__).parent))
 from draft_record import locked, local_path, save_state
+from closure_status import inspect_closure
 
 
 def record_identity(path):
@@ -23,6 +24,8 @@ def record_identity(path):
             raise ValueError('Change manifest lacks ' + key)
         values[key] = match[1].strip('\"\'')
     values['completed'] = bool(re.search(r'^closure:\s*\n(?:  [^\n]*\n)*?  kind: completed\s*$', text, re.M))
+    closure = re.search(r'^closure:\s*\n(?:  [^\n]*\n)*?  kind: (completed|abandoned|superseded)\s*$', text, re.M)
+    values['closureKind'] = closure[1] if closure else None
     return values
 
 
@@ -63,6 +66,9 @@ def inspect_record(context, item):
             identity = record_identity(active / 'change.yaml')
             if identity['uid'] != item['uid'] or identity['id'] != item['changeId']:
                 raise ValueError('Active Change identity differs from its queued identity')
+            close = inspect_closure(context, item, active)
+            if close is not None:
+                return {**close, 'currentArchive': None}
             return {'recordState': 'active', 'currentArchive': None, 'recordIssues': []}
         domain = item['changeId'].split('/')[0]
         archives = local_path(context['OpenSpecRoot'], 'openspec/archive/changes/' + domain)
@@ -71,11 +77,16 @@ def inspect_record(context, item):
             identity = record_identity(manifest)
             if identity['uid'] == item['uid'] and identity['id'] == item['changeId']:
                 matches.append((manifest, identity))
-        if len(matches) != 1 or not matches[0][1]['completed']:
+        if len(matches) != 1:
             raise ValueError('Active Change is missing; exactly one matching completed archive is required')
         archive = str(matches[0][0].parent.relative_to(context['OpenSpecRoot'])).replace('\\', '/')
-        return {'recordState': 'archive-pending', 'currentArchive': archive, 'recordIssues': []}
-    except (ValueError, OSError) as error:
+        close = inspect_closure(context, item, matches[0][0].parent, matches[0][1]['closureKind'])
+        if close is not None:
+            return {**close, 'currentArchive': archive}
+        if not matches[0][1]['completed']:
+            raise ValueError('Historical advancement requires a completed archive; an incomplete outcome requires its actual close operation')
+        return {'recordState': 'archive-pending', 'currentArchive': archive, 'closureKind': 'completed', 'recordIssues': []}
+    except (ValueError, OSError, KeyError, TypeError, AttributeError) as error:
         return {'recordState': 'record-blocked', 'currentArchive': None, 'recordIssues': [str(error)]}
 
 
@@ -302,6 +313,7 @@ def operate(context, action, parameters):
                 raise ValueError('; '.join(record['recordIssues']))
             item['disposition'] = 'archived'
             item['archive'] = record['currentArchive']
+            item['closureKind'] = record['closureKind']
             head = current(state)
             if head:
                 if state['pauseReason'] or not authorized_pending(state):

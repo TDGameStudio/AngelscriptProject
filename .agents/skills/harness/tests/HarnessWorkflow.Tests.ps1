@@ -12,10 +12,11 @@ $processReader = & $unrealModule { (Get-Command Get-HarnessUnrealProcessList).Sc
 # Bound the external process inventory to an idle fixture; all Harness adapters,
 # native planning and closure eligibility remain real.
 & $unrealModule { function script:Get-HarnessUnrealProcessList { param($WorkspaceRoot) return ,@() } }
+. (Join-Path $PSScriptRoot 'HistoricalChangeFixture.ps1')
 function W($path, $body) { [void][IO.Directory]::CreateDirectory([IO.Path]::GetDirectoryName($path)); [IO.File]::WriteAllText($path, $body) }
 function Check($value, $message) { if (-not $value) { throw $message }; "PASS $message" }
 function Invoke-WorkflowFixture($command, $parameters=@{}, $arguments=@()) {
-    $r = Invoke-Harness -Context $context -Command $command -Parameters $parameters -ArgumentList $arguments
+    $r = if ($command -eq 'harness.change.create') { Invoke-HistoricalFixtureCreate -Context $context -Parameters $parameters } else { Invoke-Harness -Context $context -Command $command -Parameters $parameters -ArgumentList $arguments }
     if ($r.status -ne 'Succeeded') { throw "$command : $($r.error.message)" }
     return $r.data
 }
@@ -58,7 +59,7 @@ try {
     & git -C $fixture add .gitignore
     & git -C $fixture commit -qm baseline
     W (Join-Path $fixture 'Fixture.uproject') '{"FileVersion":3,"Modules":[],"Plugins":[]}'
-    foreach ($relative in @('.agents/skills/harness/scripts','.agents/skills/workspace-lifecycle/scripts','.agents/skills/openspec/bin')) {
+    foreach ($relative in @('.agents/skills/harness/scripts','.agents/skills/workspace-lifecycle/scripts','.agents/skills/git-operations/scripts','.agents/skills/openspec/bin')) {
         $destination=Join-Path $fixture $relative
         [void][IO.Directory]::CreateDirectory([IO.Path]::GetDirectoryName($destination))
         Copy-Item -LiteralPath (Join-Path $projectRoot $relative) -Destination $destination -Recurse
@@ -131,8 +132,35 @@ python -c "assert True"
     $beforeTasks=Get-Content -LiteralPath (Join-Path $changeRoot 'tasks.md') -Raw
     $afterTasks=$beforeTasks.Replace('"1.1": []', '"1.1": []' + "`n    " + '"1.2": ["1.1"]') + "`n" + ($beforeTasks.Substring($beforeTasks.IndexOf('## [ ]')).Replace('1.1 Implement behavior','1.2 Verify integration').Replace('+ fixture.txt','+ integration.txt'))
     $replanParameters=@{Change=$id;TalkId=$record.talk_id;SessionId='fixture-session';ExpectedRevision=$settled.revision;ReplanId='replan-20260917-120000-behavior';ResumeTask='1.1';ExpectedHashes=$hashes;Candidates=@{'design.md'="# Design`n`n## Call chains`n`nnone — accepted behavior A.`n";'tasks.md'=$afterTasks};HandoffText='Preserve behavior A and add the dependent integration proof task.'}
+    W (Join-Path $fixture 'implementation.cpp') 'unfinished implementation remains live'
+    W (Join-Path $fixture 'outside.txt') 'outside staged work'
+    & git -C $fixture add outside.txt
+    $outsideBefore=& git -C $fixture rev-parse ':outside.txt'
+    $replanParameters.GitPlan=@{CommitMessage='fixture accepted Replan';RepositoryScopes=@{'.'=@('openspec/changes/'+$id)}}
     $replanPreview=Invoke-WorkflowFixture harness.replan.apply ($replanParameters+@{PlanOnly=$true})
+    $acceptReplan=@{ConvergenceSource='message:ready';DecisionSource='message:apply';Decision='replan';TargetChange=$id;HandoffRevision=$replanPreview.HandoffRevision}
+    $missingGit=$replanParameters.Clone(); [void]$missingGit.Remove('GitPlan')
+    Check ((Invoke-Harness harness.replan.apply -Context $context -Parameters ($missingGit+@{PlanOnly=$true})).status -eq 'Failed') 'new public Replan cannot bypass its Git intent'
+    $changedGit=$replanParameters.Clone(); $changedGit.GitPlan=@{CommitMessage='unshown different commit intent';RepositoryScopes=@{'.'=@('openspec/changes/'+$id)}}
+    Check ((Invoke-Harness harness.replan.apply -Context $context -Parameters ($changedGit+@{Gate=$acceptReplan})).status -eq 'Failed') 'changed Git intent cannot reuse the displayed Replan Gate'
+    W (Join-Path $fixture '.git/hooks/pre-commit') "#!/bin/sh`nexit 1`n"
+    $commitFailed=Invoke-Harness harness.replan.apply -Context $context -Parameters ($replanParameters+@{Gate=$acceptReplan})
+    Check ($commitFailed.status -eq 'Failed' -and $commitFailed.error.message -match 'pre-commit') 'normal hook failure retains the applied Replan as commit-pending'
+    $pendingReplan=Invoke-WorkflowFixture harness.replan.status @{Change=$id}
+    Check ($pendingReplan.recoveryNeeded -and -not $pendingReplan.executionAllowed) 'pending Replan Git independently blocks continuation'
+    $appliedBefore=(Get-FileHash (Join-Path $changeRoot ('attachments/replans/'+$replanParameters.ReplanId+'.md'))).Hash
+    [IO.File]::Delete((Join-Path $fixture '.git/hooks/pre-commit'))
     $applied=Invoke-WorkflowFixture harness.replan.apply ($replanParameters+@{Gate=@{ConvergenceSource='message:ready';DecisionSource='message:apply';Decision='replan';TargetChange=$id;HandoffRevision=$replanPreview.HandoffRevision}})
+    Check ($appliedBefore -eq (Get-FileHash (Join-Path $changeRoot ('attachments/replans/'+$replanParameters.ReplanId+'.md'))).Hash) 'commit recovery preserves the immutable applied record'
+    $repeated=Invoke-WorkflowFixture harness.replan.apply ($replanParameters+@{Gate=$acceptReplan})
+    Check ($repeated.PlanningCommit -eq $applied.PlanningCommit) 'exact retry does not create a duplicate Replan commit'
+    $replacedGate=$acceptReplan.Clone(); $replacedGate.DecisionSource='fixture:invented-replacement'
+    Check ((Invoke-Harness harness.replan.apply -Context $context -Parameters ($replanParameters+@{Gate=$replacedGate})).status -eq 'Failed') 'retry cannot replace the already consumed actual decision'
+    $committedPlan=@(& git -C $fixture show ('HEAD:openspec/changes/'+$id+'/tasks.md') 2>$null)
+    Check ($LASTEXITCODE -eq 0 -and ($committedPlan -join "`n").Contains('1.2 Verify integration')) 'accepted Replan planning is committed before its arrangement'
+    & git -C $fixture cat-file -e 'HEAD:implementation.cpp' 2>$null
+    Check ($LASTEXITCODE -ne 0 -and (Get-Content (Join-Path $fixture 'implementation.cpp') -Raw) -eq 'unfinished implementation remains live') 'Replan does not checkpoint old implementation'
+    Check ((& git -C $fixture rev-parse ':outside.txt') -eq $outsideBefore) 'Replan preserves outside staged content'
     Check ($applied.status -eq 'applied') 'real portable CLI validates staged and applied planning artifacts'
     Check ('1.2' -in $applied.task_changes.added -and '1.1 -> 1.2' -in $applied.edge_changes.added) 'applied record captures the actual task and dependency additions'
     $waiting=Invoke-WorkflowFixture harness.execution.status @{SessionId='fixture-session'}

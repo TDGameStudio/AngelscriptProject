@@ -2,7 +2,7 @@
 #requires -PSEdition Core
 
 [CmdletBinding()]
-param()
+param([switch]$LinkPreflightOnly)
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
@@ -22,12 +22,13 @@ $context = [pscustomobject]@{
     HarnessRoot = $projectRoot; WorkspaceRoot = $fixtureRoot; PrimaryRoot = $fixtureRoot
     GitCommonDir = $fixtureRoot; Topology = 'Primary'; Branch = 'fixture'; Head = '1111111111111111111111111111111111111111'
 }
+. (Join-Path $PSScriptRoot 'HistoricalChangeFixture.ps1')
 function Invoke-GatedCreate([hashtable]$Parameters) {
     $Parameters.SessionId = 'gate-fixture'
-    $preview = Invoke-Harness harness.change.create -Context $context -Parameters ($Parameters + @{PlanOnly=$true})
+    $preview = Invoke-HistoricalFixtureCreate -Context $context -Parameters ($Parameters + @{PlanOnly=$true})
     if ($preview.status -ne 'Succeeded') { throw $preview.error.message }
     $Parameters.Gate = @{ConvergenceSource='message:ready';DecisionSource='message:create';Decision='create';TargetChange=$Parameters.ChangeId;HandoffRevision=$preview.data.HandoffRevision}
-    return Invoke-Harness harness.change.create -Context $context -Parameters $Parameters
+    return Invoke-HistoricalFixtureCreate -Context $context -Parameters $Parameters
 }
 try {
     & $exe init $fixtureRoot --project-id fixture --title Fixture --workflow angelscript | Out-Null
@@ -36,6 +37,117 @@ try {
     Copy-Item -LiteralPath (Join-Path $projectRoot 'openspec/workflows/angelscript') -Destination (Join-Path $fixtureRoot 'openspec/workflows/angelscript') -Recurse -Force
     $domain = Invoke-Harness -Command openspec.domain -Context $context -ArgumentList @('create', 'harness', '--title', 'Harness', '--json')
     Assert-Equal 'Succeeded' $domain.status 'fixture domain is created'
+
+    & git -C $fixtureRoot init --quiet -b main
+    & git -C $fixtureRoot config user.name Fixture
+    & git -C $fixtureRoot config user.email fixture@example.invalid
+    [IO.File]::WriteAllText((Join-Path $fixtureRoot '.gitignore'),"Saved/`nopenspec/drafts/`n")
+    & git -C $fixtureRoot add .gitignore
+    & git -C $fixtureRoot commit --quiet -m 'fixture baseline'
+    $fullCandidates=@{
+        'proposal.md'="# Why`n`nPersist a complete documentation plan.`n"
+        'design.md'="## Call chains`n`nnone — documentation fixture with no implementation call chain.`n"
+        'tasks.md'=@'
+---
+task_graph:
+  version: 1
+  depends_on:
+    "1.1": []
+---
+# Complete fixture
+## Goal
+Prove a persisted plan.
+## Architecture
+Document the fixture.
+## Global constraints
+No external work.
+## Requirement coverage
+Fixture guidance: 1.1.
+## [ ] 1.1 Document fixture guidance
+
+Write bounded guidance.
+
+**Outcome**
+
+The fixture has a self-contained guide.
+
+**Files**
+
+```diff
++guide.md
+```
+
+**Verification**
+
+```powershell
+Test-Path guide.md
+```
+'@
+        'specs/harness/fixture/spec.md'="## ADDED Requirements`n`n### Requirement: Persist fixture guidance`n`nThe fixture SHALL retain its guide.`n`n#### Scenario: Read guidance`n`n- **WHEN** the fixture is read`n- **THEN** the guide is available`n"
+    }
+    $fullFailures=[Collections.Generic.List[string]]::new()
+    $completeCases=if ($LinkPreflightOnly) { @('invalid-link') } else { @('invalid','invalid-link','persist','stale','missing','recover') }
+    foreach ($case in $completeCases) {
+        try {
+            $id='harness/improve-full-'+$case
+            $complete=@{ChangeId=$id;Title='Complete';Goal='Persist planning';Origin='Direct';Reason='Explicit fixture';HandoffText='A complete bounded documentation plan and its exact Git checkpoint.';SessionId='full-plan-fixture';Candidates=$fullCandidates.Clone();GitPlan=@{CommitMessage='fixture full plan';RepositoryScopes=@{'.'=@('openspec/changes/'+$id)}}}
+            if ($case -eq 'invalid') { $complete.Candidates['tasks.md']='not a task plan' }
+            if ($case -eq 'invalid-link') { $complete.Candidates['design.md']+="`nSee [accepted evidence](attachments/data/missing.md).`n" }
+            if ($case -eq 'persist') { $complete.Candidates['design.md']+="`nSee [fixture contract](specs/harness/fixture/spec.md).`n" }
+            if ($case -eq 'missing') { $complete.Remove('Candidates'); $complete.Remove('GitPlan') }
+            $fullPreview=Invoke-Harness harness.change.create -Context $context -Parameters ($complete+@{PlanOnly=$true})
+            if ($case -in @('invalid','invalid-link','missing')) {
+                Assert-Equal 'Failed' $fullPreview.status 'invalid complete candidate fails before canonical creation'
+                Assert-True (-not (Test-Path (Join-Path $fixtureRoot ('openspec/changes/'+$id)))) 'invalid preview has no canonical publication'
+            } else {
+                if ($fullPreview.status -ne 'Succeeded') { throw $fullPreview.error.message }
+                Assert-True (-not (Test-Path (Join-Path $fixtureRoot ('openspec/changes/'+$id)))) 'preview does not materialize the canonical Change'
+                $complete.Gate=@{ConvergenceSource='fixture:ready';DecisionSource='fixture:accept-plan';Decision='create';TargetChange=$id;HandoffRevision=$fullPreview.data.HandoffRevision}
+                if ($case -eq 'stale') { $complete.Candidates['tasks.md'] += "`nUnshown altered outcome.`n" }
+                if ($case -eq 'recover') {
+                    $hook=Join-Path $fixtureRoot '.git/hooks/pre-commit'
+                    [IO.File]::WriteAllText($hook,"#!/bin/sh`nexit 1`n")
+                    $rejected=Invoke-Harness harness.change.create -Context $context -Parameters $complete
+                    Assert-Equal 'Failed' $rejected.status 'normal hook rejects the first planning commit'
+                    $ownedManifest=[IO.File]::ReadAllText((Join-Path $fixtureRoot ('openspec/changes/'+$id+'/change.yaml')))
+                    $origin=Get-Content (Join-Path $fixtureRoot ('openspec/changes/'+$id+'/attachments/data/harness-origin.json')) -Raw | ConvertFrom-Json
+                    $talkPath=Join-Path $fixtureRoot ('openspec/changes/'+$id+'/attachments/talks/'+$origin.gate.post_talk_id+'.md')
+                    $indexPath=Join-Path $fixtureRoot ('openspec/changes/'+$id+'/attachments/INDEX.md')
+                    $beforeTalk=[IO.File]::ReadAllBytes($talkPath); $beforeIndex=[IO.File]::ReadAllBytes($indexPath)
+                    $arranged=Invoke-Harness harness.talk.update -Context $context -Parameters @{Change=$id;TalkId=$origin.gate.post_talk_id;SessionId='full-plan-fixture';ExpectedRevision=1;Status='closed';Disposition='no-change';Questions=@(
+                        @{id='draft-disposition';question='Draft';answer='not-applicable';source='not-applicable:no-draft'},
+                        @{id='execution-disposition';question='Execution';answer='later';source='fixture:later'}
+                    );Arrangements=@{draft=@{status='applied';decision='not-applicable';source='not-applicable:no-draft'};execution=@{status='applied';decision='later';source='fixture:later'}}}
+                    Assert-Equal 'Succeeded' $arranged.status 'fixture closes arrangement to isolate the pending Git block'
+                    $pending=Invoke-Harness harness.replan.status -Context $context -Parameters @{Change=$id}
+                    Assert-True (-not $pending.data.executionAllowed) 'pending planning commit blocks implementation'
+                    [IO.File]::Delete($hook)
+                    $conflictingRetry=Invoke-Harness harness.change.create -Context $context -Parameters $complete
+                    Assert-Equal 'Failed' $conflictingRetry.status 'retry refuses changed generated records'
+                    [IO.File]::WriteAllBytes($talkPath,$beforeTalk); [IO.File]::WriteAllBytes($indexPath,$beforeIndex)
+                }
+                $fullCreated=Invoke-Harness harness.change.create -Context $context -Parameters $complete
+                if ($case -eq 'stale') {
+                    Assert-Equal 'Failed' $fullCreated.status 'changed task content cannot consume the former Gate'
+                } else {
+                    Assert-Equal 'Succeeded' $fullCreated.status 'accepted full plan creates and commits'
+                    $saved=& git -C $fixtureRoot show ('HEAD:openspec/changes/'+$id+'/tasks.md') 2>$null
+                    Assert-True ($LASTEXITCODE -eq 0 -and ($saved -join "`n").Contains('Document fixture guidance')) 'the complete accepted task plan is already committed before execution arrangement'
+                    $again=Invoke-Harness harness.change.create -Context $context -Parameters $complete
+                    Assert-Equal 'Succeeded' $again.status 'retry resumes the same persisted planning operation'
+                    Assert-Equal $fullCreated.data.HandoffId $again.data.HandoffId 'retry preserves the handoff identity'
+                    if ($case -eq 'recover') {
+                        Assert-Equal $ownedManifest ([IO.File]::ReadAllText((Join-Path $fixtureRoot ('openspec/changes/'+$id+'/change.yaml')))) 'commit retry keeps the native UID and manifest'
+                    }
+                }
+            }
+            Write-Output "PASS full candidate: $case"
+        } catch { $fullFailures.Add("${case}: $($_.Exception.Message)"); Write-Output "FAIL full candidate: ${case}: $($_.Exception.Message)" }
+    }
+    if ($LinkPreflightOnly) {
+        if ($fullFailures.Count) { throw ($fullFailures -join "`n") }
+        'HarnessChangeGate link preflight: PASS'; return
+    }
 
     $legacy = Invoke-Harness -Command openspec.change -Context $context -ArgumentList @('create', 'harness/improve-bypass-new-gate', '--title', 'Bypass', '--goal', 'No bypass', '--json')
     Assert-Equal 'Failed' $legacy.status 'generic route cannot bypass the new creation gate'
@@ -212,6 +324,7 @@ try {
     [System.IO.File]::WriteAllText((Join-Path $seedRoot 'design.md'), "## Call chains`n`n- `"A`" -> `"B`"`n`nMeasured at: 1111111111111111111111111111111111111111; dirty: none.`n")
     $completePlan = Invoke-Harness -Command harness.change.plan.verify -Context $context -Parameters @{ ChangeId = 'harness/improve-seeded-change' }
     Assert-Equal 'Succeeded' $completePlan.status 'root design with measured call chain passes'
+    if ($fullFailures.Count) { throw ($fullFailures -join "`n") }
 }
 finally {
     $resolvedFixture = [System.IO.Path]::GetFullPath($fixtureRoot)

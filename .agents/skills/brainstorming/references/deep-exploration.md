@@ -4,6 +4,7 @@
 - Explicit direct work needs no draft handoff. A direct creation/Replan still presents concrete reviewable handoff text and consumes the operation's explicit Gate.
 - Write `designs/<scope>/handoff.md` in the draft language. Explain the problem/outcome, success criteria, evidence, boundaries, selected approach, relevant architecture, confirmed names, meaningful trade-offs and necessary proof.
 - Resolve blocking design choices before the Gate. Keep accepted assumptions and excluded work explicit.
+- New creation preparation includes the complete English proposal/design/tasks/applicable delta specs and required exports, plus the exact canonical Git planning intent. These candidates exist before the first Gate; Ensure plan does not defer the new Task DAG until after approval. Replan prepares its full changed artifacts and their hashes without checkpointing old implementation.
 - Read [the handoff Gate explanation](../../harness/references/handoff-gate.md) when preparing the concrete Gate. Present the full background, current and proposed system, roles/terms/call paths, concrete changes, reasons, proof and handoff boundary in conversation for a reader unfamiliar with this system. A short summary or link to the handoff is not presentation.
 
 ## OpenSpec Handoff
@@ -40,7 +41,7 @@
 
 - Omit unused example rows. Include transitive source dependencies needed to understand the selected outcome; leave unrelated work and the conversation transcript local.
 - Export current summaries in English with provenance, preserve identifiers and retain original local wording.
-- Creation freezes the expected export list; `harness.change.seed.verify` checks copies, indexing and local link closure before planning.
+- Creation freezes the expected export list together with complete planning candidates. Seed/plan/strict checks precede the formal planning commit and separate arrangement Gate. Show that commit before asking how to retain/archive the draft and schedule execution.
 
 ## Explicit handoff Gate
 

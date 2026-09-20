@@ -115,7 +115,7 @@ try {
         Write-Fixture (Join-Path $item.Folder 'attachments/INDEX.md') ((@('# INDEX','') + @($entries) + @('', 'Prose mentions data/evidence.txt without being another entry.', '- `openspec/specs/fixture/data/evidence.txt` - a durable reference, not another local entry.')) -join "`n")
         Refresh-CaseEvaluation $item
         $actual = Invoke-Harness openspec.change -Context $context -ArgumentList @('archive',$item.Id,'--closure-file',$item.Closure,'--json')
-        Check ($actual.status -eq 'Succeeded' -and -not (Test-Path $item.Folder)) "Archive accepts $formatName exact entries, an indexed local closure, an empty directory and non-entry prose"
+        Check ($actual.status -eq 'Failed' -and $actual.error.message -match 'exact approved' -and (Test-Path $item.Folder)) "Valid $formatName entries reach the user close boundary after attachment validation"
         Write-Output "Attachment format $formatName : $($actual.status)"
     }
     $format = New-Case 'format'
@@ -128,22 +128,25 @@ try {
     $actual = Invoke-Harness openspec.change -Context $context -ArgumentList @('archive',$format.Id,'--closure-file',$format.Closure,"--closure-file=$($format.Closure)",'--json')
     Check ($actual.status -eq 'Failed' -and (Test-Path $format.Folder)) 'Duplicate closure options cannot split checked and consumed files'
     $actual = Invoke-Harness openspec.change -Context $context -ArgumentList @('archive',$format.Id,'--closure-file',$format.Closure,'--json')
-    Check ($actual.status -eq 'Succeeded' -and -not (Test-Path $format.Folder)) 'Explicit JSON closure uses the same terminal gate'
+    Check ($actual.status -eq 'Failed' -and $actual.error.message -match 'exact approved' -and (Test-Path $format.Folder)) 'Explicit JSON closure reaches the same close decision boundary'
     $actual = Invoke-Harness openspec.change -Context $context -ArgumentList @('archive','--help')
     Check ($actual.status -eq 'Succeeded') 'Archive help stays read-only without a terminal target'
     $valid = New-Case 'valid'
+    $unapproved = New-Case 'unapproved'
+    $noDecision = Invoke-Harness openspec.change -Context $context -ArgumentList @('archive',$unapproved.Id,'--closure-file',$unapproved.Closure,'--json')
+    Check ($noDecision.status -eq 'Failed' -and (Test-Path $unapproved.Folder)) 'Fresh terminal evidence does not replace the user close Gate'
     $actual = Invoke-Harness OpenSpec.Change -Context $context -ArgumentList @('archive',$valid.Id,"--closure-file=$($valid.Closure)",'--json')
-    Check ($actual.status -eq 'Succeeded' -and -not (Test-Path $valid.Folder)) 'Valid completed archive passes with equals option and canonical route handling'
+    Check ($actual.status -eq 'Failed' -and $actual.error.message -match 'exact approved' -and (Test-Path $valid.Folder)) 'Equals option and canonical route handling cannot bypass the close decision'
     $early = New-Case 'early' 'fresh' 'abandoned' -NoTasks
     $terminal = Invoke-Harness harness.evolution.status -Context $context -Parameters @{Change=$early.Id;ClosureKind='abandoned';RequireTerminal=$true}
     Check ($terminal.status -eq 'Succeeded') 'Explicit early abandonment with fresh evidence requires no fabricated Task DAG'
     $actual = Invoke-Harness openspec.change -Context $context -ArgumentList @('archive',$early.Id,'--closure-file',(Split-Path $early.Closure -Leaf),'--json')
-    Check ($actual.status -eq 'Succeeded' -and -not (Test-Path $early.Folder)) 'Early abandonment archives using a canonical-record-root relative closure path'
+    Check ($actual.status -eq 'Failed' -and $actual.error.message -match 'exact approved' -and (Test-Path $early.Folder)) 'Early abandonment with a canonical-record-root relative path still requires its close decision'
     $invalid = New-Case 'invalid' 'fresh' 'abandoned' -NoTasks
     Write-Fixture (Join-Path $invalid.Folder 'tasks.md') '# Present but not a TaskPlan'
     $actual = Invoke-Harness openspec.change -Context $context -ArgumentList @('archive',$invalid.Id,'--closure-file',$invalid.Closure,'--json')
     Check ($actual.status -eq 'Failed' -and (Test-Path $invalid.Folder)) 'Incomplete closure never exempts an existing invalid plan'
-    Check (@(Get-ChildItem -LiteralPath (Join-Path $fixture 'Saved/AgentTemp/harness-archive') -File).Count -eq 0) 'Checked closure snapshots are cleaned after archive'
+    Check (@(Get-ChildItem -LiteralPath (Join-Path $fixture 'Saved/AgentTemp/harness-archive') -File -ErrorAction SilentlyContinue).Count -eq 0) 'Checked closure snapshots are cleaned after archive'
     if ($failures.Count) { throw "Mutation Gate failures: $($failures -join '; ')" }
     'HarnessMutationGate.Tests.ps1: PASS'
 }

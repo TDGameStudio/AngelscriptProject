@@ -6,6 +6,7 @@ description: Close and archive an OpenSpec change with explicit completed, aband
 # Close and Archive a Change
 
 - Read the [closure schema](../openspec/references/record-schema.md), [attachment gates](../openspec/references/attachments.md), and Harness [impact-scoped verification policy](../harness/references/verification.md).
+- Harness [closure](../harness/references/closure.md) owns the complete result explanation, actual selectable close Gate, exact Git plan and recovery. Show accepted design versus implemented behavior, actual proof/limits, selected/excluded workspace content and the post-close state before asking commit-and-archive, explain/adjust, or leave pending.
 - Use the smallest applicable post-move check and expand only when its evidence requires it.
 
 ## Completed gate
@@ -28,23 +29,25 @@ description: Close and archive an OpenSpec change with explicit completed, aband
 - `abandoned` and `superseded` are explicit outcomes, not bypasses.
 - Supply a reason and a disposition for every incomplete task; `superseded` also identifies its replacement.
 - Do not mark incomplete tasks done.
+- Preserve the shown owned implementation in an explicitly incomplete Git checkpoint before an exact withdrawal. Abandoned work withdraws only its approved owned portion; superseded work follows the named replacement's accepted carryover. Prove and commit the withdrawal while preserving unrelated hunks/staging and normal hooks. Replan or dissatisfaction alone is not abandonment authority; do not promote unfinished deltas into current specs.
 - An early Change without `tasks.md` may close as abandoned or superseded with fresh terminal evidence; do not invent tasks. A present task plan must still be valid.
 
 ## Procedure
 
 ```text
-close checks
-  -> prepare closure YAML
-  -> openspec.change archive <id> --closure-file <path>
-  -> openspec.validate --archived --strict --json
-  -> smallest applicable non-destructive lifecycle gate
+close checks + full explanation of result/Git disposition
+  -> harness.change.close PlanOnly -> actual version-bound selectable Gate
+  -> same exact close operation: implementation/save/withdrawal stages
+  -> terminal checkpoint -> native archive -> exact archived-item validation
+  -> canonical result/record commit -> full close complete -> queue advance
 ```
 
 - The primitive never merges specs, validates implementation, edits attachments, or decides closure kind.
-- The public Harness archive route enforces the current terminal evaluation immediately before invoking that primitive. A separate successful status check cannot substitute for this mutation-time check.
-- Supply one closure file with an explicit root `kind: completed`, `kind: abandoned`, or `kind: superseded` (plain or quoted YAML, or a JSON object). The checked file bytes are the bytes consumed by archive.
+- The public Harness archive route requires the approved close operation and current terminal evaluation before invoking that primitive. Calling raw archive with a valid evaluation cannot bypass the actual close Gate. `harness.change.close` supplies its private operation and exact closure bytes.
+- The close operation generates one closure file from the approved Dispositions.Closure, with explicit completed/abandoned/superseded kind. The checked bytes are the bytes consumed by native archive; callers do not bypass close by supplying another file.
 - Never hand-move the directory.
-- If a post-move check exposes a new defect, preserve the archive and capture its source evidence in the feedback inbox or a linked draft.
+- A moved archive with a failed final canonical commit is still `close-pending`; retry the saved exact close request. Preserve successful earlier commits and immutable archive bytes. The same shown close approval covers its local commits; do not add another generic Git question. Generic queue authorization alone never approves unseen close content.
+- If a post-move check exposes a new defect, preserve the archive and capture its source evidence in the owning topic draft, visible through the feedback query.
   - Continue an already authorized bounded direct repair within its existing scope; do not manufacture another Change or repeat approval.
   - For a new repair scope, let the user select it. A formal successor requires user-led convergence and its exact handoff Gate; recording a finding never creates one automatically.
 - Report the archived path, closure kind, evidence, historical-audit result, and post-move gate.

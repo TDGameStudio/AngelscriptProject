@@ -1,0 +1,305 @@
+{
+  "schema": "owned-source-manifest-v1",
+  "change": "harness/feature-lifecycle-git-closure",
+  "baseline": "2afe4b9090a3fc849545ee6301b2b83839fa8f84",
+  "capturedAt": "2026-09-20T10:24:18.0976059+00:00",
+  "files": [
+    {
+      "path": ".agents/skills/brainstorming/references/deep-exploration.md",
+      "sha256": "b894d25a70e69783b8c4253df06ff8c931e85e8c7e3730fcda213d318758e071"
+    },
+    {
+      "path": ".agents/skills/brainstorming/references/drafts.md",
+      "sha256": "b0f7ced36991e33df3c4a7843ad4d30cfa44f74bbadb7add2a8fab57f295a9fe"
+    },
+    {
+      "path": ".agents/skills/brainstorming/SKILL.md",
+      "sha256": "ce728559d7408cd6992d9d0a71dd96a74ada6006dd0607a54de41381b8ff6af4"
+    },
+    {
+      "path": ".agents/skills/change-queue/SKILL.md",
+      "sha256": "15240e55f565871cb411cc1d96e3286fcb5a9784d92a3da64ce5bd6f33253f0e"
+    },
+    {
+      "path": ".agents/skills/explaining-work/references/improvement.md",
+      "sha256": "961602f74a44b0c33105ca308ef048f704fcd65d8c1072d5c88a50dcf0a356fa"
+    },
+    {
+      "path": ".agents/skills/explaining-work/references/method.md",
+      "sha256": "17c0244e4287692a885d0844c6f0ae3aeda0d14a9562c143192d301e5208429e"
+    },
+    {
+      "path": ".agents/skills/explaining-work/SKILL.md",
+      "sha256": "70fcecd1c4dbc7bda5a0d5dc2e98c54a1a1cd01efb7cced1d7020bfc3748df8a"
+    },
+    {
+      "path": ".agents/skills/git-operations/references/commits.md",
+      "sha256": "15c1bf85c7511cffa155492199188fb06132ab0e1b3e9728581a89e9317403ee"
+    },
+    {
+      "path": ".agents/skills/git-operations/scripts/GitOperations.psm1",
+      "sha256": "71e67c2854a150de34ff85ba000a30008491266dcc7ccb4e8624263739be6c67"
+    },
+    {
+      "path": ".agents/skills/git-operations/SKILL.md",
+      "sha256": "fb3b6a75f2de1611f07a0a109b8aa7faba5457d2e82128d71681da6b80a69b9a"
+    },
+    {
+      "path": ".agents/skills/git-operations/tests/GitOperations.Tests.ps1",
+      "sha256": "615ddbe013333fd4a564752c38184f2ec8c7238c602525513a9f0199056e8986"
+    },
+    {
+      "path": ".agents/skills/grill/references/hosts.md",
+      "sha256": "c8cf3e95aabf07acab7d48a3ca437b6c0f6e3e0ecc1df05e44a2acad7072d698"
+    },
+    {
+      "path": ".agents/skills/grill/references/rounds.md",
+      "sha256": "b1872e325210e2bf1ab5696abb65ff68d1077d2d0db8182c92d7ea7dac77f232"
+    },
+    {
+      "path": ".agents/skills/grill/SKILL.md",
+      "sha256": "d4680af111489d76aca7f888243bc93d416e803629910f91b5b6f4581065c523"
+    },
+    {
+      "path": ".agents/skills/harness/references/closure.md",
+      "sha256": "446aed3e746e06fde8e141a7b05a99d1b8efdcb6f89cead6c1a0c2ba2ddb832b"
+    },
+    {
+      "path": ".agents/skills/harness/references/discussions.md",
+      "sha256": "975289b3f07384201707b176ed1d7a772001379817acd1b12e71482b76f32c05"
+    },
+    {
+      "path": ".agents/skills/harness/references/evolution.md",
+      "sha256": "246b5fa5c6ffcf3045b1d9fbb15fcb328b3be438d53db672cf4d9c4881f19827"
+    },
+    {
+      "path": ".agents/skills/harness/references/handoff-gate.md",
+      "sha256": "48676e9fc0ca2ba2d1e5d9a02e0c2c1524cd734ab308acd60fd379ac4ceb6342"
+    },
+    {
+      "path": ".agents/skills/harness/references/queries.md",
+      "sha256": "7c70b68801fc3dda0546bc8a291308ceddc57520b9d023d2466aca8c2322e869"
+    },
+    {
+      "path": ".agents/skills/harness/references/replan.md",
+      "sha256": "ae380b19e10556cf7e26b24a7639cbfc6c0633b0e67d73955cdfed4e50c3ccb0"
+    },
+    {
+      "path": ".agents/skills/harness/references/routing.md",
+      "sha256": "e17470ee8cedc8a382e9d387d617dc016d10102b1768705b458aa5ef13d7a85f"
+    },
+    {
+      "path": ".agents/skills/harness/references/verification.md",
+      "sha256": "8e3fb26ac90dfc1414f7a283d1f254f35bc972a9b3d410afff70807576b9657d"
+    },
+    {
+      "path": ".agents/skills/harness/scripts/change_queue.py",
+      "sha256": "7cdfebf775e0ca37fa6c3ea475ebbba0a6f89c9cfe5f44d949f5486d7057d80e"
+    },
+    {
+      "path": ".agents/skills/harness/scripts/ChangeClosure.psm1",
+      "sha256": "c8ea657f0c96533e21b4f33d2212e7e141093ca83ae7597923e38ff8c0af13cb"
+    },
+    {
+      "path": ".agents/skills/harness/scripts/ChangeGate.psm1",
+      "sha256": "b73543e7c30493bb383c4a8a6ac97a24d5e854047eff30944379cb00d4d3118c"
+    },
+    {
+      "path": ".agents/skills/harness/scripts/ChangeQueue.psm1",
+      "sha256": "05a4e4378ffcd0bc44ed06392d9854b73c03c85e3c12a37b2913b24c5da7e98c"
+    },
+    {
+      "path": ".agents/skills/harness/scripts/closure_status.py",
+      "sha256": "1e9b493c36925708ba22e7274cdadfb75698b9c86407302f5ebd4c0a980c9f3a"
+    },
+    {
+      "path": ".agents/skills/harness/scripts/closure_withdrawal.py",
+      "sha256": "857b395efa7cba2b303d02c92c6f24c6d9fbe112a9fab20fd730b1d3eefe36a4"
+    },
+    {
+      "path": ".agents/skills/harness/scripts/execution.py",
+      "sha256": "fbafc1ee98edd0fb4d9ea48d33e70e8a193de47fd4595cf392fb5fa6c136d376"
+    },
+    {
+      "path": ".agents/skills/harness/scripts/Feedback.psm1",
+      "sha256": "439a4e186b2411409b034b1eb01082b8d9b2300329756331777d9c9083f9452b"
+    },
+    {
+      "path": ".agents/skills/harness/scripts/handoff.py",
+      "sha256": "677ad6fcd18cd89fce5e1aa88726c74392797b0507c665d725c2922e89c9a5e0"
+    },
+    {
+      "path": ".agents/skills/harness/scripts/Harness.psm1",
+      "sha256": "8cd980e2eaac99a2b5ade68b47e6c90c4c039bd91c9c9f6f9e1a992008d7a520"
+    },
+    {
+      "path": ".agents/skills/harness/scripts/planning_git.py",
+      "sha256": "f3a4203f339805507a45f0680cb90483aedf665b43b2dcd64312239788f820b9"
+    },
+    {
+      "path": ".agents/skills/harness/scripts/PlanningGit.psm1",
+      "sha256": "de96112246ec8d1fc79e5c5bdff736a8103f7753653fe8e79046f2374c069d59"
+    },
+    {
+      "path": ".agents/skills/harness/scripts/replans.py",
+      "sha256": "cb5626fd5a858739a763c0249de067b53d7839bf3dcc6e8306f74efed6984d26"
+    },
+    {
+      "path": ".agents/skills/harness/scripts/Test-Harness.ps1",
+      "sha256": "471feeef09101ac60bca2d0f47c68e9a461af0f8ee897e953128a5700e84bcad"
+    },
+    {
+      "path": ".agents/skills/harness/scripts/Workflow.psm1",
+      "sha256": "3a668516d5003a396c8df0c88388f7ceccf014760938feaf127046b6f4e034d5"
+    },
+    {
+      "path": ".agents/skills/harness/SKILL.md",
+      "sha256": "718289e047be5ff98745a97e70ba5326b840db8375626b3d28f9b169bf74473b"
+    },
+    {
+      "path": ".agents/skills/harness/tests/Harness.Performance.Tests.ps1",
+      "sha256": "38b4649f331cafc3c63624fe87fba788267c8c36a49216e0d8ee8726c2baa468"
+    },
+    {
+      "path": ".agents/skills/harness/tests/Harness.Tests.ps1",
+      "sha256": "a4846bcc0f5cea7a64e103c5f058dc8790f8213079ab9adc8e3198672ba5485b"
+    },
+    {
+      "path": ".agents/skills/harness/tests/HarnessChangeGate.Tests.ps1",
+      "sha256": "59c83bff1eb2906fb359f9635b54436b261d757065aca2be7d4ac1db3d45e232"
+    },
+    {
+      "path": ".agents/skills/harness/tests/HarnessClosure.Tests.ps1",
+      "sha256": "d59182559c62d574b553d5a21a49eb76c8ef39b610fa3345a6eee0307d559de6"
+    },
+    {
+      "path": ".agents/skills/harness/tests/HarnessFeedback.Tests.ps1",
+      "sha256": "c1d84d89a962b91651a7e46204f36df0e60a24483bd3520a4491ba9a59f46963"
+    },
+    {
+      "path": ".agents/skills/harness/tests/HarnessHandoff.Tests.ps1",
+      "sha256": "cbe1848d9179a17eec700aa8eca855cc0174c1335b9707a287c2861056a1eb19"
+    },
+    {
+      "path": ".agents/skills/harness/tests/HarnessIncompleteClosure.Tests.ps1",
+      "sha256": "300f2c0ed561476d574a6972a58af129a124826edcdd7254de56632043c2b7b9"
+    },
+    {
+      "path": ".agents/skills/harness/tests/HarnessLifecycle.Tests.ps1",
+      "sha256": "9996348a46c5779497cf6876f9bddf1d5a4da318ea7bc37cc6e36ef257bdf054"
+    },
+    {
+      "path": ".agents/skills/harness/tests/HarnessMutationGate.Tests.ps1",
+      "sha256": "31a99f02a8f1f168c83c02b98f272fa1a42ba5c7138e033e79ec50d81eaeeb82"
+    },
+    {
+      "path": ".agents/skills/harness/tests/HarnessQueue.Tests.ps1",
+      "sha256": "dd274ce47687e5474d893741206fbff26b594eb94823785868a29ec640f22c1f"
+    },
+    {
+      "path": ".agents/skills/harness/tests/HarnessWorkflow.Tests.ps1",
+      "sha256": "5ef255ef4fccafc1151cc8c00c91ea4b762fe8974c0e82a43fe4c49020014918"
+    },
+    {
+      "path": ".agents/skills/harness/tests/HistoricalChangeFixture.ps1",
+      "sha256": "7bb8881ca06a72b9eb6d986bc20c72b2f4cf0f7c2fe55e5ff4304ad407575606"
+    },
+    {
+      "path": ".agents/skills/harness/tests/LifecycleFixture.ps1",
+      "sha256": "68db9658ba713e073962e52d9774ec7f6ad3500fb38ade31d98628060a4914f2"
+    },
+    {
+      "path": ".agents/skills/harness/tests/Protocol.Tests.ps1",
+      "sha256": "f1a6a4505aa4cdf43c3fc48da1e9a5c040e204766098c28730cb22644e8bb8d4"
+    },
+    {
+      "path": ".agents/skills/harness/tests/test_change_queue.py",
+      "sha256": "bf66b74d68aace948abd603bb666bfa74b0b3c99862c616020b4a24151571ae3"
+    },
+    {
+      "path": ".agents/skills/harness/tests/test_closure_withdrawal.py",
+      "sha256": "053cb54166a5edb00975d2d636bd0f0553671a5ca9f93b685ba0742b33be0ace"
+    },
+    {
+      "path": ".agents/skills/harness/tests/test_execution.py",
+      "sha256": "95b4f0ce372c6bae72e98f2ff9f492edc92fe5cc6988e1f5b66c1d6fb4962605"
+    },
+    {
+      "path": ".agents/skills/harness/tests/Test-Harness.Tests.ps1",
+      "sha256": "92e71d86efb3973fccd6816425bac8798462892d6ddcd1cbff76e2f6d9f45391"
+    },
+    {
+      "path": ".agents/skills/harness/updates.json",
+      "sha256": "dad73e594700b7f241a47804a222f2ac5507edc7cce29cb098a4c7ad32987aa2"
+    },
+    {
+      "path": ".agents/skills/openspec-apply-change/SKILL.md",
+      "sha256": "31c7b1bf1bbebf9ad1fd8d6460df856eb7819e7e9f3d0bb9532469db1c22a947"
+    },
+    {
+      "path": ".agents/skills/openspec-archive-change/SKILL.md",
+      "sha256": "4da6b2b7a6e13d869f35523277c7dfd3bc4e652078cfc0d59ebd94f1f8e84906"
+    },
+    {
+      "path": ".agents/skills/openspec-create-change/SKILL.md",
+      "sha256": "4040788160f535adf17c7ecfc63fed86e7b52b720799fd7f74577371bdff6e82"
+    },
+    {
+      "path": ".agents/skills/openspec-update-change/SKILL.md",
+      "sha256": "16cc614e8d8ba844856955211fd973e2b1ca645c45882240169616c4c119e373"
+    },
+    {
+      "path": ".agents/skills/openspec/references/knowledge.md",
+      "sha256": "e5065256c00062bbd0f7d71e9400558e17d099c10240db4f8596bfa5ff7bd529"
+    },
+    {
+      "path": ".agents/skills/openspec/references/record-schema.md",
+      "sha256": "635d4654257b40fc76a9e15d6626ba96c7378ac00b0a990a139e696b938e7957"
+    },
+    {
+      "path": ".agents/skills/openspec/references/specs.md",
+      "sha256": "dbec8446ac924aa1d773d80057883708ac4d59d6afb971421595b936f8d52535"
+    },
+    {
+      "path": ".agents/skills/openspec/SKILL.md",
+      "sha256": "27414ee3eaf8b57df6a5f3430e2219d718e3d9b03e842e949190529037da010b"
+    },
+    {
+      "path": ".agents/skills/README.md",
+      "sha256": "2e4b142e66054d7faf12d706926be3ca89497a7276d371d9a9793e2086e9afad"
+    },
+    {
+      "path": "AGENTS.md",
+      "sha256": "9ef438e21d055777e04d315a72f43f3767d8414fe1cedd0302d6c0b8b424264e"
+    },
+    {
+      "path": "openspec/specs/harness/core/knowledges/harness-evolution.md",
+      "sha256": "064b530941390f0e900ab2d9bdcc5437e83ec7d3bf1f86c84d5ab9ab89a07b1b"
+    },
+    {
+      "path": "openspec/specs/harness/core/knowledges/INDEX.md",
+      "sha256": "938fbabf8d7196233d42adad3711d06df9cf61012a405f6df9d9db2b767332ab"
+    },
+    {
+      "path": "openspec/specs/harness/core/spec.md",
+      "sha256": "c2faad85418aaab302034a3460e2be3898757ff8a36d1f747fb9f8e3ac6af756"
+    },
+    {
+      "path": "openspec/specs/harness/git/knowledges/INDEX.md",
+      "sha256": "110d57a54b5b73630f10e52969ef16995b2b1bddc6c6f25f2514375a052df789"
+    },
+    {
+      "path": "openspec/specs/harness/git/knowledges/lifecycle-checkpoints.md",
+      "sha256": "7c764a380249ac415fe4888396741b98e3fa2eb8c89d4017816cfa80e18ec962"
+    },
+    {
+      "path": "openspec/specs/harness/git/spec.md",
+      "sha256": "e687cf9c12641cc917a16a8ae7abed2d2397cf2f75dfecac6163ad9e15241c86"
+    }
+  ],
+  "excluded": [
+    "_scratch_prec.py",
+    "双循环流程.png",
+    "Reference/README.md"
+  ]
+}

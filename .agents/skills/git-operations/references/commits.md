@@ -9,7 +9,7 @@ Invoke-Harness -Command git.status -Context $context
 The result reports parent and initialized top-level submodule heads, branches, and staged/unstaged/untracked paths.
 
 - In a registered replica, status exposes only editable plugin repositories. The project root and fixed snapshots have no Git commit target.
-- Queue closure uses exact plugin scopes with `PluginsOnly = $true` and `PreserveOutsideStaged = $true`. This also applies in primary: plugin commits do not automatically commit parent gitlinks. Primary-repository commits remain separately user-directed.
+- Lifecycle closure composes exact plugin scopes with `PluginsOnly = $true` and a separately shown canonical parent scope, preserving outside staging. Plugin commits alone never implicitly select parent gitlinks. The actual close Gate can authorize both shown local stages; generic queue execution cannot.
 
 ```powershell
 Invoke-Harness git.commit -Context $context -Parameters @{
@@ -37,6 +37,10 @@ Invoke-Harness -Command git.commit -Context $context -Parameters @{
 Map `.` to parent-repository paths and a top-level submodule path to paths relative to that submodule. `WorkspaceRoot` comes from the selected context. An omitted scope and any pre-staged path outside the selected scope are rejected. Exact commits always build a candidate index from the current HEAD, stage only literal effective scopes, run the repository's normal `pre-commit`, `prepare-commit-msg`, and `commit-msg` hooks against that candidate, and validate it before the ref is accepted.
 
 ## Preserve Existing Staged Work Outside the Scope
+
+For a version-bound lifecycle selection, retain the WhatIf result's `PlanRevision` and pass it as `ExpectedPlanRevision` on mutation. `IncludedChanges` exposes the selected `Patch`, `ExcludedPatch`, baseline and candidate tree. Show the meaningful content as well as paths. A changed baseline, live/index candidate, branch or commit intent rejects the stale revision before the affected commit.
+
+Use `RepositoryPatches=@{ '<repository>'=<explicit binary-safe Git patch> }` for owned hunks inside a mixed file, with matching literal `RepositoryScopes`. The patch must describe actual live content and apply to the baseline; other live and staged hunks are preserved through an isolated index merge. Overlapping/unseparable edits fail instead of broadening ownership. Exact accepted candidates reject hooks that rewrite their shown bytes; normal hooks are still executed. Legacy direct commits without an accepted revision retain the existing bounded formatter behavior described below.
 
 The default rejection remains the safest choice. When a primary or linked workspace intentionally contains independently staged work, opt into an explicit outside-index preservation proof:
 

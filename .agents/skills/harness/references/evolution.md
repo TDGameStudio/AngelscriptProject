@@ -1,37 +1,31 @@
 # Feedback, improvement and update visibility
 
-## Collect evidence automatically
+## Keep new feedback in its topic draft
 
-- Use `harness.observe` for a concrete workflow defect, recurring friction, routing mistake, missing explanation, or tool contract gap. Include `Category`, bounded `Summary`, actual `SourceRef`; optionally `DedupKey`, `OwnerDraftId`, Change, stage, correlation and duration.
-- Raw versioned JSON remains under ignored `Saved/Harness/Observations/`; old `Saved/Hardness/Observations/` stays readable. Group repeats with a stable problem-oriented key while preserving every occurrence. Do not turn every compile error, expected RED or user cancellation into a Harness issue.
-- Mutation regenerates `INBOX.md` from raw observations plus immutable triage records. The Markdown is a readable projection, never an approval authority. `harness.evolution.status` with `InboxOnly=$true` and optional Limit is read-only; its Issues and Truncated fields disclose incomplete views.
-- Collecting an observation grants no authority to edit unrelated Skills, introduce a new gate or create a successor Change. Continue the current in-scope task unless the finding blocks its actual contract.
+- Capture concrete workflow friction, routing mistakes, incomplete explanations and tool gaps with `harness.observe`: bounded `Category`/`Summary`, actual `SourceRef`, optional `DedupKey`, `OwnerDraftId`, `OwnerScope`, Change/stage/correlation. Prefer a meaningful existing owner, such as a Harness-upgrade topic; the tool creates an ignored topic when none is provided. Modes remain research/proposal/design, not a new upgrade type.
+- The source can be “this explanation was unclear”; the cause is still a question. Capture alone neither diagnoses a Skill defect nor selects its repair. Do not turn expected RED, ordinary unfamiliarity or cancellation into proof of broken prompts.
+- New observations live inside the owning `openspec/drafts/<domain>/<topic>/designs/<scope>/design.md`, with README navigation and key context. Repeats retain actual sources under the same owner. No new Saved observation JSON, triage ledger, derived INBOX.md or separate harness-update Skill is required.
+- `harness.evolution.status` with `InboxOnly=$true` is a read-only grouped view. Check Issues and Truncated before treating it as complete. Historical Saved/Hardness observations and archived draft observations remain readable and unchanged; they are not writable new-feedback stores.
+- Drafts remain ignored/local. A commit or `updates.json` does not back them up across machines. Preserve old material in place; do not migrate or delete it as routine cleanup.
 
-## Keep capture local and conclusions durable
+## Explain, select and improve
 
-- `Saved/Harness/Observations/` owns raw occurrences, triage events and the derived inbox in the selected workspace. They survive a conversation ending, but are Git-ignored local files: a Git commit, another clone or a different workspace does not back them up or aggregate them. Do not delete or migrate earlier observations as routine cleanup.
-- Keep synthetic observation-write measurements in an isolated fixture workspace, including when performance queries target an explicit real Change. Measure the real route there and retain benchmark results with the performance artifacts; a timing sample is not a user problem. Do not contaminate the real inbox and then try to clean up after the test.
-- A draft owns unresolved design and key decisions, but drafts are also ignored. An admitted active-Change issue needs its indexed implementation attachment; completed direct maintenance belongs in the actual Skill/tool/test and any justified durable specification or capability knowledge. Promote the useful conclusion and evidence boundary, not the raw conversation or measurement stream.
-- There is no Git-tracked global backlog for unowned feedback. Say so when the user needs cross-machine retention of pending items; do not promise that moving them to a draft or updating `updates.json` provides it. Choosing such a backlog is a separate storage decision, not a reason to invent a Change for every observation.
+- When the user says “what does this mean?”, “I did not understand”, or asks for another explanation, invoke explaining-work's [improvement loop](../../explaining-work/references/improvement.md). First improve the current explanation from source, current specification and the owning knowledge INDEX/entry. Distinguish explanation method, unclear intended spec, missing capability knowledge, missed retrieval and unproven cause. Grill only the consequential ambiguity, without a compulsory understanding quiz.
+- Record the sourced improvement question in the owning topic and preserve the interrupted work/Gate/Grill return point. Capture may remain draft-only indefinitely. It does not create a Change, queue item or default successor, and does not block unrelated authorized work.
+- At a useful discussion point, present a batch with source/example, impact, suspected owner, confidence, bounded proposed change and proving check. Read each actual source before calling it an unresolved defect. User unfamiliarity, synthetic fixtures and historical corrections have different meanings.
+- Use `harness.evolution.triage` with exact `ObservationIds`, actual `DecisionSource`, bounded `Scope`, and selected/deferred/dismissed disposition. Selection can come from existing explicit task authority; avoid asking twice. Unselected observations stay unchanged. Further work on historical/archived feedback reuses its actual source in an active topic, without rewriting the old record.
+- Route selected work by intent: explicitly authorized direct maintenance stays direct; substantial unsettled design remains in Brainstorming/Grill; an accepted formal outcome uses the ordinary Create/Replan Gates. No separate upgrade workflow is necessary.
+- A current authorized Change may already own the improvement. Otherwise, do not edit unrelated Skills, behavior specs or tools merely because an observation recurred. Factual knowledge publication follows the owning [knowledge admission contract](../../openspec/references/knowledge.md) and actual authority; behavior changes still need their accepted scope and proof.
 
-## Present a batch and apply the user's scope
+## Resolve with evidence, archive without erasing questions
 
-- At an appropriate discussion point, group related problems, show a concrete example, impact, likely owning Skill/tool, proposed bounded repair and proving check. Explain what the candidate changes in future behavior before asking.
-- Before describing a pending count as unresolved defects, read each candidate's category and exact source. Separate actual findings, synthetic probes and historical planning corrections. For an old linked issue, compare its exact observation/source identity with the final issue disposition, task and closure evidence; matching words or an archived directory alone do not prove resolution.
-- Offer selected now, deferred or dismissed choices for the actual batch. Use `harness.evolution.triage` with exact `ObservationIds`, `Disposition=selected|deferred|dismissed`, actual `DecisionSource` and bounded `Scope`. Never infer selection from mere observation or repeated occurrence.
-- Route the selected work by intent: authorized direct maintenance can be implemented directly; a substantial unresolved design enters the normal draft loop and user-led handoff Gates. Selection of the repair scope is not automatic approval of a new formal Change.
-- Preserve raw evidence. After implementing the selected scope, record `Disposition=resolved`, `Result` and exact `Evidence`; this retains the original decision source and scope without asking again. A new recurrence is pending, even if earlier occurrences were resolved.
-- Reconcile an authorized historical batch through the same selected-to-resolved record, naming the existing completion evidence and that this is state reconciliation, not a new repair or test run. Dismiss proven synthetic samples with their reason and preserve their raw files. Do not treat rejection from another Change's scope as proof the underlying problem was fixed.
-- When a selected repair finishes, reconcile its exact observation IDs as part of the same closure. Report what was repaired, historically reconciled, excluded or left open; do not rely on a Change archive to update the inbox automatically.
-- Corrupt records and unknown IDs are explicit errors. Triage is serialized and validated before publication; do not silently classify a partial batch.
+- Resolution requires an actually selected scope, concrete `Result` and nonempty `Evidence` through `harness.evolution.triage -Disposition resolved`. Record the implemented correction, appropriate regression or independent consumer evidence, and proof limits. A handoff, user selection, draft archive or Change directory move is not repair evidence.
+- Preserve pending/deferred/unproven questions when explicitly archiving a draft. Explain their disposition first; archival is a safe move, not a cleanup that silently declares all discussed problems fixed.
+- Report repaired, factually supplemented, dismissed and still-open topics separately. Historical reconciliation must cite actual completion evidence and identify itself as reconciliation, not a new test run.
+- Corrupt records, unknown IDs and changed draft blocks are errors. Queries never repair them; triage validates the selected draft blocks before publication.
 
-## Publish a small update notice
+## Publish the verified workflow update
 
-- Update `harness/updates.json` after a verified workflow release: `revision`, `published_at`, human-readable `summary`, `affected_skills`. Describe changed user-visible behavior, not implementation trivia.
-- `harness.status` reads only this file for update visibility. Missing/invalid metadata appears in `UpdatesIssue` without failing unrelated status. Show the relevant summary at entry/resume and when its revision changes, once per conversation version.
-- No daemon, persistent seen registry, directory hashing or background notification framework is needed. Do not claim an external application was notified unless a real authorized integration sent it.
-
-## Durable closure remains separate
-
-- Exact Change `harness.evolution.status -RequireTerminal` checks its accepted TaskPlan, every attachment's exact INDEX membership and the 120-line limit, indexed issue/review lifecycles, current evaluation digest and closure disposition; use [closure](closure.md). The public archive operation enforces this same automatic check before moving the directory; it adds no user confirmation or global inbox scan.
-- Raw observations are non-blocking until explicitly admitted as an issue owned by the authorized work. A post-archive discovery preserves the archive, enters the inbox/linked draft and awaits the normal user scope and handoff decisions. Never create a successor automatically.
+- After a verified release, update `harness/updates.json`: revision, published_at, human-readable summary and affected_skills. Describe observable changes and their bounds.
+- `harness.status` is the update source; display the revision/summary at entry or when it changes. Missing/invalid metadata is UpdatesIssue. No seen registry, watcher, daemon or external notification is implied.
+- Exact Change terminal checks remain in [closure](closure.md). Ignored topic feedback is non-blocking until admitted as a material issue in the current scope. Post-archive discoveries preserve history and await selected authority; never auto-create a successor.

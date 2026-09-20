@@ -1,6 +1,6 @@
 ---
 name: change-queue
-description: Configure, inspect, or execute an explicit ordered Change queue in the selected Harness workspace. Continue through completed archives, handle feedback and recover an interrupted controller; ordinary chat is sufficient.
+description: Configure, inspect, or execute an explicit ordered Change queue in the selected Harness workspace. Continue through fully persisted closure outcomes, handle feedback and recover an interrupted controller; ordinary chat is sufficient.
 ---
 
 # Change Queue
@@ -24,7 +24,7 @@ description: Configure, inspect, or execute an explicit ordered Change queue in 
 - All Change execution uses the same queue core. Never overwrite/reorder a configured queue or execute preceding members to reach a requested non-head target.
 - The controller captures ordered AuthorizedUids and SourceRef; explicit claim/recovery retains that bound. A tail append does not expand it; changes to its remaining ordered prefix are rejected.
 - Existing occupation by another session needs explicit takeover; a token is not evidence that a chat is alive.
-- For `archive-pending`, advance the completed archive before reading active tasks. `record-blocked` needs investigation, not Ensure plan.
+- For `archive-pending`, register the fully persisted closure before reading the next active tasks, retaining its completed/abandoned/superseded kind. `close-pending` needs exact close recovery; `record-blocked` needs investigation, not Ensure plan.
 
 ## Execute the current Change and process feedback
 
@@ -41,12 +41,11 @@ description: Configure, inspect, or execute an explicit ordered Change queue in 
 
 ## Close and continue the authorized range
 
-- After verification, commit only owned plugin paths through `git.commit` with `PluginsOnly` and `PreserveOutsideStaged`. Main-repository commits remain user-directed.
-- Capture actual baseline/result repository identities in `harness.queue.checkpoint` before the final closure evaluation.
-- Complete required spec synchronization and the existing terminal/archive protocol. No automatic Review.
-- Advance only after the exact Change has a `completed` archive; interrupted archive-to-advance transitions are recoverable.
+- After verification and applicable spec sync, present Harness's [full close explanation](../harness/references/closure.md): design versus result, actual proof, exact code/record/Git selection, excluded workspace work and post-close state. Actually submit the per-item selectable close Gate. Queue execution alone does not approve this unseen content.
+- `harness.change.close` saves the shown plugin and canonical parent content, checkpoints source identity, verifies, archives and commits the canonical result. Incomplete outcomes first preserve the shown incomplete implementation and then apply/prove/commit their exact withdrawal/carryover. Normal hooks and outside staging remain protected; no automatic Review.
+- Advance only after full close persistence. An archive directory with a failed canonical commit remains `close-pending`; retry the accepted operation without new implementation, duplicate commits or archive rewriting. Record the actual closure kind; administrative queue exhaustion does not mean abandoned work fulfilled its objective.
 - Repeat until the authorized UID range is exhausted or a real blocker occurs.
-  - A single-item request stops/releases after its completed archive without marking the following queue item started. Appended unapproved work remains pending outside this execution request.
+  - A single-item request stops/releases after its fully persisted closure without marking the following queue item started. Appended unapproved work remains pending outside this execution request.
   - Release on a normal stop while still owning a controller; final advance releases automatically.
   - Report archived, removed and remaining members separately, plus current task progress or `plan-needed`.
 

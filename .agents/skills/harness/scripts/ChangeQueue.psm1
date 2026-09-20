@@ -25,7 +25,7 @@ function Invoke-HarnessChangeQueue {
         if (-not $PreviousControllerStopped) { throw 'Explicit takeover requires confirming the previous controller has stopped.' }
         $processes = Invoke-Harness -Command ue.process.list -Context $selected
         if ($processes.status -ne 'Succeeded') { throw 'Cannot inspect managed Unreal activity before takeover.' }
-        if (@($processes.data | Where-Object { $_.WorkspaceMatch -or [string]::IsNullOrWhiteSpace($_.CommandLine) }).Count) { throw 'Active or unidentified Unreal processes require inspection before takeover.' }
+        if (@($processes.data | Where-Object { $null -ne $_ -and ($_.WorkspaceMatch -or [string]::IsNullOrWhiteSpace($_.CommandLine)) }).Count) { throw 'Active or unidentified Unreal processes require inspection before takeover.' }
     }
     $parameters = @{Changes=$Changes; Change=$Change; ExpectedRevision=$ExpectedRevision; SessionId=$SessionId; Token=$Token; Reason=$Reason; PreviousControllerStopped=[bool]$PreviousControllerStopped}
     if ($PSBoundParameters.ContainsKey('Repositories')) { $parameters.Repositories = $Repositories }

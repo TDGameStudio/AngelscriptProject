@@ -1,0 +1,416 @@
+# Independent explanation consumer — actual trace
+
+Read scope: only the raw fixture and current owning Skill files. No active Change plans, other consumers, or prior reports were read. Seven branches are independent. All host events below are synthetic delivery records; pending/rendered unknown is neither a user answer nor proof that a popup rendered.
+
+Owning instructions actually read: explaining-work/SKILL.md and references/improvement.md, method.md, source-walkthrough.md; harness/SKILL.md and references/evolution.md; openspec/references/knowledge.md; grill/SKILL.md and references/hosts.md, rounds.md, brief.md, coverage.md; brainstorming/references/drafts.md; system skill-creator/SKILL.md.
+
+Source read: knowledge-fixture.md, including the entire finish/may_advance pseudocode, each branch contract, supplied INDEX/entry descriptions, each request, and each unfinished-discussion return point. These are the complete synthetic evidence; no real source, execution state, Git result, or failure is inferred. The fixture supplies virtual INDEX/entry content for branches 1, 2, 5, 6 and empty relevant coverage for 4, 7. Only case 4 is materialized as capability knowledge. Case 3 does not explicitly assign an INDEX state, so no branch-specific INDEX read is claimed.
+
+Workspace boundary: D:/Workspace/AngelscriptProject is the selected project; writes are confined to this knowledge-cases replica. Harness Context/status were deliberately not invoked under the evaluation restriction. No production WorkspaceId or live status revision is claimed.
+
+## Case 1 — eval-method-gap
+
+Actual simulated user-facing explanation:
+
+我会用“按下收尾按钮之后”的顺序解释。示例没有提供按钮回调，所以“按钮进入 finish”只是按你描述的入口来读，不能当成已检查过的界面调用链。已经提供的知识索引指向 stages.md；它也把这里分成代码提交、移动目录和记录提交三个阶段。
+
+收尾的目的是把这批次的实现和记录都保存成提交。finish 负责执行三个步骤，may_advance 负责读取保存结果，判断能否开始下一项。代码里的顺序是：
+
+```python
+# 来源：fixture/checkpoint 的伪代码；下面只增加说明，没有改变顺序。
+def finish(state):
+    state.code_saved = commit_selected_code()  # 提交选中的实现，并记录返回结果。
+    move_record_to_archive()                   # 把记录目录移到 archive；这一步不是记录提交。
+    state.records_saved = commit_selected_records()  # 提交选中的记录，保存这次目录变动。
+    return state.code_saved and state.records_saved  # 两项提交都成功，才报告完成。
+
+def may_advance(state):
+    return state.code_saved and state.records_saved  # 下一项使用同一条件。
+```
+
+例如，选中的代码已经提交，记录目录也已移入 archive，但记录提交返回失败：此时 code_saved 为 true，records_saved 为 false。目录看起来已经归档，finish 仍返回 false，may_advance 也返回 false。等两项提交结果都为 true，两个函数才返回 true。这个例子说明“看见归档目录”和“完成收尾”为什么不是同一时点；它是按伪代码推演的状态，并非已观察到的运行。
+
+伪代码没有显示异常处理、重试，或下一项由谁启动，因此这些行为仍未知。先前只列函数名漏掉了各阶段改变什么；本轮补上这个联系，并把这条说明反馈保留在当前收尾讨论里。工具不作修改，原来的“批次何时应当收尾”讨论继续保持未完成。
+
+Host request actually submitted:
+```json
+{
+  "type": "note",
+  "case": 1,
+  "source": "eval-method-gap",
+  "content": "我会用“按下收尾按钮之后”的顺序解释。示例没有提供按钮回调，所以“按钮进入 finish”只是按你描述的入口来读，不能当成已检查过的界面调用链。已经提供的知识索引指向 stages.md；它也把这里分成代码提交、移动目录和记录提交三个阶段。\n\n收尾的目的是把这批次的实现和记录都保存成提交。finish 负责执行三个步骤，may_advance 负责读取保存结果，判断能否开始下一项。代码里的顺序是：\n\n```python\n# 来源：fixture/checkpoint 的伪代码；下面只增加说明，没有改变顺序。\ndef finish(state):\n    state.code_saved = commit_selected_code()  # 提交选中的实现，并记录返回结果。\n    move_record_to_archive()                   # 把记录目录移到 archive；这一步不是记录提交。\n    state.records_saved = commit_selected_records()  # 提交选中的记录，保存这次目录变动。\n    return state.code_saved and state.records_saved  # 两项提交都成功，才报告完成。\n\ndef may_advance(state):\n    return state.code_saved and state.records_saved  # 下一项使用同一条件。\n```\n\n例如，选中的代码已经提交，记录目录也已移入 archive，但记录提交返回失败：此时 code_saved 为 true，records_saved 为 false。目录看起来已经归档，finish 仍返回 false，may_advance 也返回 false。等两项提交结果都为 true，两个函数才返回 true。这个例子说明“看见归档目录”和“完成收尾”为什么不是同一时点；它是按伪代码推演的状态，并非已观察到的运行。\n\n伪代码没有显示异常处理、重试，或下一项由谁启动，因此这些行为仍未知。先前只列函数名漏掉了各阶段改变什么；本轮补上这个联系，并把这条说明反馈保留在当前收尾讨论里。工具不作修改，原来的“批次何时应当收尾”讨论继续保持未完成。"
+}
+```
+Host returned:
+```json
+{
+  "status": "recorded"
+}
+```
+
+Authorized scratch record action: wrote case-01/openspec/drafts/fixture/checkpoint-discussion/README.md, CONTEXT.md and designs/understanding/design.md. No harness.observe was invoked: the evaluation prohibits live lifecycle/status operations; these are isolated topic replicas, not production observation IDs.
+
+Record choice: Source、完整契约与现有 stages.md 一致；本次解释缺了顺序和阶段效果。保留解释方法改进信号；尚未证明通用 Skill 或工具缺陷，也未选择其修复。
+
+Return point: 回到批次收尾时点的未完成讨论；原准确问题未提供，不伪造新选择题或收尾决定。当前解释没有新的必要偏好问题。
+
+## Case 2 — eval-ambiguous
+
+Actual simulated user-facing explanation:
+
+这里“保存”需要先分清对象。已读取的知识说明和伪代码一致：code_saved 记录选中代码提交的结果；records_saved 记录选中记录提交的结果。移动目录只是让记录位于 archive，不会单独满足这两个提交结果都为真的条件。
+
+所以，“保存失败”和“画面还没显示”目前都只是可能的解释。现有材料没有提供你的具体状态，也没有界面刷新逻辑：我不能从你看不到某项就判断数据丢失，也不能保证它只是显示延迟。若你指的是代码提交，需要核对的是 code_saved 对应操作的结果；若你指的是归档记录，需要区分目录已经移动与 records_saved 对应操作是否成功；若你指的是画面显示，需要另外看到界面读的是什么状态。这里的核对点是证据方向，不表示这些检查已经运行。
+
+在获得更多信息前，我只按“保存”可能指向不同对象来解释，不把其中一种当作故障结论。当前批次收尾讨论的继续点仍保留。
+
+Host request actually submitted:
+```json
+{
+  "type": "note",
+  "case": 2,
+  "source": "eval-ambiguous",
+  "content": "这里“保存”需要先分清对象。已读取的知识说明和伪代码一致：code_saved 记录选中代码提交的结果；records_saved 记录选中记录提交的结果。移动目录只是让记录位于 archive，不会单独满足这两个提交结果都为真的条件。\n\n所以，“保存失败”和“画面还没显示”目前都只是可能的解释。现有材料没有提供你的具体状态，也没有界面刷新逻辑：我不能从你看不到某项就判断数据丢失，也不能保证它只是显示延迟。若你指的是代码提交，需要核对的是 code_saved 对应操作的结果；若你指的是归档记录，需要区分目录已经移动与 records_saved 对应操作是否成功；若你指的是画面显示，需要另外看到界面读的是什么状态。这里的核对点是证据方向，不表示这些检查已经运行。\n\n在获得更多信息前，我只按“保存”可能指向不同对象来解释，不把其中一种当作故障结论。当前批次收尾讨论的继续点仍保留。"
+}
+```
+Host returned:
+```json
+{
+  "status": "recorded"
+}
+```
+
+Host request actually submitted:
+```json
+{
+  "type": "question",
+  "case": 2,
+  "source": "eval-ambiguous",
+  "tool": "request_user_input",
+  "purpose": "optional-clarification",
+  "questions": [
+    {
+      "header": "保存对象",
+      "id": "save_meaning",
+      "question": "你这里说的“保存”主要指哪一项？如方便，请在补充里说明当时看到了什么状态。",
+      "options": [
+        {
+          "label": "代码提交",
+          "description": "解释实现代码的提交结果和 code_saved。"
+        },
+        {
+          "label": "归档记录",
+          "description": "区分目录移动与记录提交结果 records_saved。"
+        },
+        {
+          "label": "界面显示",
+          "description": "先明确界面现象；现有伪代码没有刷新逻辑。"
+        }
+      ]
+    }
+  ]
+}
+```
+Host returned:
+```json
+{
+  "status": "pending",
+  "id": "Q2",
+  "rendered": "unknown"
+}
+```
+
+Authorized scratch record action: wrote case-02/openspec/drafts/fixture/checkpoint-discussion/README.md, CONTEXT.md and designs/understanding/design.md. No harness.observe was invoked: the evaluation prohibits live lifecycle/status operations; these are isolated topic replicas, not production observation IDs.
+
+Record choice: 现有知识与 source/contract 一致；“保存”的指代和具体观察缺失，原因未证明。未宣称数据丢失、界面延迟或工具缺陷。
+
+Return point: 等待可选澄清；若无回答，保留分对象解释，继续原讨论时不得把工作假设写成已确认事实。未构成必答行为批准或正式 Gate。
+
+## Case 3 — eval-intended-contract
+
+Actual simulated user-facing explanation:
+
+当前伪代码的答案很明确：需要等两项提交成功。finish 先提交代码，再移动记录目录，最后提交记录；finish 和 may_advance 都返回 code_saved and records_saved。只移动到 archive，不会让这个条件变成真。示例没有提供按钮调用者、异常恢复或真实运行结果。
+
+但这一分支的要求只有“Archive makes the item ready for the next step”。其中 ready 没有定义，archive 也可能指目录移动，或指包含记录提交的完整归档过程。因此，代码告诉我们“现在按什么条件推进”，这句话还不能单独证明“原要求一定要这样”。我不会直接把要求改成与代码一致。
+
+可以把需要澄清的两种结果放到同一例子中：选中代码提交成功、记录已移动、记录提交尚未成功。若 ready 指“两项提交都完成”，这时下一项仍等待，当前 AND 判断符合它，主要缺的是把 ready 定义清楚。若 ready 指“代码已提交且记录移到 archive”，这时下一项就能开始，但记录提交还可能没有完成；这将改变 may_advance 的准入条件，需要再讨论如何承担记录未提交的状态。若你实际想把代码提交也移出准入条件，那是更进一步的设计变化，现有一句要求尚未明确授权。
+
+我建议把 ready 定义为两项提交都成功，因为这样本批次实现和记录都持久保存后才进入下一项，也符合当前伪代码；只有你明确希望下一项与记录提交重叠进行，这个建议才需要改变。这里是在澄清期望，不是批准修改代码或正式收尾。
+
+Host request actually submitted:
+```json
+{
+  "type": "note",
+  "case": 3,
+  "source": "eval-intended-contract",
+  "content": "当前伪代码的答案很明确：需要等两项提交成功。finish 先提交代码，再移动记录目录，最后提交记录；finish 和 may_advance 都返回 code_saved and records_saved。只移动到 archive，不会让这个条件变成真。示例没有提供按钮调用者、异常恢复或真实运行结果。\n\n但这一分支的要求只有“Archive makes the item ready for the next step”。其中 ready 没有定义，archive 也可能指目录移动，或指包含记录提交的完整归档过程。因此，代码告诉我们“现在按什么条件推进”，这句话还不能单独证明“原要求一定要这样”。我不会直接把要求改成与代码一致。\n\n可以把需要澄清的两种结果放到同一例子中：选中代码提交成功、记录已移动、记录提交尚未成功。若 ready 指“两项提交都完成”，这时下一项仍等待，当前 AND 判断符合它，主要缺的是把 ready 定义清楚。若 ready 指“代码已提交且记录移到 archive”，这时下一项就能开始，但记录提交还可能没有完成；这将改变 may_advance 的准入条件，需要再讨论如何承担记录未提交的状态。若你实际想把代码提交也移出准入条件，那是更进一步的设计变化，现有一句要求尚未明确授权。\n\n我建议把 ready 定义为两项提交都成功，因为这样本批次实现和记录都持久保存后才进入下一项，也符合当前伪代码；只有你明确希望下一项与记录提交重叠进行，这个建议才需要改变。这里是在澄清期望，不是批准修改代码或正式收尾。"
+}
+```
+Host returned:
+```json
+{
+  "status": "recorded"
+}
+```
+
+Host request actually submitted:
+```json
+{
+  "type": "question",
+  "case": 3,
+  "source": "eval-intended-contract",
+  "tool": "request_user_input_async",
+  "purpose": "consequential-design-clarification",
+  "questions": [
+    {
+      "header": "ready 的含义",
+      "id": "ready_contract",
+      "question": "在“代码已提交、记录已移入 archive、记录尚未提交”这个时点，你希望下一项能否开始？",
+      "options": [
+        {
+          "label": "等两项提交完成",
+          "description": "沿用当前准入条件，把 ready 明确为代码和记录都已提交；这是我的建议。"
+        },
+        {
+          "label": "目录移动后可开始",
+          "description": "代码提交已完成时允许提前推进；记录提交尚未完成的责任和恢复方式需要后续讨论。"
+        },
+        {
+          "label": "继续澄清要求",
+          "description": "暂不选定行为，先继续解释 ready 或补充原要求背景。"
+        }
+      ]
+    }
+  ]
+}
+```
+Host returned:
+```json
+{
+  "status": "pending",
+  "id": "Q4",
+  "rendered": "unknown"
+}
+```
+
+Authorized scratch record action: wrote case-03/openspec/drafts/fixture/checkpoint-discussion/README.md, CONTEXT.md and designs/understanding/design.md. No harness.observe was invoked: the evaluation prohibits live lifecycle/status operations; these are isolated topic replicas, not production observation IDs.
+
+Record choice: 当前实现规则可判定；期望契约中的 archive/ready 含义不清。应澄清意图，不能以代码静默修订要求。本分支未明确知识 INDEX 状态，不冒称已读取其实体。
+
+Return point: 等待 ready_contract 的真实答案；不得实施依赖该答案的行为或规格改变。返回原批次收尾讨论，尚无 Create/Replan/close 版本或授权。
+
+Case 4 admission source check: materialized the fixture's empty relevant INDEX in the isolated capability directory, then actually read it:
+```markdown
+# fixture/checkpoint 知识索引
+
+本分支尚无相关条目。
+```
+Read the full synthetic contract and source again from knowledge-fixture.md before publication. Authority is the explicit eval-knowledge-publish request; no new permission or Change is needed for this bounded factual addition.
+
+Case 4 actual verification: reread the written INDEX.md and stages.md; stages.md is the only knowledge article and is indexed exactly once; the condition and phase order were compared to the provided pseudocode/full contract. No behavior regression, runtime run, real Git operation, or later-consumer reuse is claimed.
+
+## Case 4 — eval-knowledge-publish
+
+Actual simulated user-facing explanation:
+
+已把这段事实说明补进隔离示例能力的知识库，并维护了索引。文章是 case-04/openspec/specs/fixture/checkpoint/knowledges/stages.md，INDEX.md 中仅登记一次，状态为 current，来源是这次请求提供的伪代码、完整契约和代表性状态推演。
+
+文章保留了三个不同效果：代码提交保存选中的实现；目录移动把记录放到 archive；记录提交保存这次记录变动。finish 和 may_advance 都要求 code_saved 与 records_saved 同时为 true，所以目录已经归档但记录提交未成功时，下一项仍不能开始。
+
+我已回读文章与索引，核对调用顺序、AND 条件和示例状态；此次只补充事实说明，没有改变行为，也没有把这个合成示例宣称为真实 Git 恢复实现。这个文档动作已完成，原来关于批次何时收尾的讨论仍保持开放。
+
+Host request actually submitted:
+```json
+{
+  "type": "note",
+  "case": 4,
+  "source": "eval-knowledge-publish",
+  "content": "已把这段事实说明补进隔离示例能力的知识库，并维护了索引。文章是 case-04/openspec/specs/fixture/checkpoint/knowledges/stages.md，INDEX.md 中仅登记一次，状态为 current，来源是这次请求提供的伪代码、完整契约和代表性状态推演。\n\n文章保留了三个不同效果：代码提交保存选中的实现；目录移动把记录放到 archive；记录提交保存这次记录变动。finish 和 may_advance 都要求 code_saved 与 records_saved 同时为 true，所以目录已经归档但记录提交未成功时，下一项仍不能开始。\n\n我已回读文章与索引，核对调用顺序、AND 条件和示例状态；此次只补充事实说明，没有改变行为，也没有把这个合成示例宣称为真实 Git 恢复实现。这个文档动作已完成，原来关于批次何时收尾的讨论仍保持开放。"
+}
+```
+Host returned:
+```json
+{
+  "status": "recorded"
+}
+```
+
+Authorized scratch record action: wrote case-04/openspec/drafts/fixture/checkpoint-discussion/README.md, CONTEXT.md and designs/understanding/design.md. No harness.observe was invoked: the evaluation prohibits live lifecycle/status operations; these are isolated topic replicas, not production observation IDs.
+
+Record choice: 拥有明确范围的 factual knowledge addition；原 relevant INDEX 无条目。事实由 source、完整 contract 与代表性例子建立，不需要捏造行为故障或额外 RED/GREEN。
+
+Return point: 事实补充已经完成；继续原未完成的批次收尾讨论。用户“理解了”不等于 Create/Replan/close 决定。等待另行提供的 later reuse prompt，不预设该问题或答案。
+
+## Case 5 — eval-retrieval
+
+Actual simulated user-facing explanation:
+
+找到了：这个分支提供的知识 INDEX 已经链接 stages.md，我这次读取了它的正文。它写的正是：“代码提交保存实现；目录移动把记录放到归档位置；记录提交保存这次移动；推进要求两项提交。”这与当前伪代码和完整契约一致，应该直接使用这篇解释，不另写同义文章。
+
+沿着它的三个阶段看，finish 先把 commit_selected_code 的结果写入 code_saved，再移动记录目录，最后把 commit_selected_records 的结果写入 records_saved。may_advance 随后读取这两个结果；它不拿“目录已经在 archive 里”作为充分条件。例如代码提交成功、记录目录已移动、记录提交失败时，true and false 仍为 false，所以这批次未完成，下一项也不能开始。这是代码条件的推演，不是运行观测。
+
+前一次解释没有读到已有文章，问题是已有知识没有被检索使用；不是这个知识库缺文章。已经把这个检索遗漏及其来源留在当前主题，保留原来的批次收尾讨论继续点，不新增文章，也不据此修改通用工具。
+
+Host request actually submitted:
+```json
+{
+  "type": "note",
+  "case": 5,
+  "source": "eval-retrieval",
+  "content": "找到了：这个分支提供的知识 INDEX 已经链接 stages.md，我这次读取了它的正文。它写的正是：“代码提交保存实现；目录移动把记录放到归档位置；记录提交保存这次移动；推进要求两项提交。”这与当前伪代码和完整契约一致，应该直接使用这篇解释，不另写同义文章。\n\n沿着它的三个阶段看，finish 先把 commit_selected_code 的结果写入 code_saved，再移动记录目录，最后把 commit_selected_records 的结果写入 records_saved。may_advance 随后读取这两个结果；它不拿“目录已经在 archive 里”作为充分条件。例如代码提交成功、记录目录已移动、记录提交失败时，true and false 仍为 false，所以这批次未完成，下一项也不能开始。这是代码条件的推演，不是运行观测。\n\n前一次解释没有读到已有文章，问题是已有知识没有被检索使用；不是这个知识库缺文章。已经把这个检索遗漏及其来源留在当前主题，保留原来的批次收尾讨论继续点，不新增文章，也不据此修改通用工具。"
+}
+```
+Host returned:
+```json
+{
+  "status": "recorded"
+}
+```
+
+Authorized scratch record action: wrote case-05/openspec/drafts/fixture/checkpoint-discussion/README.md, CONTEXT.md and designs/understanding/design.md. No harness.observe was invoked: the evaluation prohibits live lifecycle/status operations; these are isolated topic replicas, not production observation IDs.
+
+Record choice: 用户与 fixture 明确给出 preceding explanation missed retrieval；本次实际读 supplied INDEX/entry 内容并与 source/contract 核对。已有内容适用，非知识缺口。
+
+Return point: 回到原批次收尾时点讨论；未给出新的必要用户选择，不制造理解测试或交接选择。
+
+## Case 6 — eval-conflict
+
+Actual simulated user-facing explanation:
+
+差别就在“目录移动是否足以让下一项开始”。这个分支的知识文章说，记录移动到 archive 就足够。当前伪代码却要求 code_saved and records_saved，完整契约也明确说选中代码和记录都要提交，单独移动目录不算完成。
+
+用同一个状态核对：代码已提交，记录已移到 archive，记录提交结果仍为 false。按这篇文章，已经能推进；按 may_advance，true and false 为 false，不能推进；按完整契约，也尚未完成。因此，这篇文章在这个示例、这份源代码和这份契约下不能作为准入条件的可靠说明，当前事实解释应使用“两项提交完成”这一条件。
+
+这能证明材料之间存在冲突，还不能证明文章为什么写成那样：可能属于旧版本，也可能把完整归档和目录移动混在一起，现有材料没有历史证据。我先把冲突原文、反例及需要核对的来源留在当前讨论：后续应检查文章对应的 source/contract 版本及其定义，再决定修订还是标记过时。这个请求只要求解释和留问题，本轮不覆盖文章，不修改规格或行为。原收尾时点讨论继续保持开放。
+
+Host request actually submitted:
+```json
+{
+  "type": "note",
+  "case": 6,
+  "source": "eval-conflict",
+  "content": "差别就在“目录移动是否足以让下一项开始”。这个分支的知识文章说，记录移动到 archive 就足够。当前伪代码却要求 code_saved and records_saved，完整契约也明确说选中代码和记录都要提交，单独移动目录不算完成。\n\n用同一个状态核对：代码已提交，记录已移到 archive，记录提交结果仍为 false。按这篇文章，已经能推进；按 may_advance，true and false 为 false，不能推进；按完整契约，也尚未完成。因此，这篇文章在这个示例、这份源代码和这份契约下不能作为准入条件的可靠说明，当前事实解释应使用“两项提交完成”这一条件。\n\n这能证明材料之间存在冲突，还不能证明文章为什么写成那样：可能属于旧版本，也可能把完整归档和目录移动混在一起，现有材料没有历史证据。我先把冲突原文、反例及需要核对的来源留在当前讨论：后续应检查文章对应的 source/contract 版本及其定义，再决定修订还是标记过时。这个请求只要求解释和留问题，本轮不覆盖文章，不修改规格或行为。原收尾时点讨论继续保持开放。"
+}
+```
+Host returned:
+```json
+{
+  "status": "recorded"
+}
+```
+
+Authorized scratch record action: wrote case-06/openspec/drafts/fixture/checkpoint-discussion/README.md, CONTEXT.md and designs/understanding/design.md. No harness.observe was invoked: the evaluation prohibits live lifecycle/status operations; these are isolated topic replicas, not production observation IDs.
+
+Record choice: 知识文章 Moving records to archive is sufficient to advance 与当前 source 和完整 contract 冲突。冲突已证实；文章成因、版本适用性及修订范围未证实。
+
+Return point: 保留原未完成批次收尾讨论与未选定知识修订；当前事实可按 source/contract 说明，但不能宣布一般缺陷已修复。
+
+## Case 7 — eval-no-authority
+
+Actual simulated user-facing explanation:
+
+这次只把知识候选和来源留在隔离讨论草稿中。现有完整契约与伪代码支持的事实是：finish 先提交代码、再移动记录目录、再提交记录；finish 和 may_advance 都要求两项提交结果同时为 true。目录已经移入 archive，而 records_saved 仍为 false 时，当前条件仍不允许下一项开始。
+
+这个分支的知识索引没有对应条目，因此“给以后补一篇三阶段说明”可以作为知识候选。但你已明确现在只讨论并记录，我不会把候选写进能力知识库、索引、规格或工具。草稿会保留这段事实的证据、适用范围和待选定状态；记录它不会改变行为，也不代表已经发布或修复。
+
+原来的批次收尾时点讨论仍然保留，本轮没有新增实施决定。
+
+Host request actually submitted:
+```json
+{
+  "type": "note",
+  "case": 7,
+  "source": "eval-no-authority",
+  "content": "这次只把知识候选和来源留在隔离讨论草稿中。现有完整契约与伪代码支持的事实是：finish 先提交代码、再移动记录目录、再提交记录；finish 和 may_advance 都要求两项提交结果同时为 true。目录已经移入 archive，而 records_saved 仍为 false 时，当前条件仍不允许下一项开始。\n\n这个分支的知识索引没有对应条目，因此“给以后补一篇三阶段说明”可以作为知识候选。但你已明确现在只讨论并记录，我不会把候选写进能力知识库、索引、规格或工具。草稿会保留这段事实的证据、适用范围和待选定状态；记录它不会改变行为，也不代表已经发布或修复。\n\n原来的批次收尾时点讨论仍然保留，本轮没有新增实施决定。"
+}
+```
+Host returned:
+```json
+{
+  "status": "recorded"
+}
+```
+
+Authorized scratch record action: wrote case-07/openspec/drafts/fixture/checkpoint-discussion/README.md, CONTEXT.md and designs/understanding/design.md. No harness.observe was invoked: the evaluation prohibits live lifecycle/status operations; these are isolated topic replicas, not production observation IDs.
+
+Record choice: Verified reusable fact missing from relevant INDEX；未来 factual knowledge candidate，当前明确未授权能力文档或行为修改。允许的讨论记录不等于知识发布。
+
+Return point: 继续原未完成批次收尾讨论，待用户将来另行选择事实补充范围。没有造出 Change、Gate、归档或结案决定。
+
+## Final actual state and proof limits
+
+Seven independent requests were processed. Actual host notes contain the explanations; actual question events were submitted only for case 2 (optional reference clarification) and case 3 (consequential intended-contract clarification). Both remain pending with rendered unknown. No user response was invented and no pending form was treated as approval.
+
+Cases 1, 5 and 6 read and used the provided existing-entry content; case 2 did likewise while preserving ambiguity. Case 4 alone writes a capability article/index, under existing explicit authority. Case 7 remains draft-only. Case 3 does not silently rewrite the ambiguous contract. All branches retain the unfinished batch-closure discussion; no Create, Replan, close, status, Git, UE, or actual user-input tools were invoked.
+
+The scratch drafts preserve concise source/question/result/return points. trace.md is the expressly requested evaluation transcript, not a newly prescribed project feedback ledger. events.jsonl is produced by the authorized host adapter.
+
+This verifies the consumer's source-based explanations and bounded artifact actions against the synthetic fixtures. It does not prove real runtime behavior, a real UI popup rendering, actual user understanding, general Skill defect repair, or later independent knowledge reuse. The later reuse prompt has not been supplied; no response to it is invented. Awaiting that separate prompt.
+
+## Transport note
+
+The first local host invocation failed before recording any event. A bounded diagnostic exposed `UnicodeEncodeError` while the host wrote the UTF-8 JSON event because its stdin was decoded using the default Windows encoding. `events.jsonl` was still empty. The caller was corrected to invoke the supplied host with Python `-X utf8`, preserving the host implementation; the seven-case run then completed. This is an evaluation transport issue, not evidence about the synthetic checkpoint behavior or the explaining-work Skill. No failed event was reported as delivered.
+
+
+## Round 8 — eval-knowledge-reuse (later independent question in case 4)
+
+Actual new user request: “后来我又看到一项工作的记录已经在 archive，代码提交也成功了，但 records_saved 还是 false。这次你根据这个能力现在的资料给我讲讲，它算完成了吗，接下来处于什么状态？”
+
+Actual reads in this round, in order: case-04/openspec/specs/fixture/checkpoint/knowledges/INDEX.md; linked stages.md; original knowledge-fixture.md source/full contract; case-04 topic CONTEXT.md only to preserve the existing return point. No other case outputs were read as evidence. The execution script independently read INDEX, article and fixture again and checked the same condition and full contract. Source of the new input state is the user's scenario, not runtime telemetry.
+
+Actual simulated user-facing explanation:
+
+按你给出的状态，它还不算完成，也尚不允许进入下一项。
+
+我重新读取了这个能力现在的 INDEX.md，并沿链接读了刚补入的 stages.md，再与原始伪代码和完整契约核对。文章仍适用：代码提交、记录目录移动和记录提交是三个不同效果，推进要求代码和记录的提交结果都为真。
+
+把你这次的状态放回这三个阶段：代码提交成功，对应 code_saved 为 true；记录已经位于 archive，说明你看到目录移动的结果；但 records_saved 仍为 false，所以还没有满足“记录提交成功”这一条件。目录所在位置无法替代这个条件。
+
+```python
+# 来源：fixture/checkpoint 伪代码；代入你给出的状态。
+def may_advance(state):
+    return state.code_saved and state.records_saved
+    #          true         and       false        -> false
+```
+
+finish 在返回处也使用同一个表达式。因此，若以你给出的这组值到达它的返回处，返回值也会是 false。这里说的是条件推演，不是声称我看到了 finish 已经执行完或返回失败。
+
+接下来能确定的状态是：“收尾尚未满足完成条件，当前推进条件为 false，记录提交成功这一项仍未满足。”这是一段描述，不是示例中定义过的状态枚举。要让完成与推进条件成立，需要 code_saved 继续为 true，同时 records_saved 变为 true。
+
+材料没有给出记录提交是否仍在执行、是否失败、为什么为 false，也没有给出恢复 API、重试方式或幂等性。因此，不能仅凭这个标记说下一步自动重试、重新运行 finish、撤回目录，或保证重复执行安全；目前也不能判断数据丢失。若要决定真实执行动作，需要相应提交操作的结果及恢复实现。原来的批次收尾讨论仍保留，这次解释没有作出实际收尾、推进或行为修改决定。
+
+Actual adapter note submitted:
+```json
+{
+  "type": "note",
+  "case": 8,
+  "source": "eval-knowledge-reuse",
+  "content": "按你给出的状态，它还不算完成，也尚不允许进入下一项。\n\n我重新读取了这个能力现在的 INDEX.md，并沿链接读了刚补入的 stages.md，再与原始伪代码和完整契约核对。文章仍适用：代码提交、记录目录移动和记录提交是三个不同效果，推进要求代码和记录的提交结果都为真。\n\n把你这次的状态放回这三个阶段：代码提交成功，对应 code_saved 为 true；记录已经位于 archive，说明你看到目录移动的结果；但 records_saved 仍为 false，所以还没有满足“记录提交成功”这一条件。目录所在位置无法替代这个条件。\n\n```python\n# 来源：fixture/checkpoint 伪代码；代入你给出的状态。\ndef may_advance(state):\n    return state.code_saved and state.records_saved\n    #          true         and       false        -> false\n```\n\nfinish 在返回处也使用同一个表达式。因此，若以你给出的这组值到达它的返回处，返回值也会是 false。这里说的是条件推演，不是声称我看到了 finish 已经执行完或返回失败。\n\n接下来能确定的状态是：“收尾尚未满足完成条件，当前推进条件为 false，记录提交成功这一项仍未满足。”这是一段描述，不是示例中定义过的状态枚举。要让完成与推进条件成立，需要 code_saved 继续为 true，同时 records_saved 变为 true。\n\n材料没有给出记录提交是否仍在执行、是否失败、为什么为 false，也没有给出恢复 API、重试方式或幂等性。因此，不能仅凭这个标记说下一步自动重试、重新运行 finish、撤回目录，或保证重复执行安全；目前也不能判断数据丢失。若要决定真实执行动作，需要相应提交操作的结果及恢复实现。原来的批次收尾讨论仍保留，这次解释没有作出实际收尾、推进或行为修改决定。"
+}
+```
+Host returned:
+```json
+{
+  "status": "recorded"
+}
+```
+
+Record choices and actions: reused existing case-04 article; no duplicate knowledge, article edit or index edit. Appended the new source and bounded question to the existing case-04 topic. The knowledge model was actually applied to the supplied state; the AND condition is false. There is no unresolved preference needed to answer this factual question, so no new question form or comprehension quiz was submitted. No failure cause or recovery design was invented.
+
+Return point: the original discussion about when a batch should close remains unfinished. Case 4 factual publication is complete, and this later question has been answered from its published model. No new Create/Replan/close approval, convergence, implementation instruction, or user-understanding feedback exists.
+
+## Eight-round actual outcome
+
+1. Replaced a symbol-only explanation with the three stages and their condition; retained a possible explanation-method signal without declaring a general defect.
+2. Explained multiple meanings of “save” and actually submitted optional clarification; no runtime cause inferred. Q2 remains pending/rendered unknown.
+3. Distinguished clear code behavior from ambiguous intended “ready”; actually submitted the consequential intended-contract question. Q4 remains pending/rendered unknown; no contract rewritten.
+4. Used explicit authority to create one factual stages.md and one matching INDEX entry in the isolated capability. Read both back; did not require an unrelated behavior failure or new approval.
+5. Read and applied supplied existing knowledge, retaining missed-retrieval feedback without a duplicate article.
+6. Explained article/source/contract conflict using the same counterexample and retained the unresolved provenance question; no repair was selected or applied.
+7. Preserved a factual candidate in the topic only under the explicit no-document/no-behavior instruction.
+8. Actually reread the case-04 published INDEX/article and current synthetic source/contract, then applied the three-stage model to code_saved=true and records_saved=false. Completion is unmet and advancement is false; execution/recovery status beyond that is unknown.
+
+Proof: eight simulated explanations were submitted to the host, two actual synthetic forms were requested, seven independent topic replicas exist, and only case 4 contains a capability knowledge article/index. The later reuse is evidenced by actual artifact reads and application, not by an assertion that reuse happened. This is the same consumer in a later round, not a fresh-context consumer or proof of retained user understanding.
+
+Limits: synthetic source/contract only; no real project runtime, Git persistence, production publication, UI rendering, approval, recovery API, retry safety, idempotency, user comprehension, or broad Skill defect repair was proved. The two earlier pending forms remain unanswered; events are synthetic and cannot approve a real action. All writes remained under knowledge-cases. No actual usertools, status, lifecycle, Git, or UE operations were used. The requested eight-round evaluation is complete; stop here rather than inventing further work.

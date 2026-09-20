@@ -13,6 +13,7 @@ description: Take an active OpenSpec Change from created to implemented - write 
   - A newly created/applied handoff must complete its purpose-specific arrangement Gate before Ensure plan or implementation; an older binding is insufficient. A current wait choice permits state inspection, not planning or execution under an earlier request.
   - Query again at task/closure boundaries and after long calls; triage input before mutation and pause implementation for unresolved Change decisions.
 - Keep planning and implementation responsibilities distinct.
+  - New Create/Replan already committed its complete accepted planning before the execution arrangement. Ensure plan validates that plan; historical missing artifacts retain their accepted recovery path. A pending formal-record commit blocks implementation even if other arrangement answers exist.
   - Ensure plan stops and reports when the handoff lacks a user-owned decision or a public name that neither recorded vocabulary nor convention settles. Route that planning issue through Update.
   - Implementation does not ask the user directly. Derive omitted implementation names from convention and record `Naming assumed`; route a newly surfaced user-owned decision through Update and its explained Grill.
 
@@ -67,6 +68,7 @@ description: Take an active OpenSpec Change from created to implemented - write 
 ## Return to the authorized loop
 
 - Run strict validation and report completed/total plus the next Ready nodes.
+- Preserve code changes for the normal final explained close; do not default to a commit after each task or checkpoint old code during Replan. Use Harness [closure](../harness/references/closure.md) for the full result comparison, exact Git scope and actual selectable approval before commits/archive.
 - Apply never asks the user questions inside implementation. Hand planning-invalidating decisions to Update, which may open/reuse a linked design draft and calls independent `grill`; implementation waits for the actual Replan and arrangement Gates.
 - Preserve valid work and the exact task return position. After the approved Replan and current execution arrangement, return to that position in the authorized loop. This handoff does not end the execution request or expand its scope.
 

@@ -149,6 +149,41 @@ Before asking the handoff Gate, the agent MUST follow the dedicated `harness/ref
 
 Harness SHALL expose the existing small updates notice and retain actual sources for workflow friction and explanation-improvement signals in canonical topic drafts. New upgrade findings MUST use the existing README/CONTEXT/design/research structure without a parallel Saved raw-observation, triage or inbox ledger. Historical observations remain readable and are not automatically migrated or deleted. Queries MUST remain read-only. Source capture, scope selection, handoff and verified improvement MUST remain distinct facts. An understanding signal with an unproven cause MUST remain a question or hypothesis rather than a proven Skill defect.
 
+#### Scenario: Collect and group observations
+
+- **WHEN** concrete sourced workflow friction or an explanation-improvement question is captured
+- **THEN** harness.observe writes the bounded finding and actual sources into its canonical topic draft, reusing its known owner and scope
+- **AND** grouped queries remain read-only and no new Saved observation, triage or inbox ledger is created
+- **BUT** ordinary compilation failures, expected RED, unfamiliarity and cancellation are not inherently workflow defects
+
+#### Scenario: Isolate synthetic observation measurements
+
+- **GIVEN** performance measurements may query an explicitly selected real Change
+- **WHEN** the benchmark measures the observation write route
+- **THEN** it writes and validates the real draft artifact only in an isolated fixture root, leaving the selected project's feedback unchanged
+- **AND** isolation does not replace the measurement with a no-op
+
+#### Scenario: Reconcile historical feedback with exact evidence
+
+- **GIVEN** the user authorizes a batch containing historical observations
+- **WHEN** the agent checks each actual source and exact linked issue, task and final evidence
+- **THEN** it distinguishes unresolved questions, historically completed corrections and synthetic measurements, retaining new treatment in an active owning topic
+- **AND** selected-to-resolved reconciliation cites existing evidence and identifies itself without claiming a new repair or test run
+- **BUT** rejection from another scope does not establish repair, and historical raw records and immutable archives remain unchanged
+
+#### Scenario: Explain local feedback retention
+
+- **WHEN** the user asks whether feedback survives sessions, cleanup or clones
+- **THEN** the agent explains that new topic drafts and historical Saved feedback are Git-ignored local records
+- **AND** admitted Change evidence and verified reusable outcomes follow their maintained record/knowledge owners
+- **BUT** an update notice or Git commit does not back up ignored pending questions and no automatic migration is implied
+
+#### Scenario: Preserve an immutable archive
+
+- **WHEN** a new workflow question is discovered after archive
+- **THEN** it enters an active topic draft without changing the archive or automatically creating a successor Change
+- **AND** formal repair uses user-led convergence and both handoff Gates; already authorized direct maintenance proceeds within its existing scope
+
 #### Scenario: Capture only a topic draft
 
 - **WHEN** concrete sourced workflow friction is captured during execution
@@ -188,6 +223,7 @@ Each primary or replica workspace SHALL own an explicit ordered Change queue und
 - **GIVEN** the current workspace has an approved ordered queue A then B
 - **WHEN** the user asks to execute until finished
 - **THEN** the agent claims that queue, completes A through required verification and completed archive, advances to B, ensures missing planning from approved material, and continues until exhaustion or a concrete blocker
+- **AND** the explained exact close decision and all required Git stages must complete before that advancement; incomplete outcomes retain their separately approved truth
 
 #### Scenario: Preserve Task DAG progress during feedback
 - **WHEN** feedback invalidates accepted planning truth
@@ -246,6 +282,22 @@ Reusable harness knowledge MUST be loaded progressively and promoted explicitly.
 - **THEN** the agent reads the owning capability INDEX and relevant current entry, checks applicability and uses that content in the causal explanation
 - **AND** existing suitable knowledge is reused rather than duplicated, and an invalidated entry is updated or superseded with provenance while archived sources remain immutable
 
+
+### Requirement: Shared records and execution evidence
+
+#### Scenario: Close verified plugin work without committing the primary
+
+- **WHEN** the selected plugin stage of an approved close executes
+- **THEN** exact owned plugin commits preserve unrelated staged content and leave primary HEAD unchanged during that stage
+- **AND** source identities, applicable spec synchronization, terminal checks and native archive precede the separately shown canonical-record commit; only its successful persistence permits advancement
+
+### Requirement: Queue ownership and recovery
+
+#### Scenario: Advance after archive interruption
+
+- **WHEN** an exact approved completed, abandoned or superseded closure has fully persisted its required Git stages but queue registration was interrupted
+- **THEN** the controller can register that actual closure kind and advance within its authorized range without repeating completed work
+- **BUT** an archive with pending Git or withdrawal stages cannot advance and does not authorize its replacement
 
 ## ADDED Requirements
 

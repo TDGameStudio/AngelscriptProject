@@ -37,6 +37,9 @@ foreach ($name in @(
         'Harness.PS7',
         'HarnessDraft.PS7',
         'HarnessChangeGate.PS7',
+        'HarnessClosure.PS7',
+        'HarnessIncompleteClosure.PS7',
+        'HarnessLifecycle.PS7',
         'HarnessHandoff.PS7',
         'HarnessRecording.PS7',
         'HarnessEvolution.PS7',
@@ -56,7 +59,7 @@ foreach ($name in @(
         'UnrealRemovalProcessInspection.PS7')) {
     Assert-True ($name -in @($quick.Name)) "Quick profile contains $name"
 }
-Assert-Equal 25 @($quick).Count 'Quick profile includes workflow, queue, replica, feedback, mutation and peripheral boundary fixtures'
+Assert-Equal 28 @($quick).Count 'Quick profile includes workflow, queue, replica, feedback, mutation, lifecycle closure and peripheral boundary fixtures'
 Assert-Equal '-Tag|ExternalAdmission' ((@($quick | Where-Object Name -eq 'UnrealExternalAdmission.PS7')[0].Arguments | Select-Object -Last 2) -join '|') 'the external UBT check executes its focused admission cases'
 Assert-Equal 0 @($quick | Where-Object Name -match 'PS5|WindowsPowerShell').Count 'Quick exposes no legacy host check'
 
@@ -71,7 +74,7 @@ foreach ($name in @('Harness.Installation', 'OpenSpec.Doctor', 'OpenSpec.Workflo
 foreach ($name in @('HarnessPerformance.PS7')) {
     Assert-True ($name -in @($integration.Name)) "Integration contains $name"
 }
-Assert-Equal 30 @($integration).Count 'Integration contains twenty-five scripts, one performance run, and four route checks'
+Assert-Equal 33 @($integration).Count 'Integration contains twenty-eight scripts, one performance run, and four route checks'
 Assert-Equal 1 @($integration | Where-Object Name -eq 'UnrealIntegration.PS7').Count 'Integration contains the fixture-only Unreal route gate exactly once'
 Assert-Equal $quick.Count @($integration | Where-Object Kind -eq 'Script').Count 'Integration keeps the complete Quick script matrix'
 Assert-Equal $performance.Count @($integration | Where-Object Kind -eq 'Performance').Count 'Integration includes the complete Performance matrix'

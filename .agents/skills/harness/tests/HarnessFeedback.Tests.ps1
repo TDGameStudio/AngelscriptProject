@@ -7,7 +7,7 @@ $fixture = Join-Path $project ('Saved/AgentTemp/harness-feedback-' + [guid]::New
 function Assert-True($Condition, $Message) { if (-not $Condition) { throw $Message } }
 function Assert-Throws([scriptblock]$Action, $Message) { try { & $Action | Out-Null } catch { return }; throw $Message }
 & git -C $fixture init --quiet
-[IO.File]::WriteAllText((Join-Path $fixture '.gitignore'), "Saved/`n")
+[IO.File]::WriteAllText((Join-Path $fixture '.gitignore'), "Saved/`nopenspec/drafts/`nopenspec/archive/drafts/`n")
 & git -C $fixture add .gitignore
 & git -C $fixture -c user.name=Fixture -c user.email=fixture@example.invalid commit --quiet -m 'Fixture'
 $context = [pscustomobject]@{ WorkspaceRoot=$fixture; HarnessRoot=$project; PrimaryRoot=$fixture; GitCommonDir=(Join-Path $fixture '.git'); Topology='Primary'; Branch='fixture'; Head=(& git -C $fixture rev-parse HEAD) }
@@ -15,6 +15,8 @@ $module = Import-Module (Join-Path $project '.agents/skills/harness/scripts/Harn
 $observed = Invoke-Harness harness.observe -Context $context -Parameters @{Category='Explain';Summary='Missing caller explanation';SourceRef='user:1';DedupKey='missing-callers';OwnerDraftId='harness/explain'}
 if ($observed.status -ne 'Succeeded') { throw "Public observe failed: $($observed.error.message)" }
 $first = $observed.data
+Assert-True ($first.Path.Replace('\','/').Contains('/openspec/drafts/')) 'New sourced feedback must live directly in its topic draft.'
+Assert-True (-not (Test-Path (Join-Path $fixture 'Saved/Harness/Observations'))) 'New capture must not create a Saved observation ledger.'
 $second = & $module { param($c) Add-HarnessObservation -Context $c -Category Explain -Summary 'Repeated caller omission' -SourceRef 'user:2' -DedupKey 'missing-callers' } $context
 $read = { & $module { param($c) Get-HarnessEvolutionStatus -Context $c -InboxOnly -Limit 1 } $context }
 $inbox = & $read
@@ -36,7 +38,11 @@ Assert-True ($resolved.Groups[0].Status -eq 'resolved' -and $resolved.Groups[0].
 & $module { param($c) Add-HarnessObservation -Context $c -Category Explain -Summary 'Recurrence' -SourceRef 'user:4' -DedupKey 'missing-callers' } $context | Out-Null
 Assert-True ((& $read).Groups[0].Status -eq 'pending') 'New recurrence must not inherit resolved disposition.'
 Assert-Throws { Set-HarnessEvolutionTriage -Context $context -ObservationIds @('missing') -Disposition dismissed -DecisionSource 'user:5' -Scope 'Noise' } 'Unknown observation must not be classified.'
-Assert-True (Test-Path -LiteralPath (Join-Path $fixture 'Saved/Harness/Observations/INBOX.md')) 'Mutation should render a human-readable inbox.'
+Assert-True (-not (Test-Path -LiteralPath (Join-Path $fixture 'Saved/Harness/Observations'))) 'Capture and triage must not produce a second ledger.'
+Assert-True ([IO.File]::ReadAllText($first.Path).Contains('user:4')) 'The owning design retains readable actual sources for recurrence.'
+Assert-True (-not (Test-Path (Join-Path $fixture 'openspec/changes')) -and -not (Test-Path (Join-Path $fixture 'Saved/Harness/ChangeQueue'))) 'Feedback-only capture does not create a Change or queue.'
+Assert-True ([IO.File]::ReadAllText($first.Path).Contains('causes remain unproven')) 'An understanding signal must not be labeled a proven Skill defect.'
+Assert-Throws { & $module { param($c) Add-HarnessObservation -Context $c -Category Explain -Summary 'No source' } $context } 'Capture must retain an actual source, not invent one.'
 $legacyPaths = @(foreach ($store in @('Harness','Hardness')) {
     $directory = Join-Path $fixture "Saved/$store/Observations"
     [void][IO.Directory]::CreateDirectory($directory)
@@ -52,16 +58,16 @@ foreach ($store in @('Harness','Hardness')) {
     Assert-True ($legacyGroup.Count -eq 1 -and $legacyGroup[0].Count -eq 1 -and $legacyGroup[0].Status -eq 'pending') 'Legacy observations must remain individually addressable without a dedup key.'
     Assert-True ($null -eq $legacyGroup[0].Occurrences[0].SourceRef -and $null -eq $legacyGroup[0].Occurrences[0].OwnerDraftId) 'Missing legacy metadata must stay unset rather than inventing provenance.'
 }
-Set-HarnessEvolutionTriage -Context $context -ObservationIds @('legacy-Harness','legacy-Hardness') -Disposition selected -DecisionSource 'user:legacy' -Scope 'Inspect legacy observations' | Out-Null
+Assert-Throws { Set-HarnessEvolutionTriage -Context $context -ObservationIds @('legacy-Harness','legacy-Hardness') -Disposition selected -DecisionSource 'user:legacy' -Scope 'Inspect legacy observations' } 'Historical observations remain read-only without automatic migration or new ledger writes.'
 $legacyAfter = @($legacyPaths | ForEach-Object { (Get-FileHash -LiteralPath $_).Hash }) -join ':'
 Assert-True ($legacyBefore -eq $legacyAfter) 'Reading and triaging legacy observations must not rewrite their raw files.'
 $badObservation = Join-Path $fixture 'Saved/Harness/Observations/bad-json.json'
 [IO.File]::WriteAllText($badObservation, '{bad')
 $badInbox = Get-HarnessFeedbackInbox -Context $context
 Assert-True ($badInbox.Issues.Count -eq 1 -and $badInbox.Issues[0] -like 'bad-json.json:*') 'Malformed JSON must still produce an inbox read issue.'
-$triageBefore = @(Get-ChildItem -LiteralPath (Join-Path $fixture 'Saved/Harness/Observations/triage') -Filter '*.json' -File).Count
+$triageBefore = @(Get-ChildItem -LiteralPath (Join-Path $fixture 'Saved/Harness/Observations') -Recurse -File).Count
 Assert-Throws { Set-HarnessEvolutionTriage -Context $context -ObservationIds @('legacy-Harness') -Disposition dismissed -DecisionSource 'user:bad' -Scope 'Blocked read' } 'Malformed JSON must still block triage.'
-$triageAfter = @(Get-ChildItem -LiteralPath (Join-Path $fixture 'Saved/Harness/Observations/triage') -Filter '*.json' -File).Count
+$triageAfter = @(Get-ChildItem -LiteralPath (Join-Path $fixture 'Saved/Harness/Observations') -Recurse -File).Count
 Assert-True ($triageBefore -eq $triageAfter) 'A blocked triage must not create a decision record.'
 $notice = Get-HarnessUpdateNotice -HarnessRoot $fixture
 Assert-True ($null -eq $notice.Updates -and $notice.UpdatesIssue) 'Missing update notice should be reported nonfatally.'

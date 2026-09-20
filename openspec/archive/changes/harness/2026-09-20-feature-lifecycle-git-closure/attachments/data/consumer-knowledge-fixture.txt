@@ -1,0 +1,29 @@
+# Isolated raw explanation scenarios
+
+All cases concern a synthetic documentation example `fixture/checkpoint`, not the real project. Each branch is independent. Source and spec excerpts below are the entire fixture evidence; do not query real execution or invent a runtime result. Any article/draft candidate belongs only under this evaluation's scratch replica. Current production Skills govern how to respond, but these excerpts do not instruct the consumer's answer.
+
+Source excerpt (pseudocode labelled as such):
+```python
+def finish(state):
+    state.code_saved = commit_selected_code()
+    move_record_to_archive()
+    state.records_saved = commit_selected_records()
+    return state.code_saved and state.records_saved
+
+def may_advance(state):
+    return state.code_saved and state.records_saved
+```
+
+Contract excerpt: “A completed finish requires the selected code and selected records to be committed. A record directory move alone is not completion.”
+
+Known entry in the knowledge-present branches: INDEX links `stages.md`; that article says “Code commit saves the implementation; a directory move places records under archive; records commit persists that move. Advancement requires both commits.” Status current, source the same pseudocode and contract. Knowledge-missing branches have an INDEX with no relevant entry. This is a factual synthetic example, not a verified implementation of actual Git recovery.
+
+1. Source `eval-method-gap`: Known entry present. User: “你只列 finish、may_advance 这些名字，我还是没懂。请按我按下收尾按钮后发生的顺序讲，先别改工具。”
+2. Source `eval-ambiguous`: Known entry present. User: “保存这里我不理解，可能是丢了，也可能只是还没显示。你说的到底是什么？” No concrete observed state or which save the user means has been supplied.
+3. Source `eval-intended-contract`: Source as above; replace the contract with “Archive makes the item ready for the next step”, with no definition of ready. User: “归档之后到底应该允许下一项，还是要等提交？我没看明白原来的要求，帮我理一下。”
+4. Source `eval-knowledge-publish`: Knowledge missing; full contract as above. User: “这三个阶段的区别我理解了。请把这段事实说明补进这个能力的知识库，顺便维护索引，不改变行为。”
+5. Source `eval-retrieval`: Known entry present but the preceding fixture explanation did not read it. User: “我记得知识库已经有这个解释，你先找来讲清楚，别再写一篇一样的。”
+6. Source `eval-conflict`: Known entry exists, but its text instead says “Moving records to archive is sufficient to advance”; source and full contract remain as above. User: “这篇文章和你说的不一样，我没搞懂哪个才对。先解释差别，把问题留下来。”
+7. Source `eval-no-authority`: Knowledge missing; full contract as above. User: “这个知识点以后可以补，但现在只讨论并记下来，先别改文档和行为。”
+
+Each branch's return point is an unfinished discussion about when a work batch should close. No branch has actual Create/Replan/close approval or permission to change production files. Case 4 permits factual publication only in the isolated example's capability directory. A later reuse message will be supplied separately; do not invent it or its answer.

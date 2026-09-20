@@ -5,7 +5,7 @@ description: "Inspect and explain how a system, component, function or workflow 
 
 ## Explain how the system works
 
-- Establish what the user needs to understand, then inspect the relevant code, records and evidence. Explain the mechanism and its purpose, rather than starting from a diagram type.
+- Establish what the user needs to understand, then inspect the relevant source, current specification and the owning capability's `knowledges/INDEX.md`; read a relevant entry before deriving a new explanation. Record absent or conflicting knowledge honestly. Explain the mechanism and its purpose, rather than starting from a diagram type.
 - Use this Skill directly for a system question, or let [grill](../grill/SKILL.md) consume its explanation before a decision round and after an answer changes the design.
 - Keep the question's full relevant architecture visible: responsibilities, terms, important relationships, current behavior and proposed changes. Do not compress an unfamiliar mechanism into internal shorthand.
 - Write for a reader encountering this system for the first time. Supply the background needed to follow the cause and effect, define terms through concrete responsibilities and examples, and retain the technical detail that makes the explanation accurate. Use plain language without a childish tone or assuming prior project knowledge.
@@ -23,7 +23,7 @@ description: "Inspect and explain how a system, component, function or workflow 
 - Keep necessary explanation in the conversation. A saved diagram, shell output or file link cannot replace an explanation the user can read before answering.
 - Do not impose a word count, recursion depth, diagram count or compulsory set of headings. Depth follows the question and the mechanism's actual boundaries.
 - A single fact or already-clear operation needs no diagram. Complex questions must not lose important detail to satisfy a brevity preference.
-- If the user is still unsure, expose the missing concept with one concrete state change or contrasting case, then reconnect it to the relevant architecture. Follow the reader-repair guidance in [the method](references/method.md); repeating more of the same shorthand does not repair understanding.
+- “What does this mean?”, “I did not understand”, or a request to explain again enters the [explanation-driven improvement loop](references/improvement.md). Give a concrete state change or contrasting case, reconnect it to the relevant architecture, and retain the sourced improvement question in its topic draft. Ordinary unfamiliarity is not a proven defect; distinguish method, spec clarity, missing knowledge, missed retrieval and an unproven cause.
 
 ## Work with Grill and other tools
 
@@ -31,7 +31,7 @@ description: "Inspect and explain how a system, component, function or workflow 
 - When explaining a prepared Create or Replan, follow Harness's [handoff Gate](../harness/references/handoff-gate.md). Supply its current and proposed architecture with a concrete end-to-end example; Harness owns the exact preview and decision, while this Skill makes the mechanism understandable before the question.
 - After each answer, show the resulting relevant architecture and terminology in the conversation, including affected relationships, behavior and remaining uncertainty. Reuse valid background, but do not replace this with “recorded” or “the file is updated.”
 - Grill owns choices and questions. This Skill supplies facts, explanations and concrete views; it neither proposes handoff on its own nor interprets understanding as approval.
-- A standalone explanation does not automatically open a draft, create or update a Change, enqueue work or mutate implementation. Follow the user's request and the caller's record ownership.
+- A standalone factual explanation does not automatically create a draft, Change or queue item. Understanding feedback is a sourced improvement signal: reuse the caller's topic draft, or let Harness capture a bounded topic, without inventing a formal Change. Capture and explanation never authorize unrelated Skill/spec/implementation edits. Preserve the original work or Gate return point.
 - Use Harness queries for live task, queue and run state. `harness.observe` records workflow observations; it is not a system-explanation or live-status query.
 - Use [systematic-debugging](../systematic-debugging/SKILL.md) for an unexplained failure. Explaining the mechanism supports diagnosis but does not prove a root cause.
 - Use the existing Archify Skill when a durable navigable or exportable HTML diagram materially helps. The explanation and evidence still belong here; do not expand the ASCII catalog merely to make this Skill larger.

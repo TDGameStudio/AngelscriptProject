@@ -1,0 +1,670 @@
+# Independent consumer trace — after-gates
+
+This is an isolated behavioral simulation. Chinese passages below are the actual simulated turn explanations and visible-text fallbacks sent as notes to the conversation host. They were not presented to the real project user as live approval requests. Simulated form submissions are executed through conversation_host.py; no native lifecycle, Git or real user-input tools are called. Host responses are retained verbatim as JSON. A pending or accepted adapter response does not establish that any real popup rendered.
+
+All branches are independent. No approval from one branch carries into another. Only the supplied fixture facts, the task's host conditions, and the current owning Skills are used. Unknown data is identified rather than filled in. This trace is explicitly requested evaluation evidence, not a new mandatory production transcript artifact.
+
+### global / source-reads / note
+
+Source reads (actual, before simulation):
+- C:/Users/scottmei/.codex/skills/.system/skill-creator/SKILL.md — Independent Forward-Testing and bounded isolation.
+- .agents/skills/harness/SKILL.md — shared routing, exact handoff and close boundaries.
+- .agents/skills/harness/references/handoff-gate.md — full explanation, exact candidate revision, Git scope, actual permitted Gate.
+- .agents/skills/harness/references/closure.md — result explanation, scoped local commits/archive, partial recovery, terminal evidence and ownership.
+- .agents/skills/harness/references/discussions.md — receipt/provenance, planning talks, separate arrangement ownership.
+- .agents/skills/harness/references/verification.md — proportionate proof and distinction between protocol checks and observed consumer behavior.
+- .agents/skills/openspec-create-change/SKILL.md — creation planning persistence and later arrangement.
+- .agents/skills/openspec-update-change/SKILL.md — retained completed task, candidate/provenance persistence and later arrangement.
+- .agents/skills/openspec-archive-change/SKILL.md — explicit closure kind and immutable native archive.
+- .agents/skills/grill/SKILL.md — continuing discussion and user-owned convergence.
+- .agents/skills/grill/references/hosts.md — approval-capable tool selection, cancelled/default handling, visible final fallback.
+- .agents/skills/grill/references/rounds.md — reuse pending question; no invented question or convergence on an empty frontier.
+- .agents/skills/grill/references/coverage.md — affected choices and investigation coverage.
+- .agents/skills/grill/references/brief.md — current whole relevant architecture after answers.
+- .agents/skills/explaining-work/SKILL.md and references/method.md — distinguish missing relationship from proven cause; explain observable state transitions.
+- Saved/AgentTemp/lifecycle-consumers/gate-fixture.md — only raw scenario artifact read.
+
+The shared user-supplied AGENTS.md and selected-workspace path were already in context. No actual Change tasks/INDEX, current planning, implementation, other evaluation reports or conversation-host source were read. AGENTS/Harness entry status and source inspection are not executed in this isolated synthetic exercise; WorkspaceRoot is the supplied D:/Workspace/AngelscriptProject, while a real resolved WorkspaceId/OpenSpecRoot and update revision are unavailable. No values are invented.
+
+Record decisions: the trace owns requested evaluation transcripts. In a real discussion, the existing topic's CONTEXT/design would own consequential rationale; an existing Replan talk would own concise impact/provenance and resume task; a successful handoff's purpose-specific followup would own later arrangement answers; an actual close operation would own its close receipt/journal. None exists as a new live output in this test. No extra GATE.md, mirrored production transcript, real approval receipt, or production draft is created.
+
+Fixture limits: branch names, full patches/bytes, runtime Context/session/talk IDs, actual prior convergence source, Replan/Close commit-message strings, and live native evaluation results are not given. Supplied preview identities are synthetic inputs, not tool calls or independent validation. Existing candidate summaries can be explained but not falsely expanded into unseen source, exact hash values or named functions. The fixture supplies isolated proving-script names, not invocation paths/arguments; no invented commands are run.
+
+
+**Observed adapter response**
+
+```text
+{"status": "recorded"}
+```
+
+### Create / 1-explanation / note
+
+用户输入（场景给定）：请把这个版本完整解释给我，再让我决定。
+
+**Change 创建前的完整解释｜尚未确认**
+
+这轮讲解的是 `harness/feature-fixture-release-closure` 的合成预览 `fixture-create-v1`。它仍是待选方案；夹具明确三个任务都未实现。当前用户要先看完整解释再决定，因此本轮只解释已经给出的候选预览并提交模拟选择，不把这句话记录成创建批准。夹具也没有给出先前收敛消息，不能给真实 Gate 填造 ConvergenceSource。
+
+问题来自一次发布收尾：项目包含父 Git 仓库和可编辑的 `Plugins/Foo` 子模块。Git 提交把某个仓库选定的文件内容保存成可追踪版本；子模块有自己的历史，父仓库只保存它指向哪个子模块版本。Change 是这次工作的正式记录目录，保存目的、设计、任务、规范和证据索引。归档只是把完成的 Change 从活动目录移到归档目录，本身不等于保存代码历史。
+
+旧命令会先写 release report，再移动 Change 到 archive，插件代码和父仓库记录却都没有被提交。于是用户看见“发布记录已归档”，工作区还堆着没有保存到 Git 历史的改动。这个对应关系缺失正是候选设计要修复的边界：只有工作结果、完成记录以及父仓库指向的插件版本全部保存后，队列才可以进入后续工作。
+
+下面是夹具支持的工作流关系，箭头表示执行顺序；旧入口的真实函数名、内部数据字段、分支名没有提供，因此不伪造 C++ 类或实现片段。
+
+```text
+当前：发布收尾请求 -> 旧命令写 release report -> 移动活动 Change 到 archive
+                                                插件代码和父记录未提交
+
+拟议完成流程：收尾请求 -> 精确 close 预览与结果确认
+                      -> 保存所选插件代码提交
+                      -> 原生归档已验证的 Change
+                      -> 保存所选父代码、规范、归档记录和插件指针
+                      -> 所有保存成功后，队列才可继续
+```
+
+插件仓库负责保存自己的代码；父仓库负责保存属于它的代码、正式记录和 `Plugins/Foo` 指针；原生 archive 负责确定的记录移动；close 协调这些阶段和失败后的恢复；队列消费 close 是否完整完成的状态。保留的职责是各仓库各自拥有历史、原生 archive 拥有移动动作；新增或改变的是按精确范围保存及完整成功才推进的约束。具体发布例子里，插件提交成功后如果父提交失败，已经保存的插件提交和已经移动的归档仍是事实，但 close 尚未完整完成，队列不能跳走。恢复应沿原操作完成剩余阶段，不能把归档存在误读成完成证据。
+
+这次“创建”先保存的是计划，未来完成收尾时才保存实现。候选文件的对应关系是：`proposal.md` 解释为什么要避免发布改动长期未保存；`design.md` 定义上面的收尾顺序及失败保留；`tasks.md` 把工作排成 1.1 精确 Git 范围夹具 -> 1.2 收尾恢复夹具 -> 1.3 解释和文档，后项依赖前项；`specs/harness/fixture/spec.md` 固化完整持久化、保留无关暂存内容、父提交失败阻止推进这三项行为。`attachments/INDEX.md` 让设计/handoff 导出等附件可以按目的找到。夹具说所需导出完整，没有给出更多逐项清单，因此不声称会复制所有研究或整个草稿。
+
+这组任务将用隔离的 `test-git.ps1` 与 `test-close.ps1` 证明范围与恢复：所选内容能保存，无关暂存的 `outside.txt` 不进入此次提交；父提交失败时仍阻止队列前进，保留已成功阶段可恢复。Create 分支这些检查尚未运行，不能称为通过。没有 UE 行为影响的证据，不增加 Unreal 构建或全套 Automation 作为本次计划的默认门槛。夹具未提供脚本完整调用参数和每个任务的完整 Task Card；这次只依照给定候选摘要说明，不能替代真实 plan.verify。
+
+从目的比较，继续旧的“报告 + 移动”最简单，但无法满足历史保存；让用户事后手工提交则把完成状态和记录保存交给两个不同时间点，容易留下当前问题；本方案在 close 内按阶段完成，代价是要保留可恢复的阶段状态。这个理由是依据候选行为作出的工程比较，不是假称用户曾正式否决另两个方案。如果目标只要求临时报告、不要求完整保存，该代价的取舍需要重新讨论；本夹具目标明确要求保存。
+
+这一次 Create 的精确 Git 边界是父仓库基线 `parent-P0`，仅选择 `openspec/changes/harness/feature-fixture-release-closure` 这个正式 Change 目录，提交消息为 `Plan fixture release closure`。未完成代码和已暂存的 `outside.txt` 都不属于所选内容。分支名和补丁正文未提供，不在这里猜测。批准该合成预览将意味着把所示完整正式计划及必要导出物化并保存为规划提交；如果规划已经写入但 Git hook 拒绝提交，保持 planning-persist-pending，执行仍被阻止，精确重试沿用原身份和真实决定，不制造第二个 Change。
+
+保存正式计划成功后，才进入独立安排：有来源草稿时决定保留/归档草稿，再决定现在执行还是等待；没有草稿就只有执行选择。本次夹具没有给出来源草稿 ID 或兄弟范围，所以不能替用户宣布草稿将归档、无兄弟范围或可立即执行。创建批准也不批准将来的实现提交；最后完成结果有它自己的具体 close 选择。
+
+**Gate：确认这个版本**
+
+待选对象：`harness/feature-fixture-release-closure`，版本 `fixture-create-v1`。这里的创建选项只批准上述正式计划与所选规划提交；继续讨论会保留未批准候选；暂存此范围会保留返回点。随后通过模拟的可收集批准 async 机制实际提交这三个选择；这次文本本身未作决定。
+
+
+**Observed adapter response**
+
+```text
+{"status": "recorded"}
+```
+
+### Create / 1-question / question
+
+**Actual simulated tool submission**
+
+```json
+{
+  "run": "after-gates",
+  "type": "question",
+  "branch": "Create",
+  "turn": "1-question",
+  "tool": "request_user_input_async",
+  "purpose": "approval",
+  "questions": [
+    {
+      "question": "是否创建 harness/feature-fixture-release-closure 的 fixture-create-v1，并仅保存已解释的正式计划范围？",
+      "options": [
+        "创建这个版本",
+        "继续解释和讨论",
+        "暂存此范围"
+      ]
+    }
+  ]
+}
+```
+
+**Observed adapter response**
+
+```text
+{"status": "pending", "id": "Q3", "rendered": "unknown"}
+```
+
+### Create / 1-state / note
+
+Observed form adapter response: {"status": "pending", "id": "Q3", "rendered": "unknown"}. This is a simulated submission only. No actual answer or approval has arrived; real UI rendering is unknown. No DecisionSource/approval receipt is manufactured. Applicable record ownership and fixture omissions remain as specified above.
+
+**Observed adapter response**
+
+```text
+{"status": "recorded"}
+```
+
+### Create / 2-explanation / note
+
+用户输入（场景给定）：解释还不全面：这里的提交和记录到底怎么对应？没懂，再梳理下。
+
+这指出“文件里的记录”与“Git 保存这些文件”的关系还没讲清楚；没有改变候选方案，也没有批准或要求放弃。现在按同一件发布工作把三个层次放在一起。
+
+正式记录是文件内容，说明目的、设计、任务是否完成以及证据在哪里；Git 提交是把选定内容保存成某个仓库的历史版本；archive 是改变正式记录的位置，表示它退出活动列表。它们可以各自发生，不能互相替代：旧命令移动记录以后，文件仍可能没有提交，所以“在 archive 找得到”不等于“历史已保存”。
+
+|阶段|哪个内容由谁拥有|提交实际保存什么|还没有发生什么|
+|---|---|---|---|
+|当前 Create 候选|父仓库的正式 Change 目录；每个文件各自承担规划或索引职责|尚无本轮实际提交|所有三个任务尚未实现|
+|批准 Create 后|Create 物化 proposal/design/tasks/spec delta/必要导出|父仓库在 parent-P0 上只提交这个目录，消息 `Plan fixture release closure`|未来插件实现没有被保存，执行也尚未获安排|
+|未来任务完成、结果获 close 确认后|Plugins/Foo 拥有插件实现|先在插件仓库保存所选代码|父仓库指针、结果记录仍要后续保存|
+|未来 native archive 后|完成记录移到正式归档目录|移动仍只是文件状态变化|父仓库最终提交可能仍欠缺|
+|未来父仓库最终提交成功|父仓库拥有所选父代码、当前规范、归档记录和插件指针|把结果与引用插件版本一起保存|此时才满足完整 close，可进入队列后续步骤|
+
+举例说，创建的 `tasks.md` 中 1.1、1.2、1.3 都是待完成；那次规划提交真实表达的是“我们承诺做这些任务”，没有冒充“这些任务已通过”。之后任务实施会产生代码及对应完成证据；最终 close 保存的记录则真实表达“这些任务由这些证据证明完成”，并和选定代码版本、父仓库的插件指针对应。夹具没有给出实际提交 SHA 或未来实施内容，不能把这个例子说成已经发生。
+
+整体路径仍是：现在完整候选 -> `fixture-create-v1` 的真实选择 -> 仅规划保存 -> 单独安排 -> 按 1.1、1.2、1.3 实施与验证 -> 将来的精确结果选择 -> 插件提交 -> 原生归档 -> 父结果/记录/指针提交 -> 全部完成才推进。无关 `outside.txt` 和未选内容贯穿所有阶段保留；规划保存失败时等待原请求恢复，未来父结果提交失败时保留已完成阶段并阻止推进。两种失败都不能用“记录已写好”来抹掉“提交还没成功”。
+
+此次解释只是修复概念关系，`fixture-create-v1` 的候选和 Git 范围没有改变。模拟记录只保留用户这次反馈来源及“需要把记录写入、目录移动、仓库持久化分清”的简要原因，归现有主题 CONTEXT/design；不会写一份生产逐字稿，也不会把没有理解归因为已经证实的 Skill 缺陷。仍待原创建问题的真实答案，复用同一待答表单；不发送重复表单，不产生 approval receipt 或 handoff-followup。
+
+
+**Observed adapter response**
+
+```text
+{"status": "recorded"}
+```
+
+### Create / 2-question-state / note
+
+The user requested explanation repair, not a changed design or approval. Retain the same unanswered revision and reuse the existing pending question; no duplicate form is submitted. The next substantive question remains: 是否创建 harness/feature-fixture-release-closure 的 fixture-create-v1，并仅保存已解释的正式计划范围？ Options: 创建这个版本 / 继续解释和讨论 / 暂存此范围. This is a reference to the already submitted question, not an additional submission or a user answer.
+
+**Observed adapter response**
+
+```text
+{"status": "recorded"}
+```
+
+### Create / 3-cancel-and-fallback / note
+
+Host input（场景给定）：已提交表单被取消，没有答案；第一项预先选中。
+
+表单已取消，我没有收到任何选择；预先选中的第一项不代表你提交了它。fixture-create-v1 仍未确认。保留未创建的候选与 fixture-create-v1；没有正式创建、规划提交、草稿归档或任务执行。后续安排 Gate 尚未发生。
+
+**模拟 final-channel 可见文本回退——等待回答**
+
+是否创建 harness/feature-fixture-release-closure 的 fixture-create-v1，并仅保存已解释的正式计划范围？
+
+A. 创建这个版本 — 只许可上一轮完整解释的确切版本及操作范围；仍须真实执行前核对缺失的实际预览资料。
+B. 继续解释和讨论 — 保留工作和候选，继续解释或调整；若内容发生实质变化，先生成新预览再决定。
+C. 暂存此范围 — 保留现状和返回点，暂停这个待选动作。
+
+请用 A、B、C 或文字表达你的选择。仅在你真实回答后处理其含义。
+
+Delivery classification: this complete actionable text is emitted to the simulated final surface through this host note. It is neither another tool form nor an actual user response. No failed/cancelled form is probed again. Rendering of a real Codex final surface is not tested. Pending form becomes cancelled; required decision remains unanswered. A required visible fallback is permitted by hosts.md; it is not relabelled optional clarification. No fresh lifecycle receipt or native action occurs.
+
+
+**Observed adapter response**
+
+```text
+{"status": "recorded"}
+```
+
+### Create / 4-pause / note
+
+用户输入（场景给定）：现在先别执行，我还想看看。
+
+明白，当前先保持这个版本供你继续看。保留未创建的候选与 fixture-create-v1；没有正式创建、规划提交、草稿归档或任务执行。后续安排 Gate 尚未发生。 你这次明确表达的是暂停执行/继续查看，来源就是本条输入；它没有批准 fixture-create-v1，也没有选择放弃、替换或归档草稿。当前解释关系、候选和已有效证据保持不变。
+
+Record-owner decision: record only this actual pause intent and exact return point in the existing owning context/talk or execution-input/checkpoint when operating for real. This simulation writes only this scratch note. Do not mark the proposed Create/Replan/Close as performed; do not invent a successful handoff-followup or record this as its execution-disposition answer before that handoff exists. The cancelled form remains cancelled; the close/create/replan decision is unresolved, with the user now explicitly pausing action. No further question or form is necessary in this turn. The user's '还想看看' keeps discussion available and does not mean abandoned/superseded or automatic draft archive.
+
+
+**Observed adapter response**
+
+```text
+{"status": "recorded"}
+```
+
+### Replan / 1-explanation / note
+
+用户输入（场景给定）：请把这个版本完整解释给我，再让我决定。
+
+**Replan 应用前的完整解释｜尚未确认**
+
+这轮是独立的 `harness/feature-fixture-release-closure` 更新分支，给定预览 `fixture-replan-v1`。现有 Change 仍活动，1.1 已完成且范围证据有效，1.2 因设计漏掉“归档之后、Git 最终提交之前失败”的恢复而暂停。本轮并没有应用新计划或恢复执行；前次收敛消息、真实 TalkId 和哈希值不在夹具中，不能伪造其 provenance。
+
+先分清三种状态：旧命令实际行为是写发布报告后移走 Change，未提交插件或父记录；之前被接受的计划希望把发布结果完整保存，但漏写了归档后父提交失败的恢复；此次拟议修改补上这个恢复边界及 1.2 的证明。已完成的 1.1 是实施事实，有效证据继续保留；候选修订还不是被应用的正式计划。
+
+这套工作流里，插件代码由 `Plugins/Foo` 自己的 Git 仓库保存。父仓库保存父代码、Change 规划与完成记录、当前规范，以及指向某个插件提交的 `Plugins/Foo` 指针。archive 只负责移动完成记录，不能承诺父仓库 Git 保存成功。close 是整个收尾流程的协调入口，队列读取它是否全部完成，决定能否接着执行。漏掉的边界发生在“记录已经移到 archive”与“父仓库提交还没成功”之间。
+
+```text
+旧行为：发布请求 -> 写报告 -> 移动 Change；两仓库结果没有保存
+
+目标整体：发布收尾 -> 所选插件提交 -> 原生归档 -> 所选父结果/记录/指针提交
+                                                         -> 全成功才推进队列
+
+本轮补齐：插件阶段成功 + 归档成功 + 父提交失败
+         -> 保留完成阶段及原操作身份；close 仍未完成
+         -> 精确重试剩余父保存；不重复制造插件提交或改写归档
+```
+
+例如正常 Git hook 拒绝父提交时，归档目录已经存在，用户仍应看见“close 未完成、父保存待恢复”；队列不能仅因目录已移动就执行下一项。重试应保留先前真正成功的阶段，并完成欠缺的保存。这个例子说明为什么只是局部调整实现不够：原接受的设计和 1.2 的验证合同没有包含这段恢复，必须先更新明确承诺，再继续完成任务。夹具没有内部函数、状态字段实现和具体补丁，所以图表达的是已给的工作流设计，而非伪造源代码。
+
+候选修订保留 1.1 的永久 ID、完成标记和仍适用的范围证明，调整 `design.md` 以及 1.2 的证明要求；1.2 后续仍在 1.1 之后，解释/文档 1.3 仍依赖恢复工作。没有给出额外新增 task ID，不能自行附加任务。修改后的证明要覆盖父提交失败阻止推进以及精确恢复；旧 1.1 的范围证据并不自动证明新恢复行为。夹具给出隔离 `test-git.ps1`、`test-close.ps1` 作为证明工具，没有给出 Replan 分支新的运行结果，因此不说修改后的验证已通过。
+
+一个替代方向是遇到这种失败让用户手工重新整理记录和提交；操作少一些，但是否重复归档、保存了哪版结果会离开同一操作的恢复边界。当前候选保留阶段和原身份，有更明确的结果关联，代价是需要维护恢复流程和对应证明。这个是对给定方案的工程评估，不是虚构用户过去的决策历史。若原生 archive 与提交能真正具备全有或全无的跨仓库事务，设计理由可能改变；夹具没有这种保证，不能假定存在。
+
+此次应用 Replan 保存的内容只包括修订后的正式规划和简要来源/影响记录。合成 native preview 已提供完整候选与预期基线哈希，标识为 `fixture-replan-v1`，父仓库基线 `parent-P1`；本轮没有拿到实际字节与具体分支名，也没有具体 commit-message 文本，不补造它们。现存未完成实现保留原状，不做旧代码的额外 checkpoint。未选内容也没有得到提交授权。
+
+应用时，拥有正式规划的父仓库先写入所选修订和 provenance，再保存规划提交；Git 失败会留下 planning-applied/commit-pending，保留同一 Replan 身份、真实答复及有效旧任务，不恢复执行。完全保存成功以后仍要单独决定来源草稿保留/归档以及现在恢复还是等待。现有队列执行请求不能替这个新的安排作答。执行返回点是暂停的 1.2；之后只在有效任务依赖和新的实际安排允许时继续。
+
+**Gate：确认这个版本**
+
+待选对象为上述 Change、`fixture-replan-v1`；“应用此 Replan”只批准所示正式修订及规划保存，不批准重开实现、不批准草稿归档，也不放弃现有工作。继续解释会保留旧正式计划和候选，暂存则保留 1.2 的返回点。下面实际提交模拟选择，等待真实答案。
+
+
+**Observed adapter response**
+
+```text
+{"status": "recorded"}
+```
+
+### Replan / 1-question / question
+
+**Actual simulated tool submission**
+
+```json
+{
+  "run": "after-gates",
+  "type": "question",
+  "branch": "Replan",
+  "turn": "1-question",
+  "tool": "request_user_input_async",
+  "purpose": "approval",
+  "questions": [
+    {
+      "question": "是否应用 harness/feature-fixture-release-closure 的 fixture-replan-v1，只保存正式修订与来源记录，并将执行留待后续安排？",
+      "options": [
+        "应用此 Replan",
+        "继续解释和讨论",
+        "暂存此范围"
+      ]
+    }
+  ]
+}
+```
+
+**Observed adapter response**
+
+```text
+{"status": "pending", "id": "Q10", "rendered": "unknown"}
+```
+
+### Replan / 1-state / note
+
+Observed form adapter response: {"status": "pending", "id": "Q10", "rendered": "unknown"}. This is a simulated submission only. No actual answer or approval has arrived; real UI rendering is unknown. No DecisionSource/approval receipt is manufactured. Applicable record ownership and fixture omissions remain as specified above.
+
+**Observed adapter response**
+
+```text
+{"status": "recorded"}
+```
+
+### Replan / 2-explanation / note
+
+用户输入（场景给定）：解释还不全面：这里的提交和记录到底怎么对应？没懂，再梳理下。
+
+这次要补的是“修订承诺”和“保存实现”的关系。正式 Change 的设计和任务文件是对将来要交付什么、用什么证明的承诺；Replan 的 provenance 记录为什么改动、影响哪些任务、保留哪些证据以及从哪里继续；Git 规划提交把这组文件的一致版本保存进父仓库。它不把 1.2 的未完成代码变成已完成结果。
+
+```text
+已经存在：1.1 完成及有效范围证据 + 旧设计/任务 1.2 + 现存未完成代码
+本次候选：新恢复设计 + 1.2 的新证明要求 + 修订来源/影响说明
+应用保存：只替换获准正式文件/生成 provenance -> 父仓库保存该规划版本
+后续安排：实际选择恢复后，才继续实施 1.2 -> 1.3 -> 验证 -> 最终 close
+最终 close：所选插件代码提交 -> 原生归档 -> 父代码/当前规范/归档记录/插件指针提交
+```
+
+例如 1.1 的有效记录说“精确选择 Git 范围已证明”，它仍有用；新 1.2 记录要求“归档后父提交拒绝仍能恢复”，这句话进入规划提交不代表实验已经成功。之后完成该实验、写入实际证据，最终 close 才把实现与证据记录一起保存成完成结果。原有未完成代码此刻仍在工作区；Replan 不借机先提交它，也不撤回它。
+
+这里存在两处容易混淆的失败。第一次是“Replan 正式记录已应用，但规划提交被拒绝”：修订保存未完成，执行仍阻止，精确重试同一个 Replan。第二次是这个新设计要处理的未来 close 失败：“插件提交成功、Change 已归档，但父结果提交被拒绝”：已归档也不算 close 完整完成，保持原阶段并重试剩余父提交。两者拥有不同记录，却都不能把写文件/移目录当成 Git 成功。
+
+整张相关架构依旧是：父仓库拥有承诺、来源及父结果，子模块拥有插件实现，原生 archive 拥有记录移动，close 协调保存，队列只接纳完整成功。`fixture-replan-v1` 在 `parent-P1` 只选择正式修订/provenance，1.1 保持已完成，1.2 保持暂停，旧实现不动。规划提交后的草稿处置和执行安排另问；当前澄清并未跨过任一边界。
+
+本轮来源只记录“用户要求澄清提交与记录的对应关系”。已有 linked draft 的 CONTEXT/design 适合保留这个关键解释缺口；现有 Change planning talk 只应保留简要影响和 ResumeTask=1.2。由于这次没有设计修改，不能伪造 applied record 或新 revision，不能把用户不理解登记为 abandoned/superseded。原 `fixture-replan-v1` 表单继续待答；复用而不重复提交。
+
+
+**Observed adapter response**
+
+```text
+{"status": "recorded"}
+```
+
+### Replan / 2-question-state / note
+
+The user requested explanation repair, not a changed design or approval. Retain the same unanswered revision and reuse the existing pending question; no duplicate form is submitted. The next substantive question remains: 是否应用 harness/feature-fixture-release-closure 的 fixture-replan-v1，只保存正式修订与来源记录，并将执行留待后续安排？ Options: 应用此 Replan / 继续解释和讨论 / 暂存此范围. This is a reference to the already submitted question, not an additional submission or a user answer.
+
+**Observed adapter response**
+
+```text
+{"status": "recorded"}
+```
+
+### Replan / 3-cancel-and-fallback / note
+
+Host input（场景给定）：已提交表单被取消，没有答案；第一项预先选中。
+
+表单已取消，我没有收到任何选择；预先选中的第一项不代表你提交了它。fixture-replan-v1 仍未确认。保留原接受的规划、已完成 1.1 及有效证据、未完成实现和 1.2 暂停返回点；Replan 未应用、未提交，也未恢复执行。
+
+**模拟 final-channel 可见文本回退——等待回答**
+
+是否应用 harness/feature-fixture-release-closure 的 fixture-replan-v1，只保存正式修订与来源记录，并将执行留待后续安排？
+
+A. 应用此 Replan — 只许可上一轮完整解释的确切版本及操作范围；仍须真实执行前核对缺失的实际预览资料。
+B. 继续解释和讨论 — 保留工作和候选，继续解释或调整；若内容发生实质变化，先生成新预览再决定。
+C. 暂存此范围 — 保留现状和返回点，暂停这个待选动作。
+
+请用 A、B、C 或文字表达你的选择。仅在你真实回答后处理其含义。
+
+Delivery classification: this complete actionable text is emitted to the simulated final surface through this host note. It is neither another tool form nor an actual user response. No failed/cancelled form is probed again. Rendering of a real Codex final surface is not tested. Pending form becomes cancelled; required decision remains unanswered. A required visible fallback is permitted by hosts.md; it is not relabelled optional clarification. No fresh lifecycle receipt or native action occurs.
+
+
+**Observed adapter response**
+
+```text
+{"status": "recorded"}
+```
+
+### Replan / 4-pause / note
+
+用户输入（场景给定）：现在先别执行，我还想看看。
+
+明白，当前先保持这个版本供你继续看。保留原接受的规划、已完成 1.1 及有效证据、未完成实现和 1.2 暂停返回点；Replan 未应用、未提交，也未恢复执行。 你这次明确表达的是暂停执行/继续查看，来源就是本条输入；它没有批准 fixture-replan-v1，也没有选择放弃、替换或归档草稿。当前解释关系、候选和已有效证据保持不变。
+
+Record-owner decision: record only this actual pause intent and exact return point in the existing owning context/talk or execution-input/checkpoint when operating for real. This simulation writes only this scratch note. Do not mark the proposed Create/Replan/Close as performed; do not invent a successful handoff-followup or record this as its execution-disposition answer before that handoff exists. The cancelled form remains cancelled; the close/create/replan decision is unresolved, with the user now explicitly pausing action. No further question or form is necessary in this turn. The user's '还想看看' keeps discussion available and does not mean abandoned/superseded or automatic draft archive.
+
+
+**Observed adapter response**
+
+```text
+{"status": "recorded"}
+```
+
+### Close / 1-explanation / note
+
+用户输入（场景给定）：请把这个版本完整解释给我，再让我决定。
+
+**完成收尾前的完整解释｜尚未确认提交与归档**
+
+本独立分支的待选版本为 `fixture-close-v1`，对应夹具 Change `harness/feature-fixture-release-closure`。先前要求执行队列只覆盖实施范围，没有这个最终内容的 close 回答。本轮解释已完成结果及确切选择，不把这句“再让我决定”当作批准。
+
+原问题是发布报告写好了、Change 也从活动目录移到了 archive，插件改动与父仓库记录却没有保存到 Git。archive 表示正式记录的位置变化，Git commit 表示某个仓库的所选内容进入可追踪历史；两者不是同一个动作。`Plugins/Foo` 是单独仓库，它的代码先在自己的历史里保存，父仓库通过插件指针标识所用版本，再保存父代码与完成记录。
+
+接受的设计要求 close 按顺序保存选定插件代码、移动已验证记录、保存父仓库结果/记录/插件指针。只有全部持久化成功，队列才推进。夹具说明三个任务已经完成、当前 spec delta 已同步，隔离 Git 和 close 夹具在 source `C2` 上通过，没有未解的本范围问题；没有列出实现偏离接受设计的事实。这里区分夹具报告与亲自验证：本轮未运行它们，也没有完整测试日志、终态 evaluation 文件或原生 archived 检查结果，不能宣称真实终态检查已完成。
+
+```text
+旧路径：发布请求 -> 写 release report -> 活动记录移到 archive
+                                      结果仍未提交，历史未完整保存
+
+夹具所报完成路径：精确 close 预览 -> 实际确认
+                 -> Plugins/Foo：保存 release.cpp，F0 -> F1
+                 -> native archive：移动已验证的 Change
+                 -> 父仓库 P2：保存 release-driver.ps1、当前 spec、Change 记录和插件指针
+                 -> 完整持久化成功 -> 队列允许推进
+```
+
+箭头表示阶段顺序。插件仓库拥有 `release.cpp`；父仓库拥有 `release-driver.ps1`、规范与正式记录；原生 archive 拥有确定的移动；close 协调跨阶段恢复；队列消费 complete 状态，不能只看某目录消失。图中的文件归属来自夹具，不包含未给出的具体函数、补丁或分支名称。
+
+取同一次收尾作为例子：插件保存得到 `F1`，随后 Change 被移动到 `openspec/archive/changes/harness/2026-09-20-fixture`；如果正常 Git hook 拒绝父仓库提交，`F1` 和已归档记录保留，close 仍是未完整状态，队列不会进入下一项。原来的精确重试可以完成欠缺的父提交，使用原真实决定和操作身份，不能重复造插件提交、改写已归档证据或把最终父提交 SHA 写进它自身的不可变归档。查询或只读预览都不做恢复。
+
+精确选定内容如下。插件 `F0 -> F1` 只拥有 `release.cpp`；父仓库以 `P2` 为基线选取 `release-driver.ps1`、已同步的当前 spec、此 Change 的记录和 `Plugins/Foo` 指针。这一次同时保存指针有实际作用：父仓库完成记录关联的是刚保存的插件版本，读者可以把实现和证据连起来。已暂存的 `outside.txt`、无关 note edit 都排除；成功后它们仍然未提交、保持现有工作状态。夹具没有具体 patch、分支名、规范全路径和 commit-message 字符串，本模拟不扩写成看过实际 hunk 的声明。
+
+proof 的范围也要对应：隔离 Git 夹具证明精确范围和无关暂存内容保留，close 夹具证明收尾阶段与失败恢复，source `C2` 是夹具给出的结果身份。这里没有 UE 行为变化，也没有跑 UE 测试；这证明不能扩大为 Unreal 运行正确性。没有理由在本次有限影响外追加全套 build/Automation。真实 close 仍须适用的新鲜 terminal evaluation、精确附件索引检查、原生归档后的严格单项校验；夹具没有这些运行输出，所以本模拟不能代为签发通过。
+
+维持旧的“只移动记录”流程更短，但留下未保存的结果；依赖用户手工补齐 Git 会把记录位置与完整完成脱开。本次协调保存增加了阶段和恢复工作，却令失败对队列可见。这个比较解释既定方案的理由，没有虚构额外用户决策。工作已完成的状态不强迫用户现在收尾；继续解释可保持当前结果，留待收尾也不等于放弃。
+
+**Gate：确认这个完成结果**
+
+待选版本 `fixture-close-v1` 的“提交并归档此结果”覆盖上述范围的本地插件/父仓库提交及原生归档，执行后仍留下排除的两项修改；同一选择足以覆盖这些已说明的步骤，不再加一个泛化 Git 提交确认。它没有选择 push、integration 或 workspace deletion。继续解释/调整会保持未批准状态，留待收尾会保留完整工作和返回点。现在通过模拟许可的 async 机制提交这三个选择，等待真实答案。
+
+
+**Observed adapter response**
+
+```text
+{"status": "recorded"}
+```
+
+### Close / 1-question / question
+
+**Actual simulated tool submission**
+
+```json
+{
+  "run": "after-gates",
+  "type": "question",
+  "branch": "Close",
+  "turn": "1-question",
+  "tool": "request_user_input_async",
+  "purpose": "approval",
+  "questions": [
+    {
+      "question": "是否按 fixture-close-v1 提交并归档 harness/feature-fixture-release-closure 的已解释结果，保留排除的 outside.txt 与无关 note edit？",
+      "options": [
+        "提交并归档此结果",
+        "继续解释或调整",
+        "暂不收尾"
+      ]
+    }
+  ]
+}
+```
+
+**Observed adapter response**
+
+```text
+{"status": "pending", "id": "Q17", "rendered": "unknown"}
+```
+
+### Close / 1-state / note
+
+Observed form adapter response: {"status": "pending", "id": "Q17", "rendered": "unknown"}. This is a simulated submission only. No actual answer or approval has arrived; real UI rendering is unknown. No DecisionSource/approval receipt is manufactured. Applicable record ownership and fixture omissions remain as specified above.
+
+**Observed adapter response**
+
+```text
+{"status": "recorded"}
+```
+
+### Close / 2-explanation / note
+
+用户输入（场景给定）：解释还不全面：这里的提交和记录到底怎么对应？没懂，再梳理下。
+
+先把同一次发布结果拆成三份实际东西。第一份是插件的 `release.cpp`，只能由 `Plugins/Foo` 的提交保存成插件版本；第二份是父仓库的 `release-driver.ps1` 和当前 spec，它们需要父提交保存；第三份是说明“做了什么、如何证明、为何结束”的 Change 文件，它们先经 native archive 换位置，再由同一个所选父提交保存。父仓库的 `Plugins/Foo` 指针则把第二、第三份和插件版本连接起来。
+
+|状态|插件历史|正式记录所在位置|父历史|队列含义|
+|---|---|---|---|---|
+|当前尚未 close|所选变化以 F0 -> F1 表示待保存结果|Change 仍是待收尾对象|以 P2 为基线、所选内容待保存|没有这版 close 批准|
+|插件保存成功|release.cpp 已保存为 F1|仍按原生阶段处理|还没完成所选父保存|不能据此推进|
+|原生 archive 成功|F1 保留|位于 openspec/archive/changes/harness/2026-09-20-fixture|归档、父代码/spec/指针仍可能未提交|依然未完整 close|
+|父提交成功|F1 保留|不可变归档保留|父代码、spec、归档记录和指针全部保存|完整持久化后才可推进|
+
+这里 `F1` 是夹具给的符号结果，最后一列是候选操作的阶段语义，不是宣称本模拟做了这些动作。若第三行的父 Git hook 拒绝，文件“已在归档里”是真的，“父历史已经保存完整结果”是假的；close 会保留早期成果，沿同一请求恢复最后保存。最终父提交会包含插件指针，所以读取该父版本时能确定配套插件版本。它不会把自己的最终 SHA 再塞回自己要提交的不可变归档，避免为追写一个结果改变既定归档。
+
+用这张对应关系重看整体：发布收尾请求 -> 精确预览/实际选择 -> 所选插件代码保存 -> 原生归档已验证记录 -> 所选父实现/当前规范/归档/插件指针保存 -> 全部成功后队列继续。source C2 上 Git/close 夹具通过与当前 spec 同步是给定的完成证据；它们不让用户的批准自动出现。`outside.txt` 的无关暂存以及无关 note edit 始终没有被选入，最终仍留在工作区。
+
+本轮没有内容、所有权、baseline 或处置变化，`fixture-close-v1` 仍是同一个待答版本。需要澄清的是解释关系，不能据此认定用户要求 abandoned、superseded 或撤回实现，也不能加旧代码 checkpoint。收尾候选/close journal 才拥有未来真实确认和阶段状态；当前只能在本 scratch trace 记下反馈及未批准返回点。原 async 问题仍待答，不开第二个同题表单。
+
+
+**Observed adapter response**
+
+```text
+{"status": "recorded"}
+```
+
+### Close / 2-question-state / note
+
+The user requested explanation repair, not a changed design or approval. Retain the same unanswered revision and reuse the existing pending question; no duplicate form is submitted. The next substantive question remains: 是否按 fixture-close-v1 提交并归档 harness/feature-fixture-release-closure 的已解释结果，保留排除的 outside.txt 与无关 note edit？ Options: 提交并归档此结果 / 继续解释或调整 / 暂不收尾. This is a reference to the already submitted question, not an additional submission or a user answer.
+
+**Observed adapter response**
+
+```text
+{"status": "recorded"}
+```
+
+### Close / 3-cancel-and-fallback / note
+
+Host input（场景给定）：已提交表单被取消，没有答案；第一项预先选中。
+
+表单已取消，我没有收到任何选择；预先选中的第一项不代表你提交了它。fixture-close-v1 仍未确认。保留 source C2 所报完成结果、尚未批准的 fixture-close-v1 和当前工作状态；没有提交、原生归档或队列推进。
+
+**模拟 final-channel 可见文本回退——等待回答**
+
+是否按 fixture-close-v1 提交并归档 harness/feature-fixture-release-closure 的已解释结果，保留排除的 outside.txt 与无关 note edit？
+
+A. 提交并归档此结果 — 只许可上一轮完整解释的确切版本及操作范围；仍须真实执行前核对缺失的实际预览资料。
+B. 继续解释或调整 — 保留工作和候选，继续解释或调整；若内容发生实质变化，先生成新预览再决定。
+C. 暂不收尾 — 保留现状和返回点，暂停这个待选动作。
+
+请用 A、B、C 或文字表达你的选择。仅在你真实回答后处理其含义。
+
+Delivery classification: this complete actionable text is emitted to the simulated final surface through this host note. It is neither another tool form nor an actual user response. No failed/cancelled form is probed again. Rendering of a real Codex final surface is not tested. Pending form becomes cancelled; required decision remains unanswered. A required visible fallback is permitted by hosts.md; it is not relabelled optional clarification. No fresh lifecycle receipt or native action occurs.
+
+
+**Observed adapter response**
+
+```text
+{"status": "recorded"}
+```
+
+### Close / 4-pause / note
+
+用户输入（场景给定）：现在先别执行，我还想看看。
+
+明白，当前先保持这个版本供你继续看。保留 source C2 所报完成结果、尚未批准的 fixture-close-v1 和当前工作状态；没有提交、原生归档或队列推进。 你这次明确表达的是暂停执行/继续查看，来源就是本条输入；它没有批准 fixture-close-v1，也没有选择放弃、替换或归档草稿。当前解释关系、候选和已有效证据保持不变。
+
+Record-owner decision: record only this actual pause intent and exact return point in the existing owning context/talk or execution-input/checkpoint when operating for real. This simulation writes only this scratch note. Do not mark the proposed Create/Replan/Close as performed; do not invent a successful handoff-followup or record this as its execution-disposition answer before that handoff exists. The cancelled form remains cancelled; the close/create/replan decision is unresolved, with the user now explicitly pausing action. No further question or form is necessary in this turn. The user's '还想看看' keeps discussion available and does not mean abandoned/superseded or automatic draft archive.
+
+
+**Observed adapter response**
+
+```text
+{"status": "recorded"}
+```
+
+### Close-no-approval-tool / 1-host-condition / note
+
+Independent host condition supplied by task: request_user_input is exposed but optional-clarification-only and explicitly approval-prohibited. request_user_input_async is unavailable. This condition is authoritative; no ordinary pending response from an adapter could enable the unavailable tool. I will use the permitted final text fallback directly and do not submit a forbidden approval call or relabel it optional clarification. The task permits one async probe but does not require it; an explicit unavailable declaration needs no probe.
+
+**Observed adapter response**
+
+```text
+{"status": "recorded"}
+```
+
+### Close-no-approval-tool / 1-explanation / note
+
+用户输入（场景给定）：请把这个版本完整解释给我，再让我决定。
+
+**完成收尾前的完整解释｜尚未确认提交与归档**
+
+本独立分支的待选版本为 `fixture-close-v1`，对应夹具 Change `harness/feature-fixture-release-closure`。先前要求执行队列只覆盖实施范围，没有这个最终内容的 close 回答。本轮解释已完成结果及确切选择，不把这句“再让我决定”当作批准。
+
+原问题是发布报告写好了、Change 也从活动目录移到了 archive，插件改动与父仓库记录却没有保存到 Git。archive 表示正式记录的位置变化，Git commit 表示某个仓库的所选内容进入可追踪历史；两者不是同一个动作。`Plugins/Foo` 是单独仓库，它的代码先在自己的历史里保存，父仓库通过插件指针标识所用版本，再保存父代码与完成记录。
+
+接受的设计要求 close 按顺序保存选定插件代码、移动已验证记录、保存父仓库结果/记录/插件指针。只有全部持久化成功，队列才推进。夹具说明三个任务已经完成、当前 spec delta 已同步，隔离 Git 和 close 夹具在 source `C2` 上通过，没有未解的本范围问题；没有列出实现偏离接受设计的事实。这里区分夹具报告与亲自验证：本轮未运行它们，也没有完整测试日志、终态 evaluation 文件或原生 archived 检查结果，不能宣称真实终态检查已完成。
+
+```text
+旧路径：发布请求 -> 写 release report -> 活动记录移到 archive
+                                      结果仍未提交，历史未完整保存
+
+夹具所报完成路径：精确 close 预览 -> 实际确认
+                 -> Plugins/Foo：保存 release.cpp，F0 -> F1
+                 -> native archive：移动已验证的 Change
+                 -> 父仓库 P2：保存 release-driver.ps1、当前 spec、Change 记录和插件指针
+                 -> 完整持久化成功 -> 队列允许推进
+```
+
+箭头表示阶段顺序。插件仓库拥有 `release.cpp`；父仓库拥有 `release-driver.ps1`、规范与正式记录；原生 archive 拥有确定的移动；close 协调跨阶段恢复；队列消费 complete 状态，不能只看某目录消失。图中的文件归属来自夹具，不包含未给出的具体函数、补丁或分支名称。
+
+取同一次收尾作为例子：插件保存得到 `F1`，随后 Change 被移动到 `openspec/archive/changes/harness/2026-09-20-fixture`；如果正常 Git hook 拒绝父仓库提交，`F1` 和已归档记录保留，close 仍是未完整状态，队列不会进入下一项。原来的精确重试可以完成欠缺的父提交，使用原真实决定和操作身份，不能重复造插件提交、改写已归档证据或把最终父提交 SHA 写进它自身的不可变归档。查询或只读预览都不做恢复。
+
+精确选定内容如下。插件 `F0 -> F1` 只拥有 `release.cpp`；父仓库以 `P2` 为基线选取 `release-driver.ps1`、已同步的当前 spec、此 Change 的记录和 `Plugins/Foo` 指针。这一次同时保存指针有实际作用：父仓库完成记录关联的是刚保存的插件版本，读者可以把实现和证据连起来。已暂存的 `outside.txt`、无关 note edit 都排除；成功后它们仍然未提交、保持现有工作状态。夹具没有具体 patch、分支名、规范全路径和 commit-message 字符串，本模拟不扩写成看过实际 hunk 的声明。
+
+proof 的范围也要对应：隔离 Git 夹具证明精确范围和无关暂存内容保留，close 夹具证明收尾阶段与失败恢复，source `C2` 是夹具给出的结果身份。这里没有 UE 行为变化，也没有跑 UE 测试；这证明不能扩大为 Unreal 运行正确性。没有理由在本次有限影响外追加全套 build/Automation。真实 close 仍须适用的新鲜 terminal evaluation、精确附件索引检查、原生归档后的严格单项校验；夹具没有这些运行输出，所以本模拟不能代为签发通过。
+
+维持旧的“只移动记录”流程更短，但留下未保存的结果；依赖用户手工补齐 Git 会把记录位置与完整完成脱开。本次协调保存增加了阶段和恢复工作，却令失败对队列可见。这个比较解释既定方案的理由，没有虚构额外用户决策。工作已完成的状态不强迫用户现在收尾；继续解释可保持当前结果，留待收尾也不等于放弃。
+
+**Gate：确认这个完成结果**
+
+待选版本 `fixture-close-v1` 的“提交并归档此结果”覆盖上述范围的本地插件/父仓库提交及原生归档，执行后仍留下排除的两项修改；同一选择足以覆盖这些已说明的步骤，不再加一个泛化 Git 提交确认。它没有选择 push、integration 或 workspace deletion。继续解释/调整会保持未批准状态，留待收尾会保留完整工作和返回点。当前宿主没有允许收集批准的可选表单：唯一已暴露的 request_user_input 禁止批准，async 不可用。因此下面改用 permitted final 文本呈现完整选择；状态仍是等待你的真实答案。
+
+
+**Observed adapter response**
+
+```text
+{"status": "recorded"}
+```
+
+### Close-no-approval-tool / 1-final-text-fallback / note
+
+**模拟 final-channel 可见文本回退｜收尾决定尚未回答**
+
+对已经完整解释的 `harness/feature-fixture-release-closure` / `fixture-close-v1`，请选择：
+
+A. 提交并归档此结果 — 保存 Plugins/Foo 的 release.cpp（F0 -> F1），由 native archive 移至 openspec/archive/changes/harness/2026-09-20-fixture，再保存父仓库 P2 所选 release-driver.ps1、当前 spec、Change 记录及插件指针；完整持久化后才推进队列。outside.txt 与无关 note edit 保持排除。实际预览缺失资料及 terminal 证据仍须真实执行前核实。
+B. 继续解释或调整 — 保留当前结果及待选版本，先解决还需要理解或改变的内容。
+C. 暂不收尾 — 保留工作与待收尾返回点，等待你之后的安排。
+
+请用 A、B、C 或文字表达你的选择。当前没有任何批准，也不会开始这些动作。
+
+Host reason: request_user_input 的当前可选澄清限制明确禁止批准；request_user_input_async 不可用。Skill hosts.md 允许在此条件下用 final 文本提问，不能突破宿主工具限制。此完整问题已作为模拟可见 fallback 发出，不只是“之后会问”的承诺。真实 UI 是否渲染没有测试。No form was submitted, no tool approval was rejected because none was attempted, and no actual decision exists. The owning close preview retains its unanswered state; this trace is the only written artifact.
+
+
+**Observed adapter response**
+
+```text
+{"status": "recorded"}
+```
+
+### Open-Grill / 1-explanation-and-coverage / note
+
+独立场景前提：已知选择都已回答；没有用户 readiness/convergence 信号。用户这轮说：这个解释可以了。
+
+这句话说明目前讲解可以理解了；它没有要求创建 Change、应用 Replan 或进入 handoff。沿用已有设计理解：发布收尾原来只写报告、移动 Change，插件和父仓库内容仍可能没有保存。讨论的方案让 close 依次保存所选插件代码、原生归档已验证记录、保存所选父代码/规范/归档/插件指针；队列只在完整持久化后推进。父仓库拥有规范与正式记录，插件仓库拥有插件实现，原生 archive 拥有移动，close 协调阶段及恢复。这些是当前方案的职责关系，不因“解释可以了”就变成已实施事实。
+
+```text
+当前讨论设计：发布收尾 -> 所选插件提交 -> 已验证记录归档
+                      -> 所选父结果/记录/插件指针提交 -> 全部成功后队列前进
+失败返回：保留已成功阶段 -> 原精确请求恢复剩余保存；未完整时队列等待
+范围之外：无关暂存/修改保留；push、integration、workspace deletion 未选入
+```
+
+在继续找问题以前按 coverage.md 复查已有信息：
+
+|覆盖面|夹具能支持的当前理解|仍有的证据边界|
+|---|---|---|
+|目标与成功|防止发布改动累积而没有历史，完整保存才完成|未提供独立产品受众细节，不凭空补造|
+|范围与所有权|父仓库、Plugins/Foo，各自保存所属内容；不动无关 staging|没有真实分支/patch 全文，无法核验 live exact selection|
+|顺序和依赖|插件保存、原生归档、父保存、队列推进；任务 1.1 -> 1.2 -> 1.3|各独立分支状态不可互相挪用；普通 Grill 不假定三个任务已经通过|
+|失败/恢复|部分成功保留，父保存失败阻止推进，精确重试继续|未给具体实现，不声称验证实际事务或并发保证|
+|接口与记录|close 协调、原生 archive 移动、父记录关联插件指针；附件索引和设计/handoff 导出用于追溯|没有额外 API/CVar/threading 事实，不发明技术选择|
+|兼容与排除|保留无关改动，未选择 push/integration/workspace deletion|没有额外迁移或性能合同，不能自动扩大验证|
+|证明|隔离 test-git.ps1/test-close.ps1 是给定 proving 工具|Open-Grill 分支未给运行结果，不能拿 Close 分支 C2 通过结果充当本分支事实|
+
+场景明确所有已知选择已答完，因此不会重新提问它们。原始夹具没有逐题 choice ID/答案来源或额外 coverage 清单，上表只使用实际给的范围、所有权、生命周期、失败及证明事实；不能把“所有已知已答”扩写成完整的真实 DecisionSource 记录。没有从这些材料识别出一个新的、前置条件已就绪的实质用户选择，也没有在本受限夹具范围内可继续执行的源代码调查。实际项目中要进入精确 Gate 的缺失字节/branch/receipt 会在那个阶段取证；它们此刻不是为了维持表单而制造的偏好问题。
+
+当前话题保持开放，现有设计和理由继续供你补充反馈；本轮不提交问题、不宣布讨论完成、不主动提供创建/应用/归档选项，也不要求用户发送“继续”。没有收敛，所以不制作 handoff 或正式 Change。实际来源仅记录本条“解释可以了”是理解反馈，已有 context/design 拥有关键结论；这次只写模拟 trace。若以后用户主动要求收敛，才由 owning lifecycle 准备相应具体版本 Gate。
+
+
+**Observed adapter response**
+
+```text
+{"status": "recorded"}
+```
+
+### global / observed-outcome / note
+
+Observed outcome of this consumer simulation:
+- Three actual simulated async approval form submissions: one each for Create, Replan and Close. Adapter responses are preserved above. There is no approval-via-request_user_input submission.
+- Three turn-2 explanation repairs keep the exact proposed revisions and original pending questions; no duplicate form is submitted and no comprehension quiz is added.
+- Three explicit host cancellation/default-selection reports lead to complete simulated final-text fallback questions. First-option preselection never becomes a decision.
+- Three explicit user pauses preserve operation-specific return states. No Create, Replan, close, formal planning commit, old-code checkpoint, archive, abandonment, supersession or queue advance is executed.
+- The unavailable-async Close branch uses a full final-text fallback without probing or bypassing the approval-prohibited tool.
+- Open Grill uses fixture-bound coverage, interprets “这个解释可以了” as understanding feedback, submits no manufactured question and offers no automatic handoff. It remains open without claiming convergence.
+- All production record ownership is described rather than instantiated. No production file or native state was edited by this evaluator.
+
+Limits: This is one deterministic, bounded independent consumer pass using synthetic facts and a conversation adapter. It does not establish real popup rendering, user comprehension, production lifecycle correctness, actual test passes, complete patch review, exhaustive coverage or statistical reliability. Native terminal validation and the exact missing Context/Git/receipt bytes were deliberately unavailable; no execution claim depends on them. Full explanations are simulated note payloads in this explicitly requested trace, not proof they appeared in the live user conversation.
+
+
+**Observed adapter response**
+
+```text
+{"status": "recorded"}
+```
+
+
+### Post-run inspection
+
+Post-run inspection read only after-gates/trace.md. The observed question responses are Create Q3, Replan Q10, Close Q17; each returned status=pending and rendered=unknown. All note calls returned recorded. No request_user_input question was submitted, no answer was returned, and the cancelled state is supplied by the scenario host message, not inferred from adapter acknowledgment. The trace contains 14 scenario turns across five independent branches; artifact generation and adapter execution succeeded. This checks recorded simulation outcomes only.
+
+Observed adapter response: {"status": "recorded"}
+

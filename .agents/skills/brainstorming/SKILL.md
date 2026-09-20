@@ -11,6 +11,7 @@ description: "Explore user intent, evidence, alternatives and consequential desi
 - Announce the draft path once. Preserve the selected workspace and the caller's objective and return position.
 - Keep one outcome together by default. Create `designs/<scope>/design.md` when a bounded outcome can be described; split only independently deliverable outcomes, not competing alternatives for one outcome.
 - Topic mode follows current work: `research` investigates, `proposal` develops a candidate and `design` resolves choices. Modes are not authorization or a compulsory one-way ladder.
+- “Harness upgrade” is a topic/subject, not a fourth mode or a separate Skill. Execution feedback and explanation-improvement questions can live in these same drafts without ever creating a Change. A sourced unresolved question may be captured automatically; capture is not a diagnosis or repair authorization.
 
 ## Explore and make the design understandable
 
@@ -19,6 +20,7 @@ description: "Explore user intent, evidence, alternatives and consequential desi
 - Compare meaningful viable approaches with consequences and a recommendation; do not manufacture weak alternatives. Grill's [round method](../grill/references/rounds.md) owns the question frontier and answer handling.
 - After each answer, show the resulting relevant architecture and terminology again in conversation. Explain changed relationships/behavior and remaining uncertainty; a saved-file update is insufficient.
 - Keep the same draft and discussion active across answers. Let Grill actually issue the next ready question after that explanation; do not wrap each round in a completion reply or require the user to request continuation. A pending question resumes from its answer, including after a host-required text fallback.
+- Side questions and partial answers stay with the active Grill. Use its single [continuation loop](../grill/references/rounds.md), including coverage inspection when no question appears ready; do not maintain a second competing turn-ending rule here.
 - Update CONTEXT with key decisions, rationale, unresolved points and sources. Update the owning design's current truth at the same time; preserve important superseded decisions without requiring verbatim chat duplication.
 - Confirm public names using [naming](references/naming.md). A naming round always offers more candidates in a draft Markdown file, and a name the user already chose is not re-asked.
 - Draft prose follows the conversation language. Identifiers remain exact; final Change planning and exported current summaries use English.

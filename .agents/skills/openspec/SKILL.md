@@ -46,17 +46,17 @@ Invoke-Harness -Command openspec.change -Context $context -ArgumentList @('list'
 - Brainstorming before a new feature, architecture refactor, or major behavior-change record: `brainstorming`; it records shared rounds/research under `openspec/drafts/<domain>/<topic>/` and independent designs under `designs/<scope>/`.
   - Topic mode follows the current focus; scoped designs own approval/handoff state.
   - Existing Change design feedback goes through Update into a linked draft; the Change retains accepted truth until the actual Replan Gate.
-- Create the Change from one selected approved scoped design and seed English attachments (design/handoff, confirmed talks and knowledge, INDEX): `openspec-create-change` calls `harness.change.create` and `harness.change.seed.verify`.
+- Prepare complete English proposal/design/tasks/applicable specs, selected exports and formal Git scope before the exact Create Gate. `openspec-create-change` calls `harness.change.create`, validates seed/plan and persists that accepted planning before the separate arrangement.
   - An explicitly requested direct-origin formal Change also uses the concrete preview and version-bound Gate with a reason. Direct edits may remain outside Changes.
   - The generic `openspec.change create` route is closed.
-- Write missing planning artifacts and implement: `openspec-apply-change` (`Ensure plan`, then Ready nodes).
+- Validate accepted complete planning and implement: `openspec-apply-change` (`Ensure plan`, then Ready nodes); missing-plan authoring remains an explicit historical compatibility path.
 - Revise existing artifacts or apply an evidence-gated replan: `openspec-update-change`.
 - Implement ready Task DAG nodes and resolve task-local technical uncertainty: `openspec-apply-change`.
   - Keep routine uncertainty task-local; route invalidated planning/user-owned choices through Update and the Harness discussion loop.
   - An unlisted new public name is derived from convention and recorded as `Naming assumed`.
 - Verify a fixed snapshot: `openspec-verify-change`.
 - Merge durable delta specs: `openspec-sync-specs`.
-- Apply close policy and archive: `openspec-archive-change`.
+- Apply explained close policy and exact local commits/archive: `openspec-archive-change` via `harness.change.close`. A raw archive cannot bypass the saved actual decision; partial Git closure blocks advancement. Native archive remains a deterministic primitive.
 
 - For record layout, load only the relevant reference:
   - [record schema](references/record-schema.md),

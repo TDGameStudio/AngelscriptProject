@@ -30,6 +30,7 @@ Change the recommendation if <material evidence or preference>.
 
 ## Process answers
 
+- Process the whole incoming message: an answer may also contain a correction or “what does this mean?”. Preserve its settled part, explain the confusing relationship with evidence, then recompute the same topic's frontier. A completed factual explanation or returned tool result does not end the active Grill.
 - Accept numbered, partial, out-of-order, “all recommendations” and free-text answers. Preserve what the user actually accepted and the source of that answer.
 - Clarify a materially ambiguous answer with the unresolved choice; do not repeat settled questions.
 - Separate confirmed decisions, recommendations and provisional engineering assumptions. A preselected default, silence, cancellation or acknowledgement is not an answer.
@@ -48,6 +49,7 @@ Change the recommendation if <material evidence or preference>.
 ## Keep discussion separate from handoff
 
 - An empty frontier means the current explanation has no known unanswered design choice; it does not grant permission to create or Replan.
+- Before calling the frontier empty, inspect the relevant [decision coverage](coverage.md) and pending prerequisites. Record which consequential choices are settled, which facts remain to investigate and why no ready choice remains. This is a coverage check, not a request for invented questions or an automatic handoff offer.
 - If useful in-scope investigation remains, perform it. If no substantive question remains, show the current understanding and explicitly leave the topic open for the user's feedback or convergence. Do not manufacture questions, repeat settled choices or send a generic permission-to-continue question merely to keep a form active.
 - Continue responding to the user's exploration. Do not repeatedly ask whether they want to create a Change or advertise a handoff option.
 - Only user-driven convergence starts handoff preparation and its Gate. The user can still choose to view the current architecture and continue discussion after reviewing the prepared result.

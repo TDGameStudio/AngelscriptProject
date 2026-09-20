@@ -1,0 +1,254 @@
+{
+  "core": {
+    "baselineSha256": "a6bd52106886afe033ee48fb5dcd8031d6356b0e5088bbf6145a35b40f4b2567",
+    "replaced": [
+      [
+        "Two-tier exploration",
+        "Explain after every answer"
+      ],
+      [
+        "Two-tier exploration",
+        "Continue the next question without a restart request"
+      ],
+      [
+        "Two-tier exploration",
+        "Recover a missing question form"
+      ],
+      [
+        "Two-tier exploration",
+        "No substantive next question is available"
+      ],
+      [
+        "Two-tier exploration",
+        "User initiates convergence"
+      ],
+      [
+        "Two-tier exploration",
+        "Pause the current Change for an answer"
+      ],
+      [
+        "Two-tier exploration",
+        "Return through both Gates"
+      ],
+      [
+        "Exact scoped handoff and expected exports",
+        "Reject an altered creation request"
+      ],
+      [
+        "Exact scoped handoff and expected exports",
+        "Explain the full design before creating a Change"
+      ],
+      [
+        "Exact scoped handoff and expected exports",
+        "Explain a Replan without conflating plan and completed work"
+      ],
+      [
+        "Exact scoped handoff and expected exports",
+        "Keep Gate presentation distinct from transcript recording"
+      ],
+      [
+        "Exact scoped handoff and expected exports",
+        "Hand off one scope while researching another"
+      ],
+      [
+        "Exact scoped handoff and expected exports",
+        "Export useful self-contained evidence"
+      ],
+      [
+        "Exact scoped handoff and expected exports",
+        "Recover consumed creation"
+      ],
+      [
+        "Exact scoped handoff and expected exports",
+        "Enforce post-handoff arrangements"
+      ],
+      [
+        "Exact scoped handoff and expected exports",
+        "Keep direct work lightweight"
+      ],
+      [
+        "Harness dogfooding feedback",
+        "Collect and group observations"
+      ],
+      [
+        "Harness dogfooding feedback",
+        "Isolate synthetic observation measurements"
+      ],
+      [
+        "Harness dogfooding feedback",
+        "Reconcile historical feedback with exact evidence"
+      ],
+      [
+        "Harness dogfooding feedback",
+        "Explain local feedback retention"
+      ],
+      [
+        "Harness dogfooding feedback",
+        "Preserve an immutable archive"
+      ],
+      [
+        "Ordered local Change queues",
+        "Execute the full queue in ordinary chat"
+      ],
+      [
+        "Ordered local Change queues",
+        "Preserve Task DAG progress during feedback"
+      ],
+      [
+        "Ordered local Change queues",
+        "Remove queue membership"
+      ],
+      [
+        "Ordered local Change queues",
+        "Reconfigure an exhausted queue"
+      ],
+      [
+        "Progressive harness knowledge promotion",
+        "Promote a stable learning"
+      ],
+      [
+        "Progressive harness knowledge promotion",
+        "Retain one-off evidence locally"
+      ],
+      [
+        "Progressive harness knowledge promotion",
+        "Load capability knowledge progressively"
+      ],
+      [
+        "Shared records and execution evidence",
+        "Close verified plugin work without committing the primary"
+      ],
+      [
+        "Queue ownership and recovery",
+        "Advance after archive interruption"
+      ]
+    ],
+    "appended": [
+      [
+        "Two-tier exploration",
+        "A side question retains the whole discussion"
+      ],
+      [
+        "Exact scoped handoff and expected exports",
+        "Complete first planning is part of the Create decision"
+      ],
+      [
+        "Exact scoped handoff and expected exports",
+        "Replan persists records but not the old implementation"
+      ],
+      [
+        "Harness dogfooding feedback",
+        "Capture only a topic draft"
+      ],
+      [
+        "Harness dogfooding feedback",
+        "Batch treatment remains user-directed"
+      ],
+      [
+        "Harness dogfooding feedback",
+        "New feedback and measurements do not create another ledger"
+      ],
+      [
+        "Harness dogfooding feedback",
+        "Explain local retention honestly"
+      ],
+      [
+        "Harness dogfooding feedback",
+        "Preserve visible updates and material issue boundaries"
+      ],
+      [
+        "Ordered local Change queues",
+        "Pending Git closure keeps the current item active"
+      ],
+      [
+        "Progressive harness knowledge promotion",
+        "Admit verified factual explanatory knowledge"
+      ],
+      [
+        "Progressive harness knowledge promotion",
+        "Keep unauthorized or uncertain enrichment in its draft"
+      ],
+      [
+        "Progressive harness knowledge promotion",
+        "Reuse admitted knowledge in later explanations"
+      ]
+    ],
+    "added": [
+      "Explained lifecycle closure decisions",
+      "Honest incomplete closure and code disposition",
+      "Explanation-driven improvement"
+    ],
+    "retainedUnspecifiedCards": true,
+    "retainedUnspecifiedRequirements": true
+  },
+  "git": {
+    "baselineSha256": "475833fb513e6ce1fc6e5d50aa6f0c1fa0ebd25d9a36b54431c24a45ba7f48ec",
+    "replaced": [
+      [
+        "Structured scoped Git status and commit",
+        "Reject outside staged content by default"
+      ],
+      [
+        "Structured scoped Git status and commit",
+        "Isolate a hook-expanded candidate"
+      ],
+      [
+        "Structured scoped Git status and commit",
+        "Accept scope-local hook changes"
+      ],
+      [
+        "Structured scoped Git status and commit",
+        "Preserve outside staged content explicitly"
+      ],
+      [
+        "Structured scoped Git status and commit",
+        "Preserve staged content across parent and submodule commits"
+      ],
+      [
+        "Structured scoped Git status and commit",
+        "Refuse ambiguous preservation intent"
+      ],
+      [
+        "Structured scoped Git status and commit",
+        "Commit a content-similar target-only addition"
+      ],
+      [
+        "Structured scoped Git status and commit",
+        "Report resumable partial completion"
+      ],
+      [
+        "Structured scoped Git status and commit",
+        "Commit exact linked-worktree paths"
+      ],
+      [
+        "Structured scoped Git status and commit",
+        "Authorize all changes explicitly"
+      ],
+      [
+        "Plugin-only queue commits",
+        "Commit an edited replica plugin"
+      ],
+      [
+        "Plugin-only queue commits",
+        "Reject root publication from a replica"
+      ]
+    ],
+    "appended": [
+      [
+        "Structured scoped Git status and commit",
+        "Lifecycle commit consumes the displayed candidate"
+      ],
+      [
+        "Structured scoped Git status and commit",
+        "Select one attributable edit in a shared file"
+      ],
+      [
+        "Plugin-only queue commits",
+        "Complete the canonical-record stage"
+      ]
+    ],
+    "added": [],
+    "retainedUnspecifiedCards": true,
+    "retainedUnspecifiedRequirements": true
+  }
+}

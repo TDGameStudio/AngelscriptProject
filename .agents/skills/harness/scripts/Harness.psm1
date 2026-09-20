@@ -130,6 +130,7 @@ function Initialize-HarnessRoutes {
     $routes.Add((New-HarnessRoute 'harness.draft.check' 'PowerShell' $draftModule 'Test-HarnessDraft' @() @{} 'Check one selected draft design before Change creation.')) | Out-Null
     $routes.Add((New-HarnessRoute 'harness.draft.archive' 'PowerShell' $draftModule 'Close-HarnessDraft' @() @{} 'Move an explicitly selected local draft to its archive while preserving unresolved state.')) | Out-Null
     $routes.Add((New-HarnessRoute 'harness.change.create' 'PowerShell' $changeGateModule 'New-HarnessChange' @() @{} 'Preview or create one exact draft/direct-origin handoff through its version-bound user Gate.')) | Out-Null
+    $routes.Add((New-HarnessRoute 'harness.change.close' 'PowerShell' '.agents/skills/harness/scripts/ChangeClosure.psm1' 'Close-HarnessChange' @() @{} 'Preview or resume the exact approved archive and Git closure.')) | Out-Null
     $routes.Add((New-HarnessRoute 'harness.change.seed.verify' 'PowerShell' $changeGateModule 'Test-HarnessChangeSeed' @() @{} 'Check indexed self-contained draft exports before Ensure plan.')) | Out-Null
     $routes.Add((New-HarnessRoute 'harness.change.plan.verify' 'PowerShell' $changeGateModule 'Test-HarnessChangePlan' @() @{} 'Require a root design with call chains for a new Change.')) | Out-Null
     $routes.Add((New-HarnessRoute 'harness.observe' 'Internal' '' 'Add-HarnessObservation' @() @{} 'Record one bounded ignored workflow observation.')) | Out-Null
@@ -628,7 +629,7 @@ function Add-HarnessContextDefaults {
             Set-HarnessAuthoritativePathParameter -Values $values -Names @('RepositoryRoot') -CanonicalName 'RepositoryRoot' -ExpectedValue ([string]$Context.PrimaryRoot) -RouteName ([string]$Route.Name)
             Set-HarnessAuthoritativePathParameter -Values $values -Names @('WorktreeRoot') -CanonicalName 'WorktreeRoot' -ExpectedValue ([string]$Context.WorkspaceRoot) -RouteName ([string]$Route.Name)
         }
-        { $_ -in @('harness.status', 'harness.observe', 'harness.evolution.status', 'harness.evolution.triage', 'openspec.maintenance.status', 'harness.draft.create', 'harness.draft.status', 'harness.draft.record', 'harness.draft.check', 'harness.draft.archive', 'harness.change.create', 'harness.change.seed.verify', 'harness.change.plan.verify') } {
+        { $_ -in @('harness.status', 'harness.observe', 'harness.evolution.status', 'harness.evolution.triage', 'openspec.maintenance.status', 'harness.draft.create', 'harness.draft.status', 'harness.draft.record', 'harness.draft.check', 'harness.draft.archive', 'harness.change.create', 'harness.change.close', 'harness.change.seed.verify', 'harness.change.plan.verify') } {
             if ($values.ContainsKey('Context')) {
                 throw (New-HarnessCodedException -Code 'ContextAuthorityMismatch' -Message "Route '$($Route.Name)' receives Context only from the Harness dispatcher; caller replacement is forbidden.")
             }
@@ -793,7 +794,10 @@ function Invoke-Harness {
             if (-not (Test-Path -LiteralPath $target -PathType Leaf)) {
                 throw "Executable for '$Command' was not found: $target"
             }
-            $nativeArguments = @($route.Prefix) + @(ConvertTo-HarnessNativeArguments -Parameters $Parameters) + @($ArgumentList | ForEach-Object { [string]$_ })
+            $nativeParameters=$Parameters.Clone()
+            $closureOperation=''
+            if ($isArchive -and $nativeParameters.ContainsKey('ClosureOperation')) { $closureOperation=[string]$nativeParameters.ClosureOperation; $nativeParameters.Remove('ClosureOperation') }
+            $nativeArguments = @($route.Prefix) + @(ConvertTo-HarnessNativeArguments -Parameters $nativeParameters) + @($ArgumentList | ForEach-Object { [string]$_ })
             $closureSnapshot = ''
             if ($isArchive) {
                 $closure = Read-HarnessArchiveClosure -Arguments $nativeArguments -RecordRoot (Get-HarnessRecordRoot $Context)
@@ -801,6 +805,8 @@ function Invoke-Harness {
                 if ((Get-HarnessChangeInputSha256 -ChangeRoot $terminal.ChangeRoot) -cne $terminal.CurrentInputSha256) {
                     throw 'Change inputs changed during terminal evaluation; refresh evaluation before archive.'
                 }
+                Import-Module (Join-Path $Context.HarnessRoot '.agents/skills/harness/scripts/ChangeClosure.psm1')
+                Assert-HarnessCloseArchive -Context $Context -ChangeId ([string]$ArgumentList[1]) -OperationPath $closureOperation -ClosureBytes $closure.Bytes -InputSha256 $terminal.CurrentInputSha256
                 $closureSnapshot = Join-Path $Context.WorkspaceRoot "Saved/AgentTemp/harness-archive/$runId.yaml"
                 [void][IO.Directory]::CreateDirectory((Split-Path $closureSnapshot))
                 [IO.File]::WriteAllBytes($closureSnapshot, $closure.Bytes)
@@ -905,53 +911,12 @@ function Add-HarnessObservation {
         [ValidateRange(0, [long]::MaxValue)][long]$DurationMs = 0,
         [ValidateLength(0,1000)][string]$SourceRef = '',
         [ValidateLength(0,200)][string]$DedupKey = '',
-        [ValidateLength(0,200)][string]$OwnerDraftId = ''
+        [ValidateLength(0,200)][string]$OwnerDraftId = '',
+        [ValidateLength(0,200)][string]$OwnerScope = ''
     )
 
-    $relativeProbe = 'Saved/Harness/Observations/__harness_probe__.json'
-    $ignored = Invoke-HarnessGit -Repository $Context.WorkspaceRoot -Arguments @('check-ignore', '--quiet', '--', $relativeProbe) -AllowFailure
-    if ($ignored.ExitCode -ne 0) {
-        throw "Refusing to write Harness observations because '$relativeProbe' is not ignored."
-    }
-
-    $runId = [guid]::NewGuid().ToString('N')
-    $observedAt = [DateTimeOffset]::UtcNow
-    $directory = Join-Path $Context.WorkspaceRoot 'Saved/Harness/Observations'
-    [void][System.IO.Directory]::CreateDirectory($directory)
-    $path = Join-Path $directory ("{0}-{1}.json" -f $observedAt.ToString('yyyyMMddTHHmmssfffZ'), $runId)
-    $temporary = Join-Path $directory (".{0}.tmp" -f $runId)
-    $record = [ordered]@{
-        schemaVersion = 'harness-observation-v1'
-        runId         = $runId
-        observedAtUtc = $observedAt.ToString('o')
-        category      = $Category
-        summary       = $Summary.Trim()
-        change        = $Change
-        stage         = $Stage
-        correlationId = $CorrelationId
-        durationMs    = $DurationMs
-        workspaceRoot = $Context.WorkspaceRoot
-        head           = Get-HarnessLiveHead -WorkspaceRoot $Context.WorkspaceRoot
-        sourceRef      = $SourceRef
-        dedupKey       = $DedupKey
-        ownerDraftId   = $OwnerDraftId
-    }
-    try {
-        [System.IO.File]::WriteAllText($temporary, ($record | ConvertTo-Json -Depth 6), [System.Text.UTF8Encoding]::new($false))
-        [System.IO.File]::Move($temporary, $path, $false)
-    }
-    finally {
-        if (Test-Path -LiteralPath $temporary -PathType Leaf) { Remove-Item -LiteralPath $temporary -Force }
-    }
     Import-Module (Join-Path $Context.HarnessRoot '.agents/skills/harness/scripts/Feedback.psm1')
-    $inboxPath = Write-HarnessFeedbackInbox -Context $Context
-    return [pscustomobject][ordered]@{
-        RunId       = $runId
-        Path        = $path
-        ObservedAt  = $observedAt
-        Category    = $Category
-        Artifacts   = @($path,$inboxPath)
-    }
+    return Add-HarnessDraftFeedback -Context $Context -Category $Category -Summary $Summary -SourceRef $SourceRef -DedupKey $DedupKey -OwnerDraftId $OwnerDraftId -OwnerScope $OwnerScope -Change $Change -Stage $Stage -CorrelationId $CorrelationId -DurationMs $DurationMs
 }
 
 function ConvertFrom-HarnessFrontmatterScalar {

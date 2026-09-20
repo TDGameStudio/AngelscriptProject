@@ -130,6 +130,81 @@ function Assert-HarnessChangeIntent {
     }
 }
 
+function Complete-HarnessCreatedPlan {
+    param($Context,[string]$Root,[string]$IntentPath,$Intent)
+    $plan=$Intent.planning
+    if ($plan.stage -eq 'complete') { return $plan.commit }
+    Import-Module (Join-Path $Context.HarnessRoot '.agents/skills/git-operations/scripts/GitOperations.psd1')
+    $recordRoot=Get-HarnessRecordRoot $Context
+    function Read-PlanningGit([string[]]$Arguments) {
+        $output=@(& git -C $recordRoot @Arguments 2>&1)
+        if ($LASTEXITCODE) { throw ($output -join "`n") }
+        return ($output -join "`n").Trim()
+    }
+    if ((Read-PlanningGit @('symbolic-ref','--short','HEAD')) -cne $plan.validation.GitPlan.Branch) { throw 'Planning commit branch changed; inspect the saved operation.' }
+    $head=Read-PlanningGit @('rev-parse','HEAD')
+    if ($head -cne $plan.validation.GitPlan.BaselineHead) {
+        if ($plan.ContainsKey('attempt') -and $head -cne $plan.attempt.Head -and
+            (Read-PlanningGit @('rev-parse','HEAD^')) -ceq $plan.attempt.Head -and
+            (Read-PlanningGit @('rev-parse','HEAD^{tree}')) -ceq $plan.attempt.Tree) {
+            $plan.stage='complete'; $plan.commit=$head; Write-HarnessChangeJson $IntentPath $Intent; return $head
+        }
+        throw 'Planning baseline changed outside the saved commit attempt; do not absorb other work.'
+    }
+    if ($plan.ContainsKey('outputs')) {
+        foreach ($relative in $plan.outputs.Keys) {
+            $path=Get-HarnessChangeFilePath $Root $relative
+            if (-not [IO.File]::Exists($path) -or (Get-FileHash $path -Algorithm SHA256).Hash -ine $plan.outputs[$relative]) { throw "Planning recovery conflicts with an external edit: $relative" }
+        }
+    }
+    foreach ($relative in $plan.candidates.Keys) {
+        $path=Get-HarnessChangeFilePath $Root $relative
+        if ([IO.File]::Exists($path) -and [IO.File]::ReadAllText($path) -cne $plan.candidates[$relative]) { throw "Accepted planning candidate conflicts with existing content: $relative" }
+        [void][IO.Directory]::CreateDirectory((Split-Path $path))
+        [IO.File]::WriteAllText($path,$plan.candidates[$relative],[Text.UTF8Encoding]::new($false))
+    }
+    foreach ($export in $plan.validation.BinaryExports) {
+        $path=Get-HarnessChangeFilePath $Root $export.Target
+        if ([IO.File]::Exists($path)) {
+            if ((Get-FileHash $path -Algorithm SHA256).Hash -ine $export.Sha256) { throw 'Accepted binary export changed.' }
+        } else {
+            if ((Get-FileHash -LiteralPath $export.Source -Algorithm SHA256).Hash -ine $export.Sha256) { throw 'Binary export source changed after approval.' }
+            [void][IO.Directory]::CreateDirectory((Split-Path $path)); [IO.File]::WriteAllBytes($path,[IO.File]::ReadAllBytes($export.Source))
+        }
+    }
+    $indexPath=Get-HarnessChangeFilePath $Root 'attachments/INDEX.md'
+    $index=[IO.File]::ReadAllText($indexPath)
+    foreach ($file in @(Get-ChildItem -LiteralPath (Join-Path $Root 'attachments') -Recurse -File)) {
+        if ($file.FullName -eq $indexPath) { continue }
+        $relative=[IO.Path]::GetRelativePath((Join-Path $Root 'attachments'),$file.FullName).Replace('\','/')
+        if (-not $index.Contains($relative)) { $index += "`n- $relative — accepted complete planning; read for its owned design or proof.`n" }
+    }
+    [IO.File]::WriteAllText($indexPath,$index,[Text.UTF8Encoding]::new($false))
+    $allowed=@('change.yaml','attachments/INDEX.md','attachments/data/harness-origin.json',('attachments/talks/'+$Intent.followup.talk_id+'.md')) + @($plan.candidates.Keys) + @($plan.validation.BinaryExports | ForEach-Object Target)
+    $outputs=@{}
+    foreach ($file in @(Get-ChildItem -LiteralPath $Root -Recurse -File)) {
+        $relative=[IO.Path]::GetRelativePath($Root,$file.FullName).Replace('\','/')
+        [void](Get-HarnessChangeFilePath $Root $relative)
+        if ($relative -cnotin $allowed) { throw "Unapproved file in new Change Git selection: $relative" }
+        $outputs[$relative]=(Get-FileHash $file.FullName -Algorithm SHA256).Hash
+    }
+    $plan.outputs=$outputs; $plan.stage='materialized'; Write-HarnessChangeJson $IntentPath $Intent
+    [void](Test-HarnessChangeSeed $Context $Intent.changeId)
+    [void](Test-HarnessChangePlan $Context $Intent.changeId)
+    $strict=Invoke-Harness -Context $Context -Command openspec.validate -ArgumentList @($Intent.changeId,'--type','change','--strict','--json')
+    if ($strict.status -ne 'Succeeded') { throw "Created plan strict validation failed: $($strict.error.message)" }
+    $plan.stage='verified'; Write-HarnessChangeJson $IntentPath $Intent
+    $gitArgs=@{WorkspaceRoot=$recordRoot;RepositoryScopes=@{'.'=@('openspec/changes/'+$Intent.changeId)};PreserveOutsideStaged=$true;CommitMessage=$plan.validation.GitPlan.CommitMessage}
+    $gitPreview=Complete-HarnessGitCommit @gitArgs -WhatIf
+    if (@($gitPreview.IncludedChanges).Count -ne 1) { throw 'The expected uncommitted planning candidate disappeared.' }
+    $plan.attempt=@{Head=$head;Tree=$gitPreview.IncludedChanges[0].CandidateTree;Revision=$gitPreview.PlanRevision}
+    Write-HarnessChangeJson $IntentPath $Intent
+    $result=Complete-HarnessGitCommit @gitArgs -ExpectedPlanRevision $gitPreview.PlanRevision
+    if (@($result.Commits).Count -ne 1 -or -not $result.ScopedGitStateComplete) { throw 'Planning commit did not complete its exact scope.' }
+    $plan.stage='complete'; $plan.commit=$result.Commits[0].Commit; Write-HarnessChangeJson $IntentPath $Intent
+    return $plan.commit
+}
+
 function Invoke-HarnessChangeCreateCore {
     [CmdletBinding()]
     param(
@@ -139,7 +214,8 @@ function Invoke-HarnessChangeCreateCore {
         [Parameter(Mandatory = $true)][string]$Goal,
         [Parameter(Mandatory = $true)][ValidateSet('Draft', 'Direct')][string]$Origin,
         [string]$DraftId = '', [string]$Scope = '', [string]$Reason = '',
-        [switch]$PlanOnly, [hashtable]$Gate, [string]$HandoffText='', [string]$SessionId=''
+        [switch]$PlanOnly, [hashtable]$Gate, [string]$HandoffText='', [string]$SessionId='',
+        [hashtable]$Candidates=@{}, [hashtable]$GitPlan=@{}
     )
     Assert-ChangeId $ChangeId
     Import-Module (Join-Path $Context.HarnessRoot '.agents/skills/harness/scripts/DraftLifecycle.psd1') -ErrorAction Stop
@@ -148,7 +224,11 @@ function Invoke-HarnessChangeCreateCore {
     $owner = [IO.Path]::GetFullPath((Get-HarnessRecordRoot $Context)).TrimEnd('\','/')
     $workspace = [IO.Path]::GetFullPath([string]$Context.WorkspaceRoot).TrimEnd('\','/')
     $request = [ordered]@{changeId=$ChangeId;title=$Title;goal=$Goal;origin=$Origin;draftId=$DraftId;scope=$Scope;reason=$Reason;handoffText=$HandoffText}
-    $requestHash = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([Text.Encoding]::UTF8.GetBytes(($request | ConvertTo-Json -Compress)))).ToLowerInvariant()
+    if ($Candidates.Count) {
+        $request.candidates=@(foreach ($key in @($Candidates.Keys | Sort-Object)) { $key+':'+[Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([Text.Encoding]::UTF8.GetBytes([string]$Candidates[$key]))) })
+        $request.gitPlan=@{message=$GitPlan['CommitMessage'];scopes=$GitPlan['RepositoryScopes']}
+    }
+    $requestHash = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([Text.Encoding]::UTF8.GetBytes(($request | ConvertTo-Json -Depth 12 -Compress)))).ToLowerInvariant()
     $intent = $null
     if (Test-Path -LiteralPath $intentPath) {
         try {
@@ -173,9 +253,14 @@ function Invoke-HarnessChangeCreateCore {
         if ($intent -and $existing.gate.handoff_id -cne $intent.marker.gate.handoff_id) { throw 'CreationRecoveryRequired: existing origin differs from the stored receipt.' }
         if (-not $PlanOnly) {
             [void](Invoke-HarnessHandoff -Context $Context -Action restore-followup -Parameters @{ChangeId=$ChangeId})
-            if ($intent) { [IO.File]::Delete($intentPath) }
+            if ($intent -and -not $intent.ContainsKey('planning')) { [IO.File]::Delete($intentPath) }
         }
-        return [pscustomobject]@{ChangeId=$ChangeId;Path=$root;Origin=$Origin;Resumed=$true;HandoffId=$existing.gate.handoff_id;HandoffRevision=$existing.gate.revision;Followup=$existing.gate.post_talk_id}
+        $resumed=[pscustomobject]@{ChangeId=$ChangeId;Path=$root;Origin=$Origin;Resumed=$true;HandoffId=$existing.gate.handoff_id;HandoffRevision=$existing.gate.revision;Followup=$existing.gate.post_talk_id}
+        if ($intent -and $intent.ContainsKey('planning')) {
+            if (-not $PlanOnly) { $commit=Complete-HarnessCreatedPlan $Context $root $intentPath $intent; $resumed | Add-Member PlanningCommit $commit }
+            $resumed | Add-Member PlanningStage $intent.planning.stage
+        }
+        return $resumed
     }
     if ($intent -and $intent.state -eq 'created') { throw 'CreationRecoveryRequired: the owned native manifest has disappeared; do not create a replacement identity.' }
     if ($Origin -eq 'Draft') {
@@ -188,10 +273,15 @@ function Invoke-HarnessChangeCreateCore {
         if ($DraftId -or $Scope) { throw 'Direct Change creation cannot claim a draft scope.' }
     }
     $handoffParameters = @{ChangeId=$ChangeId;Title=$Title;Goal=$Goal;Origin=$Origin;DraftId=$DraftId;Scope=$Scope;Reason=$Reason;HandoffText=$HandoffText;SessionId=$SessionId;Gate=$Gate}
+    $planningValidation=$null
+    if ($Candidates.Count) {
+        $planningValidation=Invoke-HarnessHandoff -Context $Context -Action create-plan -Parameters ($handoffParameters+@{Candidates=$Candidates;GitPlan=$GitPlan})
+        $handoffParameters.Candidates=$Candidates; $handoffParameters.GitPlan=$planningValidation.GitPlan
+    }
     $previewAction = if ($intent -and -not $intent.marker.gate.ContainsKey('revision_schema')) { 'create-preview-legacy' } else { 'create-preview' }
     $prepared = Invoke-HarnessHandoff -Context $Context -Action $previewAction -Parameters $handoffParameters
     if ($intent -and $intent.marker.gate.revision -cne $prepared.HandoffRevision) { throw 'CreationRecoveryRequired: accepted design changed before native creation; resolve the saved approval before creating.' }
-    if ($PlanOnly) { return $prepared }
+    if ($PlanOnly) { if ($planningValidation) { $prepared | Add-Member Planning $planningValidation }; return $prepared }
     $exe = Join-Path ([string]$Context.HarnessRoot) '.agents/skills/openspec/bin/openspec.exe'
     if (-not (Test-Path -LiteralPath $exe -PathType Leaf)) { throw "Portable OpenSpec CLI is missing: $exe" }
     if (-not $intent) {
@@ -208,6 +298,10 @@ function Invoke-HarnessChangeCreateCore {
             createdAt = [DateTime]::UtcNow.ToString('o')
         }
         $intent = @{schema=1;changeId=$ChangeId;owner=$owner;workspace=$workspace;requestHash=$requestHash;state='prepared';manifest=$null;marker=$marker;followup=$accepted.followup}
+        if ($planningValidation) {
+            $intent.planning=@{stage='prepared';candidates=$Candidates;validation=$planningValidation | ConvertTo-Json -Depth 30 | ConvertFrom-Json -AsHashtable}
+            $marker.completePlanning=$true
+        }
         Write-HarnessChangeJson -Path $intentPath -Value $intent -NoOverwrite
     }
     $oldPreference = $ErrorActionPreference
@@ -226,8 +320,13 @@ function Invoke-HarnessChangeCreateCore {
     $markerPath = Join-Path $root 'attachments/data/harness-origin.json'
     Write-HarnessChangeMarker $root $intent.marker
     [void](Invoke-HarnessHandoff -Context $Context -Action write-followup -Parameters @{ChangeId=$ChangeId;Followup=$intent.followup})
-    [IO.File]::Delete($intentPath)
-    return [pscustomobject]@{ ChangeId = $ChangeId; Path = $root; Origin = $Origin; Marker = $markerPath; HandoffId=$intent.marker.gate.handoff_id; Followup=$intent.marker.gate.post_talk_id }
+    $result=[pscustomobject]@{ ChangeId = $ChangeId; Path = $root; Origin = $Origin; Marker = $markerPath; HandoffId=$intent.marker.gate.handoff_id; Followup=$intent.marker.gate.post_talk_id }
+    if ($intent.ContainsKey('planning')) {
+        $commit=Complete-HarnessCreatedPlan $Context $root $intentPath $intent
+        $result | Add-Member PlanningCommit $commit
+        $result | Add-Member PlanningStage $intent.planning.stage
+    } else { [IO.File]::Delete($intentPath) }
+    return $result
 }
 
 function New-HarnessChange {
@@ -239,9 +338,14 @@ function New-HarnessChange {
         [Parameter(Mandatory = $true)][string]$Goal,
         [Parameter(Mandatory = $true)][ValidateSet('Draft', 'Direct')][string]$Origin,
         [string]$DraftId = '', [string]$Scope = '', [string]$Reason = '',
-        [switch]$PlanOnly, [hashtable]$Gate, [string]$HandoffText='', [string]$SessionId=''
+        [switch]$PlanOnly, [hashtable]$Gate, [string]$HandoffText='', [string]$SessionId='',
+        [hashtable]$Candidates=@{}, [hashtable]$GitPlan=@{}
     )
     Assert-ChangeId $ChangeId
+    if (-not $Candidates.Count -and -not (Test-Path -LiteralPath (Get-ChangeRoot $Context $ChangeId)) -and
+        -not (Test-Path -LiteralPath (Get-HarnessChangeIntentPath $Context $ChangeId))) {
+        throw 'New Change creation requires complete Candidates and an exact GitPlan before its Gate.'
+    }
     if ($PlanOnly) { return Invoke-HarnessChangeCreateCore @PSBoundParameters }
     # Serialize the same canonical target across Harness processes. The durable
     # intent carries recovery evidence; the mutex is only a short creation lock.

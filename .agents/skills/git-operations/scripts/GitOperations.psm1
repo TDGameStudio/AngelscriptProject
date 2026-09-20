@@ -457,10 +457,76 @@ function Restore-GitIndexEnvironment {
     param([AllowNull()][string]$Value)
 
     if ([string]::IsNullOrEmpty($Value)) {
-        Remove-Item -LiteralPath 'Env:GIT_INDEX_FILE' -ErrorAction SilentlyContinue
+        Remove-Item -LiteralPath 'Env:GIT_INDEX_FILE' -ErrorAction SilentlyContinue -WhatIf:$false -Confirm:$false
     }
     else {
         [Environment]::SetEnvironmentVariable('GIT_INDEX_FILE', $Value, 'Process')
+    }
+}
+
+function Get-GitCommitCandidate {
+    param([string]$Repository, [string[]]$Scopes, [string]$Patch = '', [hashtable]$DerivedGitlinks = @{})
+    $head = Get-GitHead $Repository
+    $snapshot = Get-GitIndexSnapshot $Repository
+    $priorIndex = [Environment]::GetEnvironmentVariable('GIT_INDEX_FILE', 'Process')
+    $temporary = "$($snapshot.Path).harness-preview-$([guid]::NewGuid().ToString('N'))"
+    $patchPath = "$temporary.patch"
+    $mergedIndex = "$temporary.merged"
+    $indexEntries = @((Invoke-GitOperation $Repository (@('--literal-pathspecs','ls-files','--stage','--') + $Scopes)).Output)
+    $result = $null
+    try {
+        [Environment]::SetEnvironmentVariable('GIT_INDEX_FILE', $temporary, 'Process')
+        [void](Invoke-GitOperation $Repository @('read-tree',$head))
+        [void](Invoke-GitOperation $Repository (@('--literal-pathspecs','add','-A','--') + $Scopes))
+        $worktree = ((Invoke-GitOperation $Repository @('write-tree')).Output -join '').Trim()
+        foreach ($entry in $DerivedGitlinks.GetEnumerator()) {
+            [void](Invoke-GitOperation $Repository @('update-index','--add','--cacheinfo',"160000,$($entry.Value),$($entry.Key)"))
+        }
+        $worktreeIdentity = ((Invoke-GitOperation $Repository @('write-tree')).Output -join '').Trim()
+        [void](Invoke-GitOperation $Repository @('read-tree',$worktree))
+        if ($Patch) {
+            [IO.File]::WriteAllText($patchPath,$Patch,[Text.UTF8Encoding]::new($false))
+            # The exact supplied patch must already describe a live owned change.
+            [void](Invoke-GitOperation $Repository @('apply','--reverse','--check','--whitespace=nowarn',$patchPath))
+            [void](Invoke-GitOperation $Repository @('read-tree',$head))
+            [void](Invoke-GitOperation $Repository @('apply','--cached','--whitespace=nowarn',$patchPath))
+            Assert-GitCandidateIndexScope $Repository $Scopes 'explicit patch selection'
+        }
+        $tree = ((Invoke-GitOperation $Repository @('write-tree')).Output -join '').Trim()
+        [void](Invoke-GitOperation $Repository @('diff','--binary','--full-index','--no-ext-diff','--no-textconv',"--output=$patchPath",$head,$tree,'--'))
+        $included = [IO.File]::ReadAllText($patchPath)
+        [void](Invoke-GitOperation $Repository @('diff','--binary','--full-index','--no-ext-diff','--no-textconv',"--output=$patchPath",$tree,$worktree,'--'))
+        $excluded = [IO.File]::ReadAllText($patchPath)
+        foreach ($entry in $DerivedGitlinks.GetEnumerator()) {
+            [void](Invoke-GitOperation $Repository @('update-index','--add','--cacheinfo',"160000,$($entry.Value),$($entry.Key)"))
+        }
+        $treeIdentity = ((Invoke-GitOperation $Repository @('write-tree')).Output -join '').Trim()
+        $updatedIndex = $null
+        if ($Patch -and $included) {
+            # Merge the accepted delta into a COPY of the live index. This keeps
+            # other staged hunks in selected files as well as outside paths.
+            [IO.File]::WriteAllBytes($mergedIndex,[byte[]]$snapshot.Bytes)
+            [IO.File]::WriteAllText($patchPath,$included,[Text.UTF8Encoding]::new($false))
+            [Environment]::SetEnvironmentVariable('GIT_INDEX_FILE',$mergedIndex,'Process')
+            [void](Invoke-GitOperation $Repository @('apply','--cached','--3way','--whitespace=nowarn',$patchPath))
+            if (@(Get-GitUnmergedPaths $Repository).Count) { throw 'The selected patch cannot be separated from other staged hunks.' }
+            $updatedIndex = [IO.File]::ReadAllBytes($mergedIndex)
+        }
+        $identity = [ordered]@{Head=$head;Branch=(Get-GitBranch $Repository);Scopes=@($Scopes);Tree=$treeIdentity;Worktree=$worktreeIdentity;Index=@($indexEntries);Patch=$Patch}
+        $identityBytes = [Text.Encoding]::UTF8.GetBytes(($identity | ConvertTo-Json -Depth 10 -Compress))
+        $result = [pscustomobject]@{Tree=$tree;Identity=([Convert]::ToHexString([Security.Cryptography.SHA256]::HashData($identityBytes)).ToLowerInvariant());Patch=$included;ExcludedPatch=$excluded;UpdatedIndex=$updatedIndex;IndexSnapshot=$snapshot}
+    }
+    finally {
+        Restore-GitIndexEnvironment $priorIndex
+        foreach ($path in @($temporary,$patchPath,$mergedIndex)) { if ([IO.File]::Exists($path)) { [IO.File]::Delete($path) } }
+    }
+    return $result
+}
+
+function Assert-GitAcceptedCandidateTree {
+    param([string]$Repository, [string]$ExpectedTree, [string]$Stage)
+    if ($ExpectedTree -and ((Invoke-GitOperation $Repository @('write-tree')).Output -join '').Trim() -cne $ExpectedTree) {
+        throw "Accepted candidate content changed after $Stage; prepare a new preview."
     }
 }
 
@@ -469,7 +535,10 @@ function Invoke-GitScopedCommitAttempt {
         [Parameter(Mandatory = $true)][string]$Repository,
         [Parameter(Mandatory = $true)][string[]]$Scopes,
         [Parameter(Mandatory = $true)][string]$Message,
-        [Parameter(Mandatory = $true)]$ExpectedOutsideSnapshot
+        [Parameter(Mandatory = $true)]$ExpectedOutsideSnapshot,
+        [string]$Patch = '',
+        [string]$ExpectedTree = '',
+        [AllowNull()][byte[]]$UpdatedIndex = $null
     )
 
     $oldHead = Get-GitHead -Repository $Repository
@@ -487,7 +556,13 @@ function Invoke-GitScopedCommitAttempt {
             [Environment]::SetEnvironmentVariable('GIT_INDEX_FILE', $candidateIndex, 'Process')
             [void](Invoke-GitOperation -Repository $Repository -Arguments @('read-tree', $oldHead))
             $candidateExists = $true
-            [void](Invoke-GitOperation -Repository $Repository -Arguments (@('--literal-pathspecs', 'add', '-A', '--') + $Scopes))
+            if ($Patch) {
+                [IO.File]::WriteAllText($messagePath,$Patch,[Text.UTF8Encoding]::new($false))
+                [void](Invoke-GitOperation $Repository @('apply','--cached','--whitespace=nowarn',$messagePath))
+            } else {
+                [void](Invoke-GitOperation -Repository $Repository -Arguments (@('--literal-pathspecs', 'add', '-A', '--') + $Scopes))
+            }
+            Assert-GitAcceptedCandidateTree $Repository $ExpectedTree 'initial staging'
             $hasCandidate = (Invoke-GitOperation -Repository $Repository -Arguments @('diff', '--cached', '--quiet') -AllowFailure).ExitCode
             if ($hasCandidate -eq 0) {
                 return $null
@@ -499,12 +574,15 @@ function Invoke-GitScopedCommitAttempt {
             Assert-GitCandidateIndexScope -Repository $Repository -Scopes $Scopes -Stage 'initial staging'
             [void](Invoke-GitCandidateHook -Repository $Repository -Name 'pre-commit')
             Assert-GitCandidateIndexScope -Repository $Repository -Scopes $Scopes -Stage 'pre-commit'
+            Assert-GitAcceptedCandidateTree $Repository $ExpectedTree 'pre-commit'
 
             [System.IO.File]::WriteAllText($messagePath, "$Message$([Environment]::NewLine)", [System.Text.UTF8Encoding]::new($false))
             [void](Invoke-GitCandidateHook -Repository $Repository -Name 'prepare-commit-msg' -Arguments @($messagePath, 'message'))
             Assert-GitCandidateIndexScope -Repository $Repository -Scopes $Scopes -Stage 'prepare-commit-msg'
+            Assert-GitAcceptedCandidateTree $Repository $ExpectedTree 'prepare-commit-msg'
             [void](Invoke-GitCandidateHook -Repository $Repository -Name 'commit-msg' -Arguments @($messagePath))
             Assert-GitCandidateIndexScope -Repository $Repository -Scopes $Scopes -Stage 'commit-msg'
+            Assert-GitAcceptedCandidateTree $Repository $ExpectedTree 'commit-msg'
 
             [void](Invoke-GitOperation -Repository $Repository -Arguments @(
                 '-c', "core.hooksPath=$disabledHooksPath", 'commit', '--no-verify', '--file', $messagePath
@@ -516,9 +594,15 @@ function Invoke-GitScopedCommitAttempt {
             Restore-GitIndexEnvironment -Value $previousIndex
         }
 
-        [void](Invoke-GitOperation -Repository $Repository -Arguments (@(
-            '--literal-pathspecs', 'reset', '--quiet', $candidateHead, '--'
-        ) + $Scopes))
+        if ($null -ne $UpdatedIndex) {
+            $currentIndex = Get-GitIndexSnapshot $Repository
+            if ([Convert]::ToBase64String($currentIndex.Bytes) -cne [Convert]::ToBase64String($indexSnapshot.Bytes)) { throw 'The live index changed while committing the selected patch.' }
+            [IO.File]::WriteAllBytes($currentIndex.Path,$UpdatedIndex)
+        } else {
+            [void](Invoke-GitOperation -Repository $Repository -Arguments (@(
+                '--literal-pathspecs', 'reset', '--quiet', $candidateHead, '--'
+            ) + $Scopes))
+        }
 
         try {
             [Environment]::SetEnvironmentVariable('GIT_INDEX_FILE', $candidateIndex, 'Process')
@@ -576,6 +660,8 @@ function Complete-HarnessGitCommit {
     param(
         [Parameter(Mandatory = $true)][Alias('ProjectRoot')][string]$WorkspaceRoot,
         [hashtable]$RepositoryScopes = @{},
+        [hashtable]$RepositoryPatches = @{},
+        [string]$ExpectedPlanRevision = '',
         [switch]$AllChanges,
         [switch]$PreserveOutsideStaged,
         [switch]$PluginsOnly,
@@ -599,6 +685,11 @@ function Complete-HarnessGitCommit {
     if (-not $replica -and [string]::IsNullOrWhiteSpace($targetParentBranch)) { throw "Detached parent repository requires an explicit TargetBranches entry for '.'." }
     if (-not $replica -and $parentBranch -ne $targetParentBranch) { throw "Parent repository is on '$parentBranch', expected target branch '$targetParentBranch'." }
     $scopes = Resolve-GitCommitScopes -Root $root -RepositoryScopes $RepositoryScopes -AllChanges:$AllChanges
+    foreach ($repoKey in $RepositoryPatches.Keys) {
+        if (-not $scopes.ContainsKey($repoKey) -or [string]::IsNullOrWhiteSpace([string]$RepositoryPatches[$repoKey])) { throw 'Each explicit repository patch needs its exact non-empty RepositoryScopes selection.' }
+    }
+    if ($PSBoundParameters.ContainsKey('ExpectedPlanRevision') -and $ExpectedPlanRevision -cnotmatch '^[0-9a-f]{64}$') { throw 'ExpectedPlanRevision must identify a real Git preview revision.' }
+    $preciseCandidate = $PSBoundParameters.ContainsKey('ExpectedPlanRevision') -or $RepositoryPatches.Count -gt 0
     $submodules = @(Get-GitTopLevelSubmodules -Repository $root)
     $repositories = @{ '.' = $root }
     foreach ($submodule in $submodules) { $repositories[$submodule.Path] = $submodule.FullPath }
@@ -681,6 +772,27 @@ function Complete-HarnessGitCommit {
         }
     }
 
+    $candidates = @{}
+    $derivedGitlinks = @{}
+    foreach ($repoKey in @($scopes.Keys | Where-Object { $_ -ne '.' })) {
+        if (-not $PluginsOnly -and @($scopedDirtyPaths[$repoKey]).Count) { $derivedGitlinks[$repoKey] = $preflightHeads[$repoKey] }
+    }
+    $planRevision = ''
+    if ($WhatIfPreference -or $preciseCandidate) {
+        $recipe = [Collections.Generic.List[object]]::new()
+        foreach ($repoKey in @($effectiveScopes.Keys | Sort-Object)) {
+            $patch = if ($RepositoryPatches.ContainsKey($repoKey)) { [string]$RepositoryPatches[$repoKey] } else { '' }
+            $links = if ($repoKey -eq '.') { $derivedGitlinks } else { @{} }
+            $candidates[$repoKey] = Get-GitCommitCandidate $repositories[$repoKey] $effectiveScopes[$repoKey] $patch $links
+            $message = if ($SubmoduleCommitMessages.ContainsKey($repoKey)) { [string]$SubmoduleCommitMessages[$repoKey] } else { $CommitMessage }
+            $target = if ($TargetBranches.ContainsKey($repoKey)) { [string]$TargetBranches[$repoKey] } else { [string]$preflightBranches[$repoKey] }
+            $recipe.Add([ordered]@{Repository=$repoKey;Root=$repositories[$repoKey];Identity=$candidates[$repoKey].Identity;Message=$message;TargetBranch=$target})
+        }
+        $recipeBytes = [Text.Encoding]::UTF8.GetBytes((@($recipe.ToArray()) | ConvertTo-Json -Depth 12 -Compress))
+        $planRevision = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData($recipeBytes)).ToLowerInvariant()
+        if ($ExpectedPlanRevision -and $ExpectedPlanRevision -cne $planRevision) { throw 'Git plan revision is stale: selected content, index, branch, baseline or commit intent changed.' }
+    }
+
     $includedChanges = New-Object System.Collections.Generic.List[object]
     foreach ($repoKey in @($scopes.Keys | Sort-Object)) {
         $state = Get-GitPathState -Repository $repositories[$repoKey]
@@ -688,7 +800,12 @@ function Complete-HarnessGitCommit {
             Where-Object { Test-GitPathCovered -Path $_ -Scopes $scopes[$repoKey] } |
             Sort-Object -Unique)
         if ($paths.Count -gt 0) {
-            $includedChanges.Add([pscustomobject]@{ Repository = $repoKey; Paths = $paths }) | Out-Null
+            $entry = [pscustomobject]@{ Repository = $repoKey; Paths = $paths }
+            if ($candidates.ContainsKey($repoKey)) {
+                $entry.Paths = @((Invoke-GitOperation $repositories[$repoKey] @('diff','--name-only','--no-renames',$preflightHeads[$repoKey],$candidates[$repoKey].Tree,'--')).Output | Where-Object { $_ })
+                $entry | Add-Member -NotePropertyMembers @{Patch=$candidates[$repoKey].Patch;ExcludedPatch=$candidates[$repoKey].ExcludedPatch;CandidateTree=$candidates[$repoKey].Tree;Baseline=$preflightHeads[$repoKey]}
+            }
+            $includedChanges.Add($entry) | Out-Null
         }
     }
 
@@ -707,12 +824,20 @@ function Complete-HarnessGitCommit {
                 if ($outsideSnapshots.ContainsKey($repoKey)) {
                     [void](Assert-GitOutsideStagedSnapshot -Repository $repoRoot -Scopes @($effectiveScopes[$repoKey]) -Expected $outsideSnapshots[$repoKey])
                 }
+                $candidateArguments = @{}
+                if ($preciseCandidate) {
+                    $patch = if ($RepositoryPatches.ContainsKey($repoKey)) { [string]$RepositoryPatches[$repoKey] } else { '' }
+                    $freshCandidate = Get-GitCommitCandidate $repoRoot $effectiveScopes[$repoKey] $patch
+                    if ($freshCandidate.Identity -cne $candidates[$repoKey].Identity) { throw "Repository '$repoKey' candidate changed after preflight." }
+                    $candidateArguments.ExpectedTree = $freshCandidate.Tree
+                    if ($patch) { $candidateArguments.Patch=$freshCandidate.Patch; $candidateArguments.UpdatedIndex=$freshCandidate.UpdatedIndex }
+                }
                 if ([string]::IsNullOrWhiteSpace($plan.Branch)) {
                     $checkoutArguments = if ($plan.BranchExists) { @('checkout', $plan.TargetBranch) } else { @('checkout', '-b', $plan.TargetBranch) }
                     [void](Invoke-GitOperation -Repository $repoRoot -Arguments $checkoutArguments)
                 }
                 $repoScopes = @($effectiveScopes[$repoKey])
-                $attempt = Invoke-GitScopedCommitAttempt -Repository $repoRoot -Scopes $repoScopes -Message $message -ExpectedOutsideSnapshot $outsideBoundarySnapshots[$repoKey]
+                $attempt = Invoke-GitScopedCommitAttempt -Repository $repoRoot -Scopes $repoScopes -Message $message -ExpectedOutsideSnapshot $outsideBoundarySnapshots[$repoKey] @candidateArguments
                 if ($null -ne $attempt) {
                     $commits.Add([pscustomobject]@{ Repository = $repoKey; Commit = $attempt.NewHead; Branch = $plan.TargetBranch; Paths = $repoScopes }) | Out-Null
                 }
@@ -729,7 +854,15 @@ function Complete-HarnessGitCommit {
                 if ($outsideSnapshots.ContainsKey('.')) {
                     [void](Assert-GitOutsideStagedSnapshot -Repository $root -Scopes $repoScopes -Expected $outsideSnapshots['.'])
                 }
-                $attempt = Invoke-GitScopedCommitAttempt -Repository $root -Scopes $repoScopes -Message $CommitMessage -ExpectedOutsideSnapshot $outsideBoundarySnapshots['.']
+                $candidateArguments = @{}
+                if ($preciseCandidate) {
+                    $patch = if ($RepositoryPatches.ContainsKey('.')) { [string]$RepositoryPatches['.'] } else { '' }
+                    $freshCandidate = Get-GitCommitCandidate $root $repoScopes $patch $derivedGitlinks
+                    if ($freshCandidate.Identity -cne $candidates['.'].Identity) { throw "Repository '.' candidate changed after preflight." }
+                    $candidateArguments.ExpectedTree = $freshCandidate.Tree
+                    if ($patch) { $candidateArguments.Patch=$freshCandidate.Patch; $candidateArguments.UpdatedIndex=$freshCandidate.UpdatedIndex }
+                }
+                $attempt = Invoke-GitScopedCommitAttempt -Repository $root -Scopes $repoScopes -Message $CommitMessage -ExpectedOutsideSnapshot $outsideBoundarySnapshots['.'] @candidateArguments
                 if ($null -ne $attempt) {
                     $commits.Add([pscustomobject]@{ Repository = '.'; Commit = $attempt.NewHead; Branch = Get-GitBranch $root; Paths = $repoScopes }) | Out-Null
                 }
@@ -779,6 +912,7 @@ function Complete-HarnessGitCommit {
     $finalStatus = Get-HarnessGitStatus -WorkspaceRoot $root
     $scopedGitStateComplete = $true
     foreach ($repoKey in $scopes.Keys) {
+        if ($RepositoryPatches.ContainsKey($repoKey) -and -not $WhatIfPreference) { continue }
         $remainingState = Get-GitPathState -Repository $repositories[$repoKey]
         $remaining = @($remainingState.Staged + $remainingState.Unstaged + $remainingState.Untracked | Where-Object { Test-GitPathCovered -Path $_ -Scopes $scopes[$repoKey] })
         if ($remaining.Count -gt 0) { $scopedGitStateComplete = $false }
@@ -789,6 +923,7 @@ function Complete-HarnessGitCommit {
         AllChanges = [bool]$AllChanges
         PreserveOutsideStaged = [bool]$PreserveOutsideStaged
         IncludedChanges = @($includedChanges | ForEach-Object { $_ })
+        PlanRevision = $planRevision
         PreservedStaged = @($preservedStaged | ForEach-Object { $_ })
         Preview = [bool]$WhatIfPreference
         Commits = @($commits | ForEach-Object { $_ })

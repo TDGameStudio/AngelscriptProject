@@ -36,6 +36,12 @@ INDEX is the only default entry; load the linked knowledge file only when the cu
 
 ## Admission and promotion
 
-Promote only after evidence establishes the finding, repair and regression verification pass, and the learning proves reusable beyond one task. Review is not an admission prerequisite: verified knowledge may be promoted without a Review file or impact/not-required classification. Archive never promotes automatically.
+Promote only after evidence establishes the finding and its reuse. Admission depends on the kind of claim and existing authority:
+
+- A repair-derived learning needs established behavior/root cause, the selected repair and its appropriate regression verification. An unclear explanation alone is not that evidence.
+- A factual explanation may be admitted under an already authorized documentation/improvement scope when inspected source, current contract and a representative example establish its truth and reuse. Record those sources, application boundary and checks; do not invent a failure/repair or require unrelated code RED/GREEN.
+- An unclear intended contract, conflicting evidence or unselected behavior/Skill change remains a question or candidate in its topic draft. Use explaining-work's [improvement loop](../../explaining-work/references/improvement.md) and normal scope/handoff rules before changing behavior. Capture alone is not publication authority.
+
+For either admitted kind, read the existing capability INDEX first, update an applicable article instead of duplicating it, and index new files exactly once. A later explanation proves reuse by actually reading the updated INDEX/entry and applying its relevant model against current source/spec. Review is not an admission prerequisite. Archive never promotes automatically or resolves pending questions.
 
 Copy the generalized learning from the change into capability knowledge and keep the archived original frozen. Record source and intended final status in the capability INDEX before admission. If an explicitly requested Review includes that knowledge, materialize the exact intended file and INDEX entry before its immutable snapshot; later semantic changes remain outside that report and require the requester to review a new snapshot if the request still applies. If a later Change invalidates the guidance, update or supersede it through that later Change while retaining provenance; do not rewrite an archive.

@@ -75,9 +75,70 @@ $childRoot = Join-Path $fixtureRoot 'child-source'
 $childRemote = Join-Path $fixtureRoot 'child-remote.git'
 $parentRoot = Join-Path $fixtureRoot 'parent'
 $parentRemote = Join-Path $fixtureRoot 'parent-remote.git'
+$candidateFailures = [Collections.Generic.List[string]]::new()
+function Candidate-Case([string]$Name, [scriptblock]$Body) {
+    try { & $Body; Write-Output "PASS candidate: $Name" }
+    catch { $candidateFailures.Add("$Name — $($_.Exception.Message)"); Write-Output "FAIL candidate: $Name — $($_.Exception.Message)" }
+}
 
 try {
     [void](New-Item -ItemType Directory -Path $fixtureRoot -Force)
+
+    Candidate-Case 'selected content drift rejects mutation' {
+        $repo = Join-Path $fixtureRoot 'candidate-drift'
+        Initialize-TestRepository $repo
+        [IO.File]::WriteAllText((Join-Path $repo 'owned.txt'), "base`n")
+        [void](Invoke-TestGit $repo @('add','.'))
+        [void](Invoke-TestGit $repo @('commit','-m','base'))
+        [IO.File]::WriteAllText((Join-Path $repo 'owned.txt'), "shown`n")
+        $argsMap=@{WorkspaceRoot=$repo;RepositoryScopes=@{'.'=@('owned.txt')};CommitMessage='exact'}
+        $indexEnvironment=[Environment]::GetEnvironmentVariable('GIT_INDEX_FILE','Process')
+        $preview=Complete-HarnessGitCommit @argsMap -WhatIf
+        Assert-Equal $indexEnvironment ([Environment]::GetEnvironmentVariable('GIT_INDEX_FILE','Process')) 'read-only preview restores the real index environment'
+        $before=Get-TestHead $repo
+        [IO.File]::WriteAllText((Join-Path $repo 'owned.txt'), "unshown`n")
+        Assert-ThrowsMatch { Complete-HarnessGitCommit @argsMap -ExpectedPlanRevision $preview.PlanRevision | Out-Null } 'stale|changed|revision' 'stale bytes reject the accepted plan'
+        Assert-Equal $before (Get-TestHead $repo) 'stale content does not move HEAD'
+    }
+    Candidate-Case 'selected patch preserves another staged hunk and outside staging' {
+        $repo = Join-Path $fixtureRoot 'candidate-patch'
+        Initialize-TestRepository $repo
+        $base="a=0`n1`n2`n3`n4`n5`n6`n7`n8`nb=0`n"
+        $file=Join-Path $repo 'mixed.txt'
+        [IO.File]::WriteAllText($file,$base)
+        [IO.File]::WriteAllText((Join-Path $repo 'outside.txt'),"outside base`n")
+        [void](Invoke-TestGit $repo @('add','.'))
+        [void](Invoke-TestGit $repo @('commit','-m','base'))
+        [IO.File]::WriteAllText($file,$base.Replace('a=0','a=1'))
+        $patch=((Invoke-TestGit $repo @('diff','--binary','--full-index','--no-ext-diff','--','mixed.txt')).Output -join "`n")+"`n"
+        [IO.File]::WriteAllText($file,$base.Replace('b=0','b=2'))
+        [IO.File]::WriteAllText((Join-Path $repo 'outside.txt'),"outside staged`n")
+        [void](Invoke-TestGit $repo @('add','mixed.txt','outside.txt'))
+        $outside=(Invoke-TestGit $repo @('rev-parse',':outside.txt')).Output -join ''
+        [IO.File]::WriteAllText($file,$base.Replace('a=0','a=1').Replace('b=0','b=2'))
+        $argsMap=@{WorkspaceRoot=$repo;RepositoryScopes=@{'.'=@('mixed.txt')};RepositoryPatches=@{'.'=$patch};PreserveOutsideStaged=$true;CommitMessage='owned a'}
+        $preview=Complete-HarnessGitCommit @argsMap -WhatIf
+        $result=Complete-HarnessGitCommit @argsMap -ExpectedPlanRevision $preview.PlanRevision
+        Assert-Equal ($base.Replace('a=0','a=1').TrimEnd()) (((Invoke-TestGit $repo @('show','HEAD:mixed.txt')).Output -join "`n").TrimEnd()) 'commit contains only selected a edit'
+        Assert-Equal ($base.Replace('a=0','a=1').Replace('b=0','b=2').TrimEnd()) (((Invoke-TestGit $repo @('show',':mixed.txt')).Output -join "`n").TrimEnd()) 'staged unrelated b survives over new HEAD'
+        Assert-Equal $outside ((Invoke-TestGit $repo @('rev-parse',':outside.txt')).Output -join '') 'outside staging remains identical'
+        Assert-Equal ($base.Replace('a=0','a=1').Replace('b=0','b=2')) ([IO.File]::ReadAllText($file)) 'live bytes remain unchanged'
+        Assert-True $result.ScopedGitStateComplete 'the selected patch is complete even when unrelated hunks remain'
+    }
+    Candidate-Case 'accepted candidate rejects a hook rewriting selected bytes' {
+        $repo = Join-Path $fixtureRoot 'candidate-hook'
+        Initialize-TestRepository $repo
+        [IO.File]::WriteAllText((Join-Path $repo 'owned.txt'),"base`n")
+        [void](Invoke-TestGit $repo @('add','.'))
+        [void](Invoke-TestGit $repo @('commit','-m','base'))
+        [IO.File]::WriteAllText((Join-Path $repo 'owned.txt'),"shown`n")
+        [IO.File]::WriteAllText((Join-Path $repo '.git/hooks/pre-commit'),"#!/bin/sh`nprintf 'unshown\n' > owned.txt`ngit add -- owned.txt`n")
+        $argsMap=@{WorkspaceRoot=$repo;RepositoryScopes=@{'.'=@('owned.txt')};CommitMessage='exact'}
+        $preview=Complete-HarnessGitCommit @argsMap -WhatIf
+        $before=Get-TestHead $repo
+        Assert-ThrowsMatch { Complete-HarnessGitCommit @argsMap -ExpectedPlanRevision $preview.PlanRevision | Out-Null } 'candidate|changed|revision' 'hook cannot change accepted content'
+        Assert-Equal $before (Get-TestHead $repo) 'hook drift does not retain an unapproved commit'
+    }
 
     $hookIsolationRoot = Join-Path $fixtureRoot 'hook-isolation-outside-success'
     Initialize-TestRepository -Path $hookIsolationRoot
@@ -461,6 +522,7 @@ exit 0
     $resumeSubmodule = @($resumePreview.Plans | Where-Object Repository -eq 'Modules/Child')[0]
     Assert-Equal 'AlreadyIntegrated' $resumeSubmodule.Action 'a retry recognizes the submodule integration completed before the parent conflict'
     Assert-True $resumeSubmodule.Resumed 'the preview identifies a resumable partial multi-repository integration'
+    if ($candidateFailures.Count) { throw ($candidateFailures -join "`n") }
 }
 finally {
     Remove-Module GitOperations -Force -ErrorAction SilentlyContinue

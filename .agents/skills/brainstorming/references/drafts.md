@@ -83,3 +83,9 @@ opened: YYYY-MM-DD
 - Archive only after an explicit user disposition through `harness.draft.archive` with its actual `SourceRef`. Move the topic to ignored `openspec/archive/drafts/` without deleting unresolved work or claiming completion.
 - Archive metadata records when and why/source; semantic topic/design status remains intact. Retaining the draft permits continued discussion without requiring another topic.
 - Treat archived records as history. A later exploration may reference that history in an active topic without silently modifying the archive.
+
+## Feedback-only topics
+
+A Harness-upgrade discussion uses the same topic structure and research/proposal/design modes. Sourced understanding feedback or workflow questions belong in the existing `designs/<scope>/design.md`, with key decisions/reasons in CONTEXT; `harness.observe` can capture and deduplicate these without a formal Change. Do not create a separate feedback ledger or harness-update Skill. Capturing, selecting, handing off and proving an improvement are distinct states.
+
+Before an explicitly requested draft archive, show pending/deferred/unproven scopes and where any selected work is owned. Preserve their states through the directory move. Archiving a draft does not delete its discussed questions or certify them fixed; only actual evidence resolves a selected improvement.

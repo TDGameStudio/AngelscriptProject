@@ -145,12 +145,15 @@ def derive(context, state):
         elif authorized_pending(queue) != remaining:
             result.update(state='blocked', reason='Controller authorization differs from the execution scope')
         elif queue['recordState'] == 'archive-pending':
-            result.update(phase='advancing', nextAction='Advance the completed archive within the authorized queue scope.')
+            result.update(phase='advancing', closureKind=queue['closureKind'], nextAction='Register the fully persisted closure outcome within the authorized queue scope.')
+        elif queue['recordState'] == 'close-pending':
+            result.update(phase='closing', closeStage=queue['closeStage'], closureKind=queue['closureKind'],
+                          nextAction='Recover the accepted close operation; its pending stages do not authorize more implementation or queue advancement.')
         elif queue['recordState'] == 'record-blocked':
             result.update(state='blocked', reason='; '.join(queue['recordIssues']))
         if remaining and state['state'] in ('paused', 'blocked'):
             result.update(state=state['state'], reason=state.get('reason', ''))
-        if result['state'] == 'running' and result.get('change') and result['phase'] != 'advancing':
+        if result['state'] == 'running' and result.get('change') and result['phase'] not in ('advancing', 'closing'):
             execution_change(context, result['change'])
             replans = replan_status(context, result['change'])
             progress.append(replans)
