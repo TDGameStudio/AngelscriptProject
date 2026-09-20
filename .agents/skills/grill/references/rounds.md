@@ -40,7 +40,7 @@ Change the recommendation if <material evidence or preference>.
 
 ## Finish the turn at a real continuation point
 
-- Before yielding, distinguish the actual state: a concrete question was submitted and awaits its answer; a specific investigation or prerequisite still blocks the next question; the user explicitly paused; or the user requested convergence and the caller is preparing its Gate. None is implied by completing one round.
+- Before yielding, distinguish the actual state: a concrete question was submitted and awaits its answer; a specific investigation or prerequisite still blocks the next question; no substantive question or investigation remains and the topic stays open for user feedback; the user explicitly paused; or the user requested convergence and the caller is preparing its Gate. Completing a round alone does not establish any of these states or imply convergence.
 - Do not say the next question is available unless the tool call actually submitted it or the full text fallback was sent. Tool acceptance alone does not prove that a selectable window rendered; if the user reports it missing, follow [host fallback](hosts.md).
 - Reuse a still-pending question instead of creating duplicates. On an answer, match its meaning to the pending decision, preserve partial answers and continue automatically. Keep only the needed pending question and next step in the existing context; no transcript mirror or new persistent state machine is required.
 - A specific answer such as "that name is fine" settles that choice; interpret convergence from the user's contextual intent, not the mere presence of an affirmative word.

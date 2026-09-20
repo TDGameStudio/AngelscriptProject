@@ -28,7 +28,7 @@
 - Carry the same concrete example through the proposed path. Explain what now happens differently at each affected phase, why it happens and what the user or downstream system will observe.
 - For important code changes, show verified source excerpts or explicitly labeled proposed/simplified code in language-tagged blocks, with functional explanations beside the relevant statements. Preserve real class/function names for implemented code and label invented candidate names. Do not paste long bodies whose omitted details are immaterial.
 - Map the changed behavior to owning classes/modules, interfaces, files or record artifacts. Explain responsibility moves, public names, caller/callee changes, inputs/outputs and key logic. A path inventory or diff alone does not explain the design.
-- Explain relevant lifecycle, data format, compatibility, persistence, error/cancellation/retry behavior, concurrency, performance and controls. Show meaningful failure paths and boundaries, not only the happy path. Identify an important lens that does not apply rather than filling it with speculative machinery.
+- Explain relevant lifecycle, data format, compatibility, persistence, error/cancellation/retry behavior, concurrency, performance and controls. Show meaningful failure paths and boundaries, not only the happy path. Skip unrelated lenses; explain an omission only when it could otherwise mislead the reader about the scope, and do not invent machinery to fill it.
 - State scope and exclusions explicitly, including adjacent systems left for later. Explain the selected naming and any unresolved sibling scope; do not silently absorb it into this handoff.
 
 ## Explain the reasons, uncertainties and proof

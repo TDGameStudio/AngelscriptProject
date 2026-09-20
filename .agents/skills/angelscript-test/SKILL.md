@@ -1,6 +1,6 @@
 ---
 name: angelscript-test-guide
-description: Use when implementing, extending, or refactoring AngelscriptProject C++ automation tests, especially CQTest, HotReload, Bindings, inline AngelScript fixtures, TEST_CLASS_WITH_FLAGS, TEST_METHOD, ASTEST_AS, FScopedAngelscriptModule, matcher assertions, test helpers, or validation commands.
+description: Use when implementing, extending, or refactoring AngelscriptProject C++ automation tests, especially CQTest, HotReload, Bindings, Language .as coverage, chapter FileTags, inline AngelScript fixtures, TEST_CLASS_WITH_FLAGS, TEST_METHOD, ASTEST_AS, FScopedAngelscriptModule, matcher assertions, test helpers, or validation commands.
 ---
 
 # Angelscript Test Guide
@@ -16,8 +16,20 @@ description: Use when implementing, extending, or refactoring AngelscriptProject
   - The durable behavior is owned by `openspec/specs/angelscript/testing/baseline/spec.md`.
 
 - Read [references/test-code-database.md](references/test-code-database.md) when authoring shared versioned `.as` containers, adding generic source annotations, registering C++ source factories from another module, or consuming `FAngelscriptTestCode` queries.
-  - It covers both providers, complete-version rules, ownership and failure boundaries; the production Language example is `Language/Syntax/StructFields` with parentless `fields-two`, child `add-field`, and `StructFieldsCompileFail`.
-  - The durable behavior is owned by `openspec/specs/angelscript/testing/code-database/spec.md`.
+  - It covers both providers, complete-version rules, ownership and failure boundaries; the production Language Family example is `Language/Syntax/StructFields` with parentless `fields-two`, child `add-field`, and `StructFieldsCompileFail`.
+  - A parentless Language chapter pocket is `Language/Class/Constructor`, not flat `Language/Class`.
+  - Container authors belong under `Containers/`; the example is `Containers/TArray` with Fail siblings `TArrayCompileFail` and `TArrayRuntimeFail`.
+  - Remaining Bindings leftover types belong under `Unreal/<Type>` (for example `Unreal/FMath`), merged into `Unreal/Strings`, `Unreal/Input`, or `Unreal/World/Actor` on collision.
+  - Do not send Bindings leftovers to `Language/`.
+  - UClass and WorldStory first-batch authors belong under `Unreal/`; the UE-cast example is `Unreal/Casting`.
+  - The durable behavior is owned by `openspec/specs/angelscript/testing/code-database/spec.md`, `openspec/specs/angelscript/testing/unreal-fixtures/spec.md`, and `openspec/specs/angelscript/testing/host-api-fixtures/spec.md`.
+
+- Read [references/language-fixtures.md](references/language-fixtures.md) before writing or thickening `AngelscriptTestCode/Language/**`.
+  - Language coverage is per-syntax chapters and one-claim `@begin` bodies, not flat `Language/<Theme>.as` mashups.
+  - Hand-write authors; do not generate `.as` with Python.
+  - Admission does not compile or execute.
+  - Flattened FileTags `Language/Auto` through `Language/Mixin` are retired identities.
+  - The durable inventory is owned by `openspec/specs/angelscript/testing/language-fixtures/spec.md`.
 
 - When you need CQTest macro expansion, registration, lifecycle, matcher internals, latent commands, or engine test components, load [cqtest.md](cqtest.md).
   - That file is the UE 5.8 engine reference.

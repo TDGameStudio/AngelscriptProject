@@ -6,6 +6,23 @@
 > assertions, components, extension points). Corrections against older/online material
 > are listed at the end.
 
+This is the engine-mechanics reference for the `angelscript-test` skill. Project identity, replacement fixtures, and Harness verification live in [SKILL.md](SKILL.md). Load this file when writing or debugging CQTest macros, registration, assertions, latent commands, or components. If the two files conflict, `SKILL.md` wins.
+
+Contents:
+
+1. Positioning
+2. Quick start (this repository first, then engine samples)
+3. Macro system
+4. Execution timeline
+5. Assertions
+6. Latent commands
+7. Test components (optional)
+8. Extending the framework
+9. Abstract templates (engine samples)
+10. Running tests (Harness)
+11. Source map
+12. Version-difference errata
+
 ---
 
 ## 1. Positioning & Design Philosophy
@@ -18,24 +35,11 @@ It addresses two pain points of the existing UE test styles:
 - Spec Tests (BDD style): `Describe`/`It` lambda-capture scoping is a notorious trap, and state is never reset automatically.
 
 ```
-┌──────────────────────────────────────────────────────────────┐
-│                 CQTest — three core philosophies             │
-├──────────────────────────────────────────────────────────────┤
-│  1. Atomicity                                                │
-│     The test object is re-constructed before every           │
-│     TEST_METHOD → members reset automatically,               │
-│     tests are fully isolated from each other                 │
-│                                                              │
-│  2. Composition over Inheritance                             │
-│     Environment capabilities are added by holding            │
-│     Test Component member variables,                         │
-│     not by forcing users through layered base classes        │
-│                                                              │
-│  3. Make easy things easy                                    │
-│     Minimal test = one macro + one assertion                 │
-│     Complex scenarios grow incrementally via                 │
-│     WITH_BASE / WITH_ASSERTS combination macros              │
-└──────────────────────────────────────────────────────────────┘
+CQTest
+├─ Atomicity                         // A new fixture instance is constructed before every TEST_METHOD, so instance members reset
+│                                    // Static fields, BEFORE_ALL resources, and unrooted UObjects are not reset this way
+├─ Composition over inheritance       // Hold test-component members; do not invent a deep CQTest base-class ladder
+└─ Make easy things easy             // One macro + one assertion for the simple case; WITH_BASE / WITH_ASSERTS when needed
 ```
 
 Assertion philosophy: C++ exception support varies across platforms, so CQTest uses `[[nodiscard]] bool` return values plus an early-return `ASSERT_THAT` macro — cross-platform safety with good ergonomics.
@@ -59,16 +63,64 @@ CQTest's sweet spot: functional/integration testing of engine-side C++ — unit 
 
 ## 2. Quick Start
 
+### 2.1 This repository (copy this, not the engine samples)
+
+Replacement NativeEngine tests wrap the translation unit, include `CQTest.h` explicitly, and register under a fixed public identity. The C++ class identifier is the area token with no `F` prefix and no `NewVersion` segment.
+
+```
+TEST_CLASS_WITH_FLAGS(Foundation, "Angelscript.UnitTest.NativeEngine.Basic", EditorContext | EngineFilter)
+└─ [registers] Angelscript.UnitTest.NativeEngine.Basic.Foundation.<Scenario>
+   // Nested TestDir + unprefixed class name + TEST_METHOD name. The class token must not repeat the layer. Duplicate class names collide even across namespaces.
+```
+
+```cpp
+#include "CQTest.h"
+#include "NativeEngine/NativeEngineTestSupport.h"
+
+#if WITH_ANGELSCRIPT_TESTS && WITH_DEV_AUTOMATION_TESTS
+
+TEST_CLASS_WITH_FLAGS(
+	Foundation,
+	"Angelscript.UnitTest.NativeEngine.Basic",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+{
+	TEST_METHOD(ReplacementGateProvidesCQTest)
+	{
+		ASSERT_THAT(IsTrue(
+			WITH_ANGELSCRIPT_TESTS == 1,
+			TEXT("The replacement test gate should own NativeEngine CQTest registration.")));
+	}
+};
+
+#endif // WITH_ANGELSCRIPT_TESTS && WITH_DEV_AUTOMATION_TESTS
+```
+
+Do not use `TEST()`, default `TEST_CLASS()`, or `GenerateTestDirectory` for replacement tests: they change the public name shape or the flags. Do not inherit `Legacy/AngelscriptCQTest.h`. Project fixtures stay in `NativeEngine/NativeEngineTestSupport.h` (and VM-only headers); do not construct an ambient `asCScriptEngine` or `FAngelscriptEngine`.
+
+### 2.2 Pitfalls that actually bite
+
+- `TTest::TestRunner` is a static `TTestRunner*` and hides `TBaseTest::TestRunner` (`FAutomationTestBase&`). Pass `*TestRunner` to helpers that take `FAutomationTestBase&`. Call `TestRunner->SetSuppressLogWarnings(...)`, not `TestRunner.SetSuppressLogWarnings(...)`.
+- `ASSERT_THAT` is `this->Assert....; return;`. It does not compile in `BEFORE_ALL` / `AFTER_ALL` (those are static). Inside a latent lambda, `return` only leaves that lambda.
+- Restore `public:` before `BEFORE_ALL`, `AFTER_ALL`, and `TEST_METHOD`. The `HasBeforeAll` / `HasAfterAll` concepts are checked from outside the class; a private hook is invisible and never runs.
+- Duplicate `TEST_METHOD` names in one class are silently ignored (`Methods.Contains`). Duplicate class identifiers with the same `TestDir` collide in `FAutomationTestFramework` even when the C++ types live in different namespaces.
+- `TEST(Name, "Path")` expands to class `Name` plus method `Name_Method`, so the Automation path is `Path.Name.Name_Method`, not `Path.Name`.
+- Isolation resets **instance** members only. Static data and `BEFORE_ALL` resources persist across methods. `ForceGarbageCollection` after every method can collect unrooted UObjects created in `BEFORE_ALL`.
+- `AreEqual` / `AreNotEqual` reject `float` / `double`. `FVector` / `FRotator` / `FTransform` still compile with exact `==`; use `IsNear` when the contract is approximate.
+- `Assert.ExpectError` must be registered before the failing operation. An expected pattern that never appears fails the test.
+- `TEST_METHOD` names are C++ identifiers. Helpers that cannot use `ASSERT_THAT` should construct a local `FNoDiscardAsserter(*TestRunner)`.
+
+### 2.3 Engine samples (generic CQTest, not this repo's default)
+
 ```cpp
 #include "CQTest.h"
 
-// Simplest form: a single stateless test
+// Simplest form: a single stateless test. Automation name becomes Path.MySimpleTest.MySimpleTest_Method.
 TEST(MySimpleTest, "Game.MyModule")
 {
     ASSERT_THAT(IsTrue(1 + 1 == 2));
 }
 
-// With fixture: multiple methods sharing setup, state isolated automatically
+// With fixture: multiple methods sharing setup; instance members reset automatically
 TEST_CLASS(MyFixtureTests, "Game.MyModule")
 {
     int32 Counter = 0;                       // reset to 0 before every TEST_METHOD
@@ -90,8 +142,10 @@ TEST_CLASS(MyFixtureTests, "Game.MyModule")
 };
 ```
 
-Full test name = `Path.ClassName.MethodName`, e.g. `Game.MyModule.MyFixtureTests.Increment_FromTen_IsEleven`.
-The path argument can be the `GenerateTestDirectory` constant (or embed `[GenerateTestDirectory]`) to derive the directory from the source file path automatically.
+For a `TEST_CLASS`, the Automation name is `Path.ClassName.MethodName`, e.g. `Game.MyModule.MyFixtureTests.Increment_FromTen_IsEleven`.
+Default flags are `ApplicationContextMask | ProductFilter`. This repository uses `TEST_CLASS_WITH_FLAGS` with `EditorContext | EngineFilter` instead.
+
+The path argument can be the `GenerateTestDirectory` constant (or embed `[GenerateTestDirectory]`) to derive the directory from `__FILE__` as `Module.Plugins|Source|Platforms.<relative.path.with.dots>`. Replacement tests must not use that: their public identity is fixed, not path-derived.
 
 ---
 
@@ -164,10 +218,13 @@ TEST_CLASS(MyTest, "Game.Dir") { ... };
 
 ```
 What the FFunctionRegistrar constructor does:
+    if Methods already contains "Foo" → skip (duplicate TEST_METHOD names are silent)
     TestRunner->TestNames.Add("Foo");
     Methods.Add("Foo", &MyTest::Foo);        ← self-registration: automatic test discovery
     TestRunner->TestLineNumbers.Add("Foo", __LINE__);
     (with tags: also registers with FAutomationTestFramework's tag table)
+
+The runner registers with `FAutomationTestBase` using the C++ class identifier as `TestName`. Two `TEST_CLASS` definitions that share the same class identifier and `TestDir` collide at Automation registration even if they live in different C++ namespaces.
 ```
 
 ### 3.3 Lifecycle macro expansion mapping
@@ -193,6 +250,8 @@ TTest() {
 
 Once detected, they are attached to `FAutomationTestFramework`'s `OnEnteringTestSection` / `OnLeavingTestSection` delegates and fire when the framework enters/leaves the class's test section.
 
+`BEFORE_ALL` / `AFTER_ALL` are `static` and have no `this`, so `ASSERT_THAT` does not compile there. The `HasBeforeAll` / `HasAfterAll` concepts are checked from outside the class: if those hooks sit under `private:`, they are not detected and never run. Restore `public:` before them. Shared one-time state must be `static`; it is not reset between methods.
+
 ### 3.4 State isolation: the factory function
 
 `TTestRunner` holds a factory function pointer, aimed at `TTest<Derived>::CreateTestClass`:
@@ -205,7 +264,7 @@ static TUniquePtr<TBaseTest<AsserterType>> CreateTestClass(TTestRunner<AsserterT
 }
 ```
 
-`TTestRunner::RunTest(TestName)` starts with `CurrentTestPtr = TestInstanceFactory(*this)` — **members return to their initial values, and that is the entire state-isolation implementation**.
+`TTestRunner::RunTest(TestName)` starts with `CurrentTestPtr = TestInstanceFactory(*this)` — **instance members return to their initial values**. That is the whole instance-isolation implementation. Static members, `BEFORE_ALL` resources, and process-global registrations are not reset. After each method, `TTearDownRunner` calls `GEngine->ForceGarbageCollection()`, which can collect unrooted UObjects created in `BEFORE_ALL`.
 
 ### 3.5 Class hierarchy overview
 
@@ -307,12 +366,13 @@ ASSERT_THAT( <ConditionFn> )        # every method has an optional trailing Fail
     Assert.ExpectErrorRegex(TEXT("Pattern.*"), N);      # regex match
 ```
 
-Three important facts:
+Four important facts:
 
-1. **Never use `AreEqual` for floats** — the 5.8 source has `static_assert(!std::is_floating_point ...)` telling you to use `IsNear()`; for a deliberate exact comparison use `IsTrue(A == B)`.
-2. **`IsNearlyEqual` is not an asserter method.** Those functions live in the `CQTestCondition` namespace (overloads for float/double/FVector/FRotator/FTransform, default tolerance `UE_KINDA_SMALL_NUMBER`); they are the underlying implementation of `IsNear`/`AreEqual`, and you can compose them yourself:
+1. **Never use `AreEqual` for `float` / `double`** — the 5.8 source has `static_assert(!std::is_floating_point ...)` telling you to use `IsNear()`; for a deliberate exact comparison use `IsTrue(A == B)`.
+2. **`FVector` / `FRotator` / `FTransform` are not floating-point types**, so `AreEqual` compiles and uses exact `==`. Approximate compares must use `IsNear` (or `CQTestCondition::IsNearlyEqual`).
+3. **`IsNearlyEqual` is not an asserter method.** Those functions live in the `CQTestCondition` namespace (overloads for float/double/FVector/FRotator/FTransform, default tolerance `UE_KINDA_SMALL_NUMBER`); they are the underlying implementation of `IsNear`/`AreEqual`, and you can compose them yourself:
    `ASSERT_THAT(IsTrue(CQTestCondition::IsNearlyEqual(VecA, VecB)))`.
-3. **`ExpectError` is backed by `FAutomationTestBase::AddExpectedError`** — semantics: "this error is expected to appear in the log". Useful both for testing defensive code (invalid input must raise an error) and for framework self-tests.
+4. **`ExpectError` is backed by `FAutomationTestBase::AddExpectedError`** — substring match (`IsRegex=false`); `ExpectErrorRegex` uses the default regex path. Register the expectation **before** the failing operation. A pattern that never appears fails the test.
 
 Failure-message readability for custom types is governed by `CQTestConvert::ToString` (`Assert/CQTestConvert.h`) — you can specialize it for your own types.
 
@@ -326,7 +386,7 @@ AddWarning(Msg)          → warning; does not affect pass/fail
 AddInfo(Msg)             → plain log
 ```
 
-Useful for "collect several failure points, report them together" scenarios. `TestRunner.SetSuppressLogWarnings()` / `SetSuppressLogErrors()` control log-suppression behavior.
+Useful for "collect several failure points, report them together" scenarios. Inside a `TEST_METHOD`, `TestRunner` is the static `TTestRunner*` (it hides the `FAutomationTestBase&` member). Call `TestRunner->SetSuppressLogWarnings(...)` / `SetSuppressLogErrors(...)`, and pass `*TestRunner` to helpers that take `FAutomationTestBase&`. A helper that cannot use `ASSERT_THAT` should construct `FNoDiscardAsserter LocalAssert(*TestRunner)`.
 
 ---
 
@@ -383,6 +443,8 @@ TSharedPtr<FScopedTestEnvironment> ScopedTimeout =
 ---
 
 ## 7. Test Components
+
+Optional. NativeEngine reconstruction tests do not need spawners, PIE network, Slate, EnhancedInput, or asset lookup. Reach for a component only when the scenario actually requires a `UWorld`, a map, PIE, UI ticks, or injected input.
 
 Components are held as member variables and are rebuilt/destroyed together with the fixture — composition over inheritance.
 
@@ -735,8 +797,11 @@ TMyGameTestBase()
 
 ## 9. Abstract Templates (pick by scenario)
 
+These are generic engine samples. Replacement tests in this repository copy §2.1 (`TEST_CLASS_WITH_FLAGS` + `EditorContext | EngineFilter`), not Template 1 or 2.
+
 ```
-Verifying a single logic point, stateless?      → Template 1  TEST
+Replacement NativeEngine test?                 → Section 2.1  TEST_CLASS_WITH_FLAGS
+Verifying a single logic point, stateless?      → Template 1  TEST  (engine sample only)
 Multiple scenarios sharing setup/teardown?      → Template 2  TEST_CLASS + TEST_METHOD
 Cross-frame / polling / async waits?            → Template 3  TestCommandBuilder chain
 Server/Client network verification?             → NETWORK_TEST_CLASS boilerplate in 7.5
@@ -802,24 +867,24 @@ TEST_METHOD(WhenAsyncOpCompletes_ExpectSuccess)
 
 ## 10. Running Tests
 
-CQTest registers standard UE Automation Tests, so every native entry point works:
+CQTest registers as ordinary UE Automation tests. In this repository, run them only through Harness `ue.test` in the selected workspace. Do not call `Tools\RunTests.ps1`, `Tools\RunTestSuite.ps1`, or `UnrealEditor-Cmd.exe` directly.
 
-```bash
-# In-editor: Window → Session Frontend (Test Automation) → filter by prefix → Start Tests
-
-# Command line (CI / headless, most common)
-UnrealEditor-Cmd.exe MyProject.uproject ^
-    -ExecCmds="Automation RunTests Game.Module; Quit" ^
-    -unattended -nullrhi -nosound -log ^
-    -ReportOutputPath="TestResults/"
-
-# Run a single test class / method (prefix match)
--ExecCmds="Automation RunTests Game.Module.FeatureTests; Quit"
+```powershell
+Import-Module ./.agents/skills/harness/scripts/Harness.psd1
+$context = New-HarnessContext -WorkspaceRoot (Get-Location).Path
+Invoke-Harness -Command workspace.activate -Context $context | Out-Null
+Invoke-Harness -Command ue.test -Context $context -Parameters @{
+    TestPrefix = 'Angelscript.UnitTest.NativeEngine.Foundation'
+    Fast = $true
+    TimeoutMs = 600000
+}
 ```
 
-Filter prefix = the second argument of `TEST_CLASS` plus the class name. Flags determine in which contexts the test is discovered: the default `ApplicationContextMask | ProductFilter` covers both editor and command line; editor-only tests use `EditorContext | ProductFilter` (network/map/asset tests almost always need it).
+The Automation filter prefix is `TestDir.ClassName` (and `.MethodName` for one scenario). `Fast = $true` selects the Harness `fast-headless` launch profile; it is not an `EngineFilter` vs `ProductFilter` switch. This project's replacement tests still use `EditorContext | EngineFilter` as the CQTest flags.
 
-> Within this project, run tests via `Tools\RunTests.ps1` / `Tools\RunTestSuite.ps1` — see `Documents/Guides/Test.md`.
+Network, map, and asset tests almost always need `EditorContext`. Record the managed run ID, report path, and pass/fail/warning counts; the report's complete paths are the public-identity oracle.
+
+In-editor Session Frontend still works for interactive filtering (`Window → Session Frontend → Test Automation`).
 
 ---
 
@@ -868,3 +933,5 @@ The following claims are common in material based on early ue5-main revisions an
 4. **Default timeouts are 10s / 30s / 30s** (Command / Network / MapTest), not 30/120/120.
 5. **`AddWaitUntilLoadedCommand` can — and by official boilerplate should — be called inside `BEFORE_EACH`**; the real restriction is "never call it from inside a latent command".
 6. The `BEFORE_ALL`/`AFTER_ALL` signature is `static void BeforeAll(const FString&)`, triggered via test-section delegates; chain the base-class call as `TBase::BeforeAll(FString())`.
+7. **`TEST(Name, Path)` is not `Path.Name`.** The generated method is `Name_Method`.
+8. **Inside the fixture, `TestRunner` is a static pointer.** Pass `*TestRunner` to `FAutomationTestBase&`; `TestRunner.SetSuppressLogWarnings()` does not compile.

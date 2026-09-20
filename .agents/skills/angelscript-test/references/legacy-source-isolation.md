@@ -11,7 +11,13 @@ AngelscriptTest/
 |-- AngelscriptTest.Build.cs
 |-- AngelscriptTestModule.cpp
 |-- Core/AngelscriptTestModule.h
-|-- NewVersion/                       active replacement tests
+|-- NativeEngine/                     NativeEngine layer homes
+|-- Bindings/
+|-- Framework/
+|-- FrameworkTests/
+|-- Baseline/
+|-- TestCode/
+|-- TestFramework/
 `-- Legacy/
     |-- .ubtignore                    hard source-discovery boundary
     |-- Core/                         retained old sources
@@ -57,4 +63,4 @@ Invoke-Harness -Command ue.build -Context $context -Parameters @{
 
 Then run an ordinary incremental Harness build and the narrow replacement-test prefix. Inspect the returned managed operation's `Data.State` and `Data.ExitCode`, plus `UBT.log` or `Summary.json`; do not infer native success only from the outer Harness dispatch envelope.
 
-For the current baseline, also run `openspec/changes/angelscript/refactor-legacy-runtime-tests-quarantine/attachments/scripts/Test-LegacyTestQuarantine.ps1`. It checks that every retained old source remains below one of the ignored parents, active module shells and `NewVersion` remain outside, and generated JIT artifacts were not rewritten.
+For the current baseline, confirm retained old sources stay below an ignored `Legacy/` parent, the four tenant homes remain outside those parents, and generated JIT artifacts were not rewritten. The historical quarantine helper under the archived `refactor-legacy-runtime-tests-quarantine` Change still names `NewVersion/` and is not a current selector.

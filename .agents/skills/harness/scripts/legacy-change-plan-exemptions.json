@@ -1,7 +1,6 @@
 {
   "schema": 1,
   "activeChangeIds": [
-    "angelscript/feature-delegates-ue-interop",
     "angelscript/feature-memory-gc-observability",
     "angelscript/refactor-builder-source-entry",
     "angelscript/refactor-defaults-constructor-unification",

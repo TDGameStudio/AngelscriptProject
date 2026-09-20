@@ -10,6 +10,7 @@ description: "Inspect and explain how a system, component, function or workflow 
 - Keep the question's full relevant architecture visible: responsibilities, terms, important relationships, current behavior and proposed changes. Do not compress an unfamiliar mechanism into internal shorthand.
 - Write for a reader encountering this system for the first time. Supply the background needed to follow the cause and effect, define terms through concrete responsibilities and examples, and retain the technical detail that makes the explanation accurate. Use plain language without a childish tone or assuming prior project knowledge.
 - Follow [evidence and explanation](references/method.md) for investigation and narrative. For code, also read [source walkthroughs](references/source-walkthrough.md); choose [focused lenses](references/focused-lenses.md) when ownership, lifecycle, data, concurrency, controls or observation matter.
+- When the reader cannot connect those pieces, use the [worked example](references/worked-example.md) to see roles, call/data relationships, annotated source, a state trace and bounded proof joined around one question. Read it on demand, not as a compulsory template.
 - Distinguish the implemented system, a proposed design and a user-confirmed design. Acceptance of a proposal does not mean its code exists.
 
 ## Deliver the explanation
@@ -22,6 +23,7 @@ description: "Inspect and explain how a system, component, function or workflow 
 - Keep necessary explanation in the conversation. A saved diagram, shell output or file link cannot replace an explanation the user can read before answering.
 - Do not impose a word count, recursion depth, diagram count or compulsory set of headings. Depth follows the question and the mechanism's actual boundaries.
 - A single fact or already-clear operation needs no diagram. Complex questions must not lose important detail to satisfy a brevity preference.
+- If the user is still unsure, expose the missing concept with one concrete state change or contrasting case, then reconnect it to the relevant architecture. Follow the reader-repair guidance in [the method](references/method.md); repeating more of the same shorthand does not repair understanding.
 
 ## Work with Grill and other tools
 

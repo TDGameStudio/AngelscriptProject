@@ -2,6 +2,7 @@
 
 - Locate the owning module/file, the subject's role and relevant callers and callees. Check source context rather than copying an isolated search hit.
 - Identify the source version or commit when available. Do not treat main-branch knowledge as proof of a fixed Unreal release.
+- For a durable explanation or a comparison involving local edits, identify the relevant dirty source as well as the base commit. A HEAD alone cannot reproduce uncommitted content; avoid a whole-repository provenance ceremony for an ordinary explanation.
 - Keep actual identifiers and important control order. Label excerpts with their source; label simplifications and identify omitted detail.
 - Do not manufacture a class, function, CVar, field or signature to complete an example. Proposed design shapes must be clearly labeled.
 - A source excerpt and a simplified overview serve different needs. Show both only when each adds useful information; there is no compulsory two-block rule.
@@ -35,6 +36,8 @@
 
 - Show the caller side up to the relevant entry point or trigger: who reaches the function, under which condition, how often where known, and what state exists on entry.
 - Show the callee side down to the meaningful boundary: helpers, reads, writes, creation, scheduling and downstream consumers.
+- Treat search hits and static call graphs as navigation evidence. Confirm consequential edges at their actual call site, implementation selection, registration or dispatch point; virtual calls, callbacks, macros and generated bindings can hide relationships from a name search. A declared override is not proof that this runtime path selects it.
+- If no caller is found, state the inspected scope and unresolved entry boundary. "Not found here" does not establish "never called"; do not fill a gap with a plausible entry point or claim exhaustive coverage from partial source.
 - Distinguish synchronous calls from registration, deferred execution, event delivery and later reads. Do not draw them as interchangeable calls.
 - Mark the subject with `◆` when useful. Use edge labels such as `[calls]`, `[schedules]`, `[reads]` and `[writes]`, with a `//` explanatory clause on meaningful nodes.
 - Include signatures or arguments when they explain routing. Put source paths/version in banners or nearby links rather than every tree node.

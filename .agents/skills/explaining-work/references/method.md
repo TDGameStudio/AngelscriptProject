@@ -4,6 +4,7 @@
 - Inspect owning source and nearby entry points before drawing conclusions. Follow relevant references outward to establish boundaries, then use exact symbols and paths to resolve details.
 - Reuse current evidence rather than repeatedly surveying the repository. Expand when an unanswered causal link or conflicting evidence requires it.
 - Distinguish code facts, runtime observations, documentation, historical notes and inference. Prefer the requested version's actual source when historical articles or snippets disagree.
+- Separate a step's demonstrated effect from the historical reason someone chose it. Source can establish how a guard protects state; a design record may establish the original trade-off. Without that record, present a plausible rationale as analysis, not the author's documented intent.
 - Preserve exact type, function, field, CVar and route names. Do not invent missing callers, defaults, thread affinity or lifetime guarantees.
 - Mark uncertainty and give a concrete check: a source symbol, search term, observation point or relevant test. Explain what current evidence already establishes.
 
@@ -31,6 +32,14 @@
 - Keep current reality and accepted future design distinct. Do not redraw an accepted proposal as already implemented.
 - Update key conclusions and provenance in the existing context/design record. Do not require the visible explanation to be copied verbatim into a draft.
 
+## Repair a missing connection for the reader
+
+- When the user says the explanation is unclear, identify the missing distinction from their words and the current example. Investigate discoverable facts yourself; ask a focused clarification only if different interpretations would materially change the explanation.
+- Give the confusing term an observable meaning: the actual field, object, event, branch or result that represents it. For example, distinguish recording a cancellation request from a worker receiving it and from evidence that the operation ended; use only the states present in the subject.
+- Walk the same small input or object through the relevant transitions. Show a contrasting outcome when it reveals the distinction, then reconnect the example to the complete relevant architecture and real names. A smaller example must not silently replace the user's system with a different design.
+- Correct a false premise using source or observations. The user chooses desired behavior, not what the current code already does. Keep a remaining preference separate from an unresolved fact.
+- Use the [worked example](worked-example.md) when a concrete model helps. Avoid a compulsory comprehension quiz or another approval step; during Grill return to its actual pending choice after explaining.
+
 ## Explain a prepared Create or Replan
 
 - Use the presentation contract in Harness's [handoff Gate](../../harness/references/handoff-gate.md); do not create another approval sequence here. A gate question needs the explanation in the conversation before it is asked, even when the draft contains the detail.
@@ -44,6 +53,7 @@
 - A call tree explains navigation; annotated code explains actual conditions and operations. Use them together when both are needed.
 - Use a data shape when representation matters, a lifecycle or timeline when validity/order matters, and a comparison when a decision changes relationships.
 - Keep diagrams adjacent to their explanation. Explain edges and consequences; decorative arrows without semantics add no understanding.
+- State what a view depicts: structure, a possible execution path, observed execution, data movement or a proposed change. Mark meaningful ordering and edge types; placement in a structure tree does not prove runtime order, and a state label alone does not prove its external effect completed.
 - Prefer unboxed ASCII trees in ordinary conversation. Use the [visual catalog](visual-catalog.md) to select a relevant fragment, never load all categories by default.
 - Use focused HTML when navigation, interaction or export improves the result. Preserve readable explanation in chat even when a larger artifact helps.
 - Do not automatically produce an article collection, cheat sheet, Draw.io file or second explanation document for a chat question.

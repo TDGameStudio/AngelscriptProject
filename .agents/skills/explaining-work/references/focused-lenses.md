@@ -4,6 +4,7 @@
 - Identify core class/module, collaborators, resource owners and scheduling responsibilities. Distinguish ownership from a non-owning reference, handle, lookup or cached pointer.
 - Connect creation, initialization, use, update/rebuild and destruction to actual functions/events.
 - Explain when values may be absent, stale or replaced, who ensures validity and which consumer assumes it. Include thread affinity when relevant and supported.
+- For workflow or asynchronous states, separate recorded intent, derived permission, the operation that performs the effect, and evidence of completion when those differ. Locate the consumer that acts on a request; a field called paused, cancelled or ready does not by itself establish what a process or resource did.
 - Select fields that reveal the mechanism; explain meanings and transitions rather than imposing a fixed field count.
 
 ## Data and memory

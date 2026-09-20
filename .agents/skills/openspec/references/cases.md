@@ -92,7 +92,7 @@ Numbered steps, each `action → observation`; one role and one oracle for the w
 
 ```markdown
 6. **NoPublicCollect** — new RED · absence
-   Must not compile against `asIScriptEngine` in `NewVersion/Bindings/GcAbsenceTests.cpp`: `GarbageCollect`, `GetGCStatistics`, `NotifyGarbageCollectorOfNewObject`, `GetObjectInGC`. Oracle: each symbol compiled under `#if AS_EXPECT_NO_GC_API`; the build reports exactly the four expected errors.
+   Must not compile against `asIScriptEngine` in `Bindings/GcAbsenceTests.cpp`: `GarbageCollect`, `GetGCStatistics`, `NotifyGarbageCollectorOfNewObject`, `GetObjectInGC`. Oracle: each symbol compiled under `#if AS_EXPECT_NO_GC_API`; the build reports exactly the four expected errors.
 ```
 
 ### measurement

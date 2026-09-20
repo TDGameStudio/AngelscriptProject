@@ -15,7 +15,7 @@ Both providers feed the same Parser or Builder, admission rules, singleton and q
 
 ## Author a complete-version `.as` container
 
-Author shared fixtures below the repository `AngelscriptTestCode/` root. The relative path determines the public file Tag: `AngelscriptTestCode/Language/Syntax/StructFields.as` becomes `Language/Syntax/StructFields`. The extension and generated C++ symbol suffix are not part of the public identity.
+Author shared fixtures below the repository `AngelscriptTestCode/` root. The relative path determines the public file Tag: `AngelscriptTestCode/Language/Syntax/StructFields.as` becomes `Language/Syntax/StructFields`. Parameterized container authors live under `AngelscriptTestCode/Containers/`; `Containers/TArray.as` becomes `Containers/TArray`. Remaining host-API types from Bindings leftovers live under `AngelscriptTestCode/Unreal/<Type>/` as `Unreal/FMath` or fold into an existing first-batch theme (`Unreal/Strings`, `Unreal/Input`, `Unreal/World/Actor`). Do not revive an admitted `Bindings/` root and do not place TArray under `Language/`. UClass, Actor, and WorldStory first-batch programs live under `AngelscriptTestCode/Unreal/`; `Unreal/Casting.as` becomes `Unreal/Casting`. The extension and generated C++ symbol suffix are not part of the public identity.
 
 Use Doxygen-style metadata comments. The first block describes the file; every following block describes one source version and is followed by that version's complete body and `/** @end */`.
 
@@ -55,7 +55,7 @@ struct FStructFields
 /** @end */
 ```
 
-Compile-fail cases for the same theme live in a sibling `StructFieldsCompileFail.as` (runtime-fail polarity uses `RuntimeFail`). The file-level `@version v1` names the metadata grammar. It is not a source node and is not passed to `Get`. Case identity is `@begin <tag>`. Several versions may omit `@parent`; write `@parent` only for a real same-program Family. A Tag spelled `root` has no privilege. Declaration order is irrelevant, siblings remain independent, and every body is complete source rather than a patch against its parent. Callables may carry a function-header block (`@function`, `@summary`, `@inputs`, `@return`, optional `@covers`).
+Compile-fail cases for the same theme live in a sibling `StructFieldsCompileFail.as` (runtime-fail polarity uses `RuntimeFail`). The file-level `@version v1` names the metadata grammar. It is not a source node and is not passed to `Get`. Case identity is `@begin <tag>`. Several versions may omit `@parent`; write `@parent` only for a real same-program Family. A Tag spelled `root` has no privilege. Declaration order is irrelevant, siblings remain independent, and every body is complete source rather than a patch against its parent. Callables may carry a function-header block (`@function`, `@summary`, `@inputs`, `@return`, optional `@covers`). Language chapter pockets are parentless `@begin` files under `AngelscriptTestCode/Language/<Chapter>/<Slice>.as` (for example `Language/Class/Constructor`). Flat `Language/<Theme>.as` identities are retired. Coverage, chapter owners, and Language exclusions are in [language-fixtures.md](language-fixtures.md).
 
 `@summary` is required at file and node level. Repeat `@topic` to attach zero or more filter labels. Topics are metadata for selection; `Reload`, `Negative`, or any other spelling does not schedule a reload or change admission behavior.
 

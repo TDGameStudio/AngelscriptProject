@@ -1,3 +1,0 @@
-# Python bytecode caches are local, reproducible artifacts.
-__pycache__/
-*.py[cod]
