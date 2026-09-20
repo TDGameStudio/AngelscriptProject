@@ -1,23 +1,23 @@
 /**
  * @version v1
- * @summary Live event callable-type declarations.
+ * @summary DECLARE-based multicast event callable-type declarations.
  * @topic Language
  * @topic Event
  *
- * declare-event                   // A named event with a void return and an empty parameter list.
- * declare-event-with-parameter    // A named event whose parameter list has one typed parameter.
+ * declare-event                   // An ordinary multicast delegate with an empty parameter list.
+ * declare-event-with-parameter    // An ordinary multicast OneParam delegate.
  */
 /**
  * @begin declare-event
- * @summary A named event with a void return and an empty parameter list.
+ * @summary An ordinary multicast delegate with an empty parameter list.
  * @topic Event
  */
-event void FDeclareEvent();
+DECLARE_MULTICAST_DELEGATE(FDeclareEvent);
 /** @end */
 /**
  * @begin declare-event-with-parameter
- * @summary A named event whose parameter list has one typed parameter.
+ * @summary An ordinary multicast OneParam delegate.
  * @topic Event
  */
-event void FDeclareEventWithParameter(int Value);
+DECLARE_MULTICAST_DELEGATE_OneParam(FDeclareEventWithParameter, int);
 /** @end */

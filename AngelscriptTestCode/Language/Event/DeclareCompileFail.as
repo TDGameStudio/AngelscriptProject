@@ -1,23 +1,23 @@
 /**
  * @version v1
- * @summary Compile-fail cases for live event callable-type declarations.
+ * @summary Compile-fail cases for leftover event introducers.
  * @topic Language
  * @topic Event
  *
- * invalid-event-without-name         // An event declaration requires a name after the return type.
- * invalid-event-missing-semicolon    // An event declaration must end with a semicolon.
+ * leftover-event-keyword              // The removed event keyword is not a callable introducer.
+ * leftover-event-keyword-with-parameter // A leftover event introducer with a parameter is still rejected.
  */
 /**
- * @begin invalid-event-without-name
- * @summary An event declaration requires a name after the return type.
+ * @begin leftover-event-keyword
+ * @summary The removed event keyword is not a callable introducer.
  * @topic Negative
  */
-event void ();
+event void FOnChanged();
 /** @end */
 /**
- * @begin invalid-event-missing-semicolon
- * @summary An event declaration must end with a semicolon.
+ * @begin leftover-event-keyword-with-parameter
+ * @summary A leftover event introducer with a parameter is still rejected.
  * @topic Negative
  */
-event void FMissingSemicolon()
+event void FOnValue(int Value);
 /** @end */

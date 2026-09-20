@@ -1,31 +1,31 @@
 /**
  * @version v1
- * @summary Live delegate callable-type declarations.
+ * @summary DECLARE-based delegate callable-type declarations.
  * @topic Language
  * @topic Delegate
  *
- * declare-delegate                   // A named delegate with a non-void return and an empty parameter list.
- * declare-delegate-with-parameter    // A named delegate whose parameter list has one typed parameter.
- * declare-delegate-void              // A named delegate whose return type is void.
+ * declare-delegate                   // An ordinary RetVal delegate with an empty parameter list.
+ * declare-delegate-with-parameter    // An ordinary RetVal OneParam delegate.
+ * declare-delegate-void              // An ordinary void delegate with no parameters.
  */
 /**
  * @begin declare-delegate
- * @summary A named delegate with a non-void return and an empty parameter list.
+ * @summary An ordinary RetVal delegate with an empty parameter list.
  * @topic Delegate
  */
-delegate int FDeclareDelegate();
+DECLARE_DELEGATE_RetVal(int, FDeclareDelegate);
 /** @end */
 /**
  * @begin declare-delegate-with-parameter
- * @summary A named delegate whose parameter list has one typed parameter.
+ * @summary An ordinary RetVal OneParam delegate.
  * @topic Delegate
  */
-delegate int FDeclareDelegateWithParameter(int Value);
+DECLARE_DELEGATE_RetVal_OneParam(int, FDeclareDelegateWithParameter, int);
 /** @end */
 /**
  * @begin declare-delegate-void
- * @summary A named delegate whose return type is void.
+ * @summary An ordinary void delegate with no parameters.
  * @topic Delegate
  */
-delegate void FDeclareDelegateVoid();
+DECLARE_DELEGATE(FDeclareDelegateVoid);
 /** @end */

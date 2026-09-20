@@ -1,23 +1,23 @@
 /**
  * @version v1
- * @summary Compile-fail cases for live delegate callable-type declarations.
+ * @summary Compile-fail cases for leftover delegate introducers.
  * @topic Language
  * @topic Delegate
  *
- * invalid-delegate-without-name         // A delegate declaration requires a name after the return type.
- * invalid-delegate-missing-semicolon    // A delegate declaration must end with a semicolon.
+ * leftover-delegate-keyword              // The removed delegate keyword is not a callable introducer.
+ * leftover-delegate-keyword-with-parameter // A leftover delegate introducer with a parameter is still rejected.
  */
 /**
- * @begin invalid-delegate-without-name
- * @summary A delegate declaration requires a name after the return type.
+ * @begin leftover-delegate-keyword
+ * @summary The removed delegate keyword is not a callable introducer.
  * @topic Negative
  */
-delegate int ();
+delegate int FOnDone();
 /** @end */
 /**
- * @begin invalid-delegate-missing-semicolon
- * @summary A delegate declaration must end with a semicolon.
+ * @begin leftover-delegate-keyword-with-parameter
+ * @summary A leftover delegate introducer with a parameter is still rejected.
  * @topic Negative
  */
-delegate int FMissingSemicolon()
+delegate int FOnChanged(int Value);
 /** @end */
