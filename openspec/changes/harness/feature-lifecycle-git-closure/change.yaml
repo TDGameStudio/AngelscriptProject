@@ -1,0 +1,9 @@
+api_version: openspec.dev/v1
+kind: change
+metadata:
+  uid: change_9f1c9245-1e3e-49a7-9d23-7754908153bb
+  id: harness/feature-lifecycle-git-closure
+  title: Explain and persist Harness lifecycle decisions through Git closure
+workflow: angelscript
+created_at: 2026-09-20T07:52:14Z
+goal: Make complete planning, ongoing discussion, topic feedback and three-kind closure explicit, Git-persisted and recoverable within exact user authority.

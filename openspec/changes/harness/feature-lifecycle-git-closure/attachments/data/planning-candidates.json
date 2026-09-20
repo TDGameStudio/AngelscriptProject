@@ -1,0 +1,21 @@
+{
+  "purpose": "exact displayed planning candidate; not an approval receipt",
+  "target": "harness/feature-lifecycle-git-closure",
+  "files": {
+    "decisions.md": "51b7f6cefba75e2fb28e9ebc97f9191733134e137a03f2f26b318ebe1371a06e",
+    "design.md": "8032e4f3c31432f4ebaf53660c1f03a0a0aa1118dd8ef9ad2f84b9847e13d9b0",
+    "evidence.md": "166c77eec6384f8b7656290f8117e8cbceb9ca61906f406de16fb2081cc38113",
+    "planning-validation.md": "28656856949c15f21c24b29399da9c6179630ec3f093fdaa7179e261a55fc2f7",
+    "proposal.md": "b77a863df71aa106113d2cc1bbcb3c1387d3141e3ad29aaa0c6aba153097c227",
+    "specs/harness/core/spec.md": "95c9fa06ade81fd1cfab1cdf62b0eac7f16f07c4e68318a66a5259b0b43c9b72",
+    "specs/harness/git/spec.md": "af365233271714de0419100f676c138b3696e200234184b0dff3e41ca65cd8fe",
+    "tasks.md": "8a4c559e774f970d6a7c55ad934aa9f5490a60020451cbbaff534fc347ee351a"
+  },
+  "root_materialization": [
+    "proposal.md",
+    "design.md",
+    "tasks.md",
+    "specs/harness/core/spec.md",
+    "specs/harness/git/spec.md"
+  ]
+}

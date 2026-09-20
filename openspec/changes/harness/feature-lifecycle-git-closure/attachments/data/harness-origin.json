@@ -1,0 +1,167 @@
+{
+  "schema": 3,
+  "changeId": "harness/feature-lifecycle-git-closure",
+  "origin": "Draft",
+  "draftId": "harness/change-git-checkpoints",
+  "scope": "workflow-convergence",
+  "reason": null,
+  "approvalRound": "",
+  "exportDigestSchema": 1,
+  "expectedExports": [
+    {
+      "Source": "design.md",
+      "Target": "attachments/drafts/design.md",
+      "Reason": "完整选定范围和中文讨论语义的英文导出",
+      "Preservation": "translated-text"
+    },
+    {
+      "Source": "handoff.md",
+      "Target": "attachments/drafts/handoff.md",
+      "Reason": "准确目标、创建边界和承接清单",
+      "Preservation": "translated-text"
+    },
+    {
+      "Source": "candidates/proposal.md",
+      "Target": "attachments/drafts/candidates/proposal.md",
+      "Reason": "已展示的英文 proposal 候选",
+      "Preservation": "translated-text"
+    },
+    {
+      "Source": "candidates/design.md",
+      "Target": "attachments/drafts/candidates/design.md",
+      "Reason": "英文根设计和调用关系候选",
+      "Preservation": "translated-text"
+    },
+    {
+      "Source": "candidates/tasks.md",
+      "Target": "attachments/drafts/candidates/tasks.md",
+      "Reason": "完整任务 DAG 与证明命令候选",
+      "Preservation": "translated-text"
+    },
+    {
+      "Source": "candidates/specs/harness/core/spec.md",
+      "Target": "attachments/drafts/candidates/specs/harness/core/spec.md",
+      "Reason": "核心行为 delta 候选",
+      "Preservation": "translated-text"
+    },
+    {
+      "Source": "candidates/specs/harness/git/spec.md",
+      "Target": "attachments/drafts/candidates/specs/harness/git/spec.md",
+      "Reason": "Git 行为 delta 候选",
+      "Preservation": "translated-text"
+    },
+    {
+      "Source": "candidates/decisions.md",
+      "Target": "attachments/drafts/research/decisions.md",
+      "Reason": "实际选择及来源摘要",
+      "Preservation": "translated-text"
+    },
+    {
+      "Source": "candidates/evidence.md",
+      "Target": "attachments/drafts/research/evidence.md",
+      "Reason": "源码调查和有限演练结论",
+      "Preservation": "translated-text"
+    },
+    {
+      "Source": "candidates/planning-validation.md",
+      "Target": "attachments/data/planning-validation.md",
+      "Reason": "候选规划自检与验证边界",
+      "Preservation": "translated-text"
+    },
+    {
+      "Source": "candidates/manifest.json",
+      "Target": "attachments/data/planning-candidates.json",
+      "Reason": "绑定已展示英文规划文件的准确内容摘要",
+      "Preservation": "bytes",
+      "Sha256": "65dd931e14560834287542d67b3f2ff107ec2dd7e9390ccd2e5138ea2a16db2b"
+    }
+  ],
+  "gate": {
+    "schema": "harness-handoff-v1",
+    "handoff_id": "handoff-7519a64d7bdc4854",
+    "operation": "create",
+    "revision_schema": 2,
+    "export_digest_schema": 1,
+    "expected_exports": [
+      {
+        "Source": "design.md",
+        "Target": "attachments/drafts/design.md",
+        "Reason": "完整选定范围和中文讨论语义的英文导出",
+        "Preservation": "translated-text"
+      },
+      {
+        "Source": "handoff.md",
+        "Target": "attachments/drafts/handoff.md",
+        "Reason": "准确目标、创建边界和承接清单",
+        "Preservation": "translated-text"
+      },
+      {
+        "Source": "candidates/proposal.md",
+        "Target": "attachments/drafts/candidates/proposal.md",
+        "Reason": "已展示的英文 proposal 候选",
+        "Preservation": "translated-text"
+      },
+      {
+        "Source": "candidates/design.md",
+        "Target": "attachments/drafts/candidates/design.md",
+        "Reason": "英文根设计和调用关系候选",
+        "Preservation": "translated-text"
+      },
+      {
+        "Source": "candidates/tasks.md",
+        "Target": "attachments/drafts/candidates/tasks.md",
+        "Reason": "完整任务 DAG 与证明命令候选",
+        "Preservation": "translated-text"
+      },
+      {
+        "Source": "candidates/specs/harness/core/spec.md",
+        "Target": "attachments/drafts/candidates/specs/harness/core/spec.md",
+        "Reason": "核心行为 delta 候选",
+        "Preservation": "translated-text"
+      },
+      {
+        "Source": "candidates/specs/harness/git/spec.md",
+        "Target": "attachments/drafts/candidates/specs/harness/git/spec.md",
+        "Reason": "Git 行为 delta 候选",
+        "Preservation": "translated-text"
+      },
+      {
+        "Source": "candidates/decisions.md",
+        "Target": "attachments/drafts/research/decisions.md",
+        "Reason": "实际选择及来源摘要",
+        "Preservation": "translated-text"
+      },
+      {
+        "Source": "candidates/evidence.md",
+        "Target": "attachments/drafts/research/evidence.md",
+        "Reason": "源码调查和有限演练结论",
+        "Preservation": "translated-text"
+      },
+      {
+        "Source": "candidates/planning-validation.md",
+        "Target": "attachments/data/planning-validation.md",
+        "Reason": "候选规划自检与验证边界",
+        "Preservation": "translated-text"
+      },
+      {
+        "Source": "candidates/manifest.json",
+        "Target": "attachments/data/planning-candidates.json",
+        "Reason": "绑定已展示英文规划文件的准确内容摘要",
+        "Preservation": "bytes",
+        "Sha256": "65dd931e14560834287542d67b3f2ff107ec2dd7e9390ccd2e5138ea2a16db2b"
+      }
+    ],
+    "target_change": "harness/feature-lifecycle-git-closure",
+    "revision": "7e3bd051e7d22afa0b3a749e4a33bab3b3665a0b9a1a11b88201fa96a5e260ff",
+    "convergence_source": "Actual user message in this task: 创建change , 并实施吧, 注意相关的Gate 的时候, 是要触发弹窗的那种选项问用户的",
+    "decision_source": "Actual request_user_input_async answer: call_drGdqaT7geYcekwQUYT0xUac question 0 — 创建此版并提交正式规划（推荐）",
+    "decision": "create",
+    "created_at": "2026-09-20T15:52:14.197443+08:00",
+    "draft_id": "harness/change-git-checkpoints",
+    "scope": "workflow-convergence",
+    "session_id": "01a0bd10-2dfb-7212-9e25-c03328e4111d",
+    "workspace_id": "git_3b46972bbc7ef05a4244fd2890d18183",
+    "post_talk_id": "grill-20260920-075214-handoff-7519a64d7bdc4854"
+  },
+  "createdAt": "2026-09-20T07:52:14.2115311Z"
+}
