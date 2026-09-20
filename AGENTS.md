@@ -6,6 +6,7 @@ This repository develops and validates `Plugins/Angelscript` as a reusable Unrea
 
 - Project Skills are enabled, and Harness is the project workflow entry.
 - Work in the current selected workspace by default. Create or switch to a worktree only when explicitly requested by the user, and preserve all unrelated uncommitted changes.
+- `develop` is the primary development branch for the parent repository and the project-owned `Plugins/Angelscript`, `Plugins/AngelscriptGAS`, `Plugins/AngelscriptGameplayTags`, and `Tools/openspec` repositories. Use `develop` as the default base for newly requested development branches and `origin/develop` for development synchronization unless the user specifies otherwise. Continue existing task branches in their selected workspace; this convention does not authorize automatic branch switching, integration, or push.
 - The primary workspace is both control center and a full execution workspace. New workspaces are minimal project replicas with only selected plugins using Git worktrees; canonical OpenSpec remains in the primary workspace. Route ordered execution to `change-queue` and live status requests through Harness queries.
 - When an OpenSpec Change exists, read its `tasks.md` and `attachments/INDEX.md` first. Then load only the one leaf Skill or focused reference needed for the current task.
 - Use `.agents/skills/README.md` for Skill discovery, Harness and OpenSpec Skills for workflow policy, `openspec/specs/` for durable behavior, and `Reference/README.md` for external-source routing.
